@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@plugin "@tailwindcss/container-queries";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-olffy-cream: #fff5d9;
+  --color-olffy-yellow: #fab405;
+  --color-olffy-orange: #e94300;
+  --color-olffy-purple: #5957b0;
+  --color-olffy-ink: #343434;
+  --color-olffy-muted: #6a6a6a;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@supports (font: -apple-system-body) and (-webkit-appearance: none) {
+  img[loading="lazy"] {
+    clip-path: inset(0.6px);
+  }
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(250, 180, 5, 0.18), transparent 32rem),
+    linear-gradient(180deg, #fffdf7 0%, #fff5d9 100%);
+  color: #343434;
+  font-family: var(--font-geist-sans), Poppins, ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-brand {
+  font-family: "Comic Sans MS", "Trebuchet MS", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.font-editorial {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+a,
+input,
+button {
+  @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-olffy-purple focus-visible:ring-offset-2 focus-visible:ring-offset-olffy-cream;
+}
