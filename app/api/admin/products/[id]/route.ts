@@ -1,9 +1,10 @@
 import { getAdminProduct, updateAdminProduct, deleteAdminProduct } from "lib/shopify/admin";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const product = await getAdminProduct(params.id);
+    const { id } = await params;
+    const product = await getAdminProduct(id);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -14,10 +15,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const product = await updateAdminProduct({ id: params.id, ...body });
+    const product = await updateAdminProduct({ id, ...body });
     
     if (product?.userErrors?.length > 0) {
       return NextResponse.json({ errors: product.userErrors }, { status: 400 });
@@ -30,9 +32,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const result = await deleteAdminProduct(params.id);
+    const { id } = await params;
+    const result = await deleteAdminProduct(id);
     
     if (result?.userErrors?.length > 0) {
       return NextResponse.json({ errors: result.userErrors }, { status: 400 });

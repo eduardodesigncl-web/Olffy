@@ -1,9 +1,10 @@
 import { getAdminCollection, updateAdminCollection, deleteAdminCollection } from "lib/shopify/admin";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const collection = await getAdminCollection(params.id);
+    const { id } = await params;
+    const collection = await getAdminCollection(id);
     if (!collection) {
       return NextResponse.json({ error: "Collection not found" }, { status: 404 });
     }
@@ -14,10 +15,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const collection = await updateAdminCollection({ id: params.id, ...body });
+    const collection = await updateAdminCollection({ id, ...body });
     
     if (collection?.userErrors?.length > 0) {
       return NextResponse.json({ errors: collection.userErrors }, { status: 400 });
@@ -30,9 +32,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const result = await deleteAdminCollection(params.id);
+    const { id } = await params;
+    const result = await deleteAdminCollection(id);
     
     if (result?.userErrors?.length > 0) {
       return NextResponse.json({ errors: result.userErrors }, { status: 400 });

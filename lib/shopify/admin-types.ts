@@ -59,22 +59,26 @@ export type AdminProductsOperation = {
   data: {
     products: AdminConnection<AdminProduct>;
   };
+  variables: { first: number };
 };
 
 export type AdminProductOperation = {
   data: {
     product: AdminProduct;
   };
+  variables: { id: string };
 };
 
 export type AdminCollectionsOperation = {
   data: {
     collections: AdminConnection<AdminCollection>;
   };
+  variables: { first: number };
 };
 
 export type AdminCollectionOperation = {
   data: {
     collection: AdminCollection;
   };
+  variables: { id: string };
 };

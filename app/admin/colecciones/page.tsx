@@ -1,10 +1,10 @@
 import { getAdminCollections } from "lib/shopify/admin";
 import Link from "next/link";
 import { PlusIcon } from "@heroicons/react/24/outline";
-
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
 
 export default async function AdminCollectionsPage() {
+  await connection();
   const collections = await getAdminCollections();
 
   return (

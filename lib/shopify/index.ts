@@ -71,6 +71,25 @@ type ExtractVariables<T> = T extends { variables: object }
   ? T["variables"]
   : never;
 
+const getShopifyErrorSummary = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+
+  if (typeof error === "object" && error && "error" in error) {
+    const shopifyError = (
+      error as {
+        error?: {
+          message?: string;
+          extensions?: { code?: string };
+        };
+      }
+    ).error;
+
+    return shopifyError?.extensions?.code || shopifyError?.message || "Unknown";
+  }
+
+  return "Unknown";
+};
+
 export async function shopifyFetch<T>({
   headers,
   query,
@@ -274,6 +293,7 @@ export async function updateCart(
 
 export async function getCart(): Promise<Cart | undefined> {
   "use cache: private";
+
   cacheTag(TAGS.cart);
   cacheLife("seconds");
 
@@ -300,17 +320,25 @@ export async function getCollection(
   handle: string
 ): Promise<Collection | undefined> {
   "use cache";
+
   cacheTag(TAGS.collections);
   cacheLife("days");
 
-  const res = await shopifyFetch<ShopifyCollectionOperation>({
-    query: getCollectionQuery,
-    variables: {
-      handle,
-    },
-  });
+  try {
+    const res = await shopifyFetch<ShopifyCollectionOperation>({
+      query: getCollectionQuery,
+      variables: {
+        handle,
+      },
+    });
 
-  return reshapeCollection(res.body.data.collection);
+    return reshapeCollection(res.body.data.collection);
+  } catch (error) {
+    console.error(
+      `Shopify getCollection failed for '${handle}': ${getShopifyErrorSummary(error)}`,
+    );
+    return undefined;
+  }
 }
 
 export async function getCollectionProducts({
@@ -323,6 +351,7 @@ export async function getCollectionProducts({
   sortKey?: string;
 }): Promise<Product[]> {
   "use cache";
+
   cacheTag(TAGS.collections, TAGS.products);
   cacheLife("days");
 
@@ -333,27 +362,35 @@ export async function getCollectionProducts({
     return [];
   }
 
-  const res = await shopifyFetch<ShopifyCollectionProductsOperation>({
-    query: getCollectionProductsQuery,
-    variables: {
-      handle: collection,
-      reverse,
-      sortKey: sortKey === "CREATED_AT" ? "CREATED" : sortKey,
-    },
-  });
+  try {
+    const res = await shopifyFetch<ShopifyCollectionProductsOperation>({
+      query: getCollectionProductsQuery,
+      variables: {
+        handle: collection,
+        reverse,
+        sortKey: sortKey === "CREATED_AT" ? "CREATED" : sortKey,
+      },
+    });
 
-  if (!res.body.data.collection) {
-    console.log(`No collection found for \`${collection}\``);
+    if (!res.body.data.collection) {
+      console.log(`No collection found for \`${collection}\``);
+      return [];
+    }
+
+    return reshapeProducts(
+      removeEdgesAndNodes(res.body.data.collection.products)
+    );
+  } catch (error) {
+    console.error(
+      `Shopify getCollectionProducts failed for '${collection}': ${getShopifyErrorSummary(error)}`,
+    );
     return [];
   }
-
-  return reshapeProducts(
-    removeEdgesAndNodes(res.body.data.collection.products)
-  );
 }
 
 export async function getCollections(): Promise<Collection[]> {
   "use cache";
+
   cacheTag(TAGS.collections);
   cacheLife("days");
 
@@ -374,34 +411,54 @@ export async function getCollections(): Promise<Collection[]> {
     ];
   }
 
-  const res = await shopifyFetch<ShopifyCollectionsOperation>({
-    query: getCollectionsQuery,
-  });
-  const shopifyCollections = removeEdgesAndNodes(res.body?.data?.collections);
-  const collections = [
-    {
-      handle: "",
-      title: "All",
-      description: "All products",
-      seo: {
+  try {
+    const res = await shopifyFetch<ShopifyCollectionsOperation>({
+      query: getCollectionsQuery,
+    });
+    const shopifyCollections = removeEdgesAndNodes(res.body?.data?.collections);
+    const collections = [
+      {
+        handle: "",
         title: "All",
         description: "All products",
+        seo: {
+          title: "All",
+          description: "All products",
+        },
+        path: "/search",
+        updatedAt: new Date().toISOString(),
       },
-      path: "/search",
-      updatedAt: new Date().toISOString(),
-    },
-    // Filter out the `hidden` collections.
-    // Collections that start with `hidden-*` need to be hidden on the search page.
-    ...reshapeCollections(shopifyCollections).filter(
-      (collection) => !collection.handle.startsWith("hidden")
-    ),
-  ];
+      // Filter out the `hidden` collections.
+      // Collections that start with `hidden-*` need to be hidden on the search page.
+      ...reshapeCollections(shopifyCollections).filter(
+        (collection) => !collection.handle.startsWith("hidden")
+      ),
+    ];
 
-  return collections;
+    return collections;
+  } catch (error) {
+    console.error(
+      `Shopify getCollections failed: ${getShopifyErrorSummary(error)}`,
+    );
+    return [
+      {
+        handle: "",
+        title: "All",
+        description: "All products",
+        seo: {
+          title: "All",
+          description: "All products",
+        },
+        path: "/search",
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+  }
 }
 
 export async function getMenu(handle: string): Promise<Menu[]> {
   "use cache";
+
   cacheTag(TAGS.collections);
   cacheLife("days");
 
@@ -410,22 +467,29 @@ export async function getMenu(handle: string): Promise<Menu[]> {
     return [];
   }
 
-  const res = await shopifyFetch<ShopifyMenuOperation>({
-    query: getMenuQuery,
-    variables: {
-      handle,
-    },
-  });
+  try {
+    const res = await shopifyFetch<ShopifyMenuOperation>({
+      query: getMenuQuery,
+      variables: {
+        handle,
+      },
+    });
 
-  return (
-    res.body?.data?.menu?.items.map((item: { title: string; url: string }) => ({
-      title: item.title,
-      path: item.url
-        .replace(domain, "")
-        .replace("/collections", "/search")
-        .replace("/pages", ""),
-    })) || []
-  );
+    return (
+      res.body?.data?.menu?.items.map((item: { title: string; url: string }) => ({
+        title: item.title,
+        path: item.url
+          .replace(domain, "")
+          .replace("/collections", "/search")
+          .replace("/pages", ""),
+      })) || []
+    );
+  } catch (error) {
+    console.error(
+      `Shopify getMenu failed for '${handle}': ${getShopifyErrorSummary(error)}`,
+    );
+    return [];
+  }
 }
 
 export async function getPage(handle: string): Promise<Page> {
@@ -447,6 +511,7 @@ export async function getPages(): Promise<Page[]> {
 
 export async function getProduct(handle: string): Promise<Product | undefined> {
   "use cache";
+
   cacheTag(TAGS.products);
   cacheLife("days");
 
@@ -455,31 +520,46 @@ export async function getProduct(handle: string): Promise<Product | undefined> {
     return undefined;
   }
 
-  const res = await shopifyFetch<ShopifyProductOperation>({
-    query: getProductQuery,
-    variables: {
-      handle,
-    },
-  });
+  try {
+    const res = await shopifyFetch<ShopifyProductOperation>({
+      query: getProductQuery,
+      variables: {
+        handle,
+      },
+    });
 
-  return reshapeProduct(res.body.data.product, false);
+    return reshapeProduct(res.body.data.product, false);
+  } catch (error) {
+    console.error(
+      `Shopify getProduct failed for '${handle}': ${getShopifyErrorSummary(error)}`,
+    );
+    return undefined;
+  }
 }
 
 export async function getProductRecommendations(
   productId: string
 ): Promise<Product[]> {
   "use cache";
+
   cacheTag(TAGS.products);
   cacheLife("days");
 
-  const res = await shopifyFetch<ShopifyProductRecommendationsOperation>({
-    query: getProductRecommendationsQuery,
-    variables: {
-      productId,
-    },
-  });
+  try {
+    const res = await shopifyFetch<ShopifyProductRecommendationsOperation>({
+      query: getProductRecommendationsQuery,
+      variables: {
+        productId,
+      },
+    });
 
-  return reshapeProducts(res.body.data.productRecommendations);
+    return reshapeProducts(res.body.data.productRecommendations);
+  } catch (error) {
+    console.error(
+      `Shopify getProductRecommendations failed for '${productId}': ${getShopifyErrorSummary(error)}`,
+    );
+    return [];
+  }
 }
 
 export async function getProducts({
@@ -492,6 +572,7 @@ export async function getProducts({
   sortKey?: string;
 }): Promise<Product[]> {
   "use cache";
+
   cacheTag(TAGS.products);
   cacheLife("days");
 
@@ -500,16 +581,21 @@ export async function getProducts({
     return [];
   }
 
-  const res = await shopifyFetch<ShopifyProductsOperation>({
-    query: getProductsQuery,
-    variables: {
-      query,
-      reverse,
-      sortKey,
-    },
-  });
+  try {
+    const res = await shopifyFetch<ShopifyProductsOperation>({
+      query: getProductsQuery,
+      variables: {
+        query,
+        reverse,
+        sortKey,
+      },
+    });
 
-  return reshapeProducts(removeEdgesAndNodes(res.body.data.products));
+    return reshapeProducts(removeEdgesAndNodes(res.body.data.products));
+  } catch (error) {
+    console.error(`Shopify getProducts failed: ${getShopifyErrorSummary(error)}`);
+    return [];
+  }
 }
 
 // This is called from `app/api/revalidate.ts` so providers can control revalidation logic.

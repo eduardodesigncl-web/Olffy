@@ -1,15 +1,17 @@
 import { CollectionForm } from "components/admin/collection-form";
 import { getAdminCollection } from "lib/shopify/admin";
 import { notFound } from "next/navigation";
-
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
 
 export default async function EditarColeccionPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const fullId = `gid://shopify/Collection/${params.id}`;
+  await connection();
+
+  const { id } = await params;
+  const fullId = `gid://shopify/Collection/${id}`;
   const collection = await getAdminCollection(fullId);
 
   if (!collection) {

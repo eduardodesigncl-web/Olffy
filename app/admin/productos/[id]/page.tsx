@@ -1,16 +1,18 @@
 import { ProductForm } from "components/admin/product-form";
 import { getAdminProduct } from "lib/shopify/admin";
 import { notFound } from "next/navigation";
-
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
 
 export default async function EditarProductoPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  await connection();
+
   // Reconstruimos el ID de Shopify (Shopify Admin API requiere GIDs completos)
-  const fullId = `gid://shopify/Product/${params.id}`;
+  const { id } = await params;
+  const fullId = `gid://shopify/Product/${id}`;
   
   const product = await getAdminProduct(fullId);
 
