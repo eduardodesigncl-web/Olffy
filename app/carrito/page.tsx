@@ -1,20 +1,18 @@
 import Image from "next/image";
 import { TrashIcon } from "@heroicons/react/24/outline";
-import { formatPrice, products } from "components/olffy/data";
+import { formatPrice } from "components/olffy/data";
+import { getOlffyProducts } from "components/olffy/shopify-products";
 import { SiteFooter } from "components/olffy/site-footer";
-
-const cartItems = [
-  { product: products[0]!, quantity: 1 },
-  { product: products[2]!, quantity: 2 },
-  { product: products[7]!, quantity: 1 },
-  { product: products[9]!, quantity: 1 },
-];
 
 export const metadata = {
   title: "Carrito",
 };
 
-export default function CartPage() {
+export default async function CartPage() {
+  const cartItems = (await getOlffyProducts()).slice(0, 4).map((product, index) => ({
+    product,
+    quantity: index === 1 ? 2 : 1,
+  }));
   const subtotal = cartItems.reduce(
     (total, item) => total + item.product.price * item.quantity,
     0,

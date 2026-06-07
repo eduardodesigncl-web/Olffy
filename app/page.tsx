@@ -4,16 +4,19 @@ import { NewsletterBand } from "components/olffy/newsletter";
 import { ProductCard } from "components/olffy/product-card";
 import { SectionHeading } from "components/olffy/section-heading";
 import { SiteFooter } from "components/olffy/site-footer";
-import { categories, products, storyImages } from "components/olffy/data";
+import { categories, storyImages } from "components/olffy/data";
+import { getOlffyProducts } from "components/olffy/shopify-products";
 
 export const metadata = {
   description:
     "Olffy: papeleria chilena creativa, agendas, stickers, libretas y regalos para artistas.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getOlffyProducts();
   const featured = products.slice(0, 4);
   const favorites = products.filter((product) => product.tag === "Favorito");
+  const favoriteProducts = favorites.length ? favorites : products.slice(0, 4);
 
   return (
     <>
@@ -174,7 +177,7 @@ export default function HomePage() {
             Productos favoritos
           </h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {favorites.map((product) => (
+            {favoriteProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

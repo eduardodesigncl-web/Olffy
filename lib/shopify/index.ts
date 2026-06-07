@@ -62,7 +62,10 @@ const domain = process.env.SHOPIFY_STORE_DOMAIN
   ? ensureStartsWith(process.env.SHOPIFY_STORE_DOMAIN, "https://")
   : "";
 const endpoint = domain ? `${domain}${SHOPIFY_GRAPHQL_API_ENDPOINT}` : "";
-const key = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN!;
+const privateKey =
+  process.env.SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN ||
+  process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const publicKey = process.env.SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN;
 
 type ExtractVariables<T> = T extends { variables: object }
   ? T["variables"]
@@ -86,7 +89,9 @@ export async function shopifyFetch<T>({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": key,
+        ...(privateKey
+          ? { "Shopify-Storefront-Private-Token": privateKey }
+          : { "X-Shopify-Storefront-Access-Token": publicKey || "" }),
         ...headers,
       },
       body: JSON.stringify({
@@ -489,6 +494,11 @@ export async function getProducts({
   "use cache";
   cacheTag(TAGS.products);
   cacheLife("days");
+
+  if (!endpoint) {
+    console.log("Skipping getProducts - Shopify not configured");
+    return [];
+  }
 
   const res = await shopifyFetch<ShopifyProductsOperation>({
     query: getProductsQuery,

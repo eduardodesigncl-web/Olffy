@@ -1,11 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatPrice, products } from "components/olffy/data";
+import { formatPrice } from "components/olffy/data";
 import { ProductCard } from "components/olffy/product-card";
+import {
+  getOlffyProduct,
+  getOlffyProducts,
+} from "components/olffy/shopify-products";
 import { SiteFooter } from "components/olffy/site-footer";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getOlffyProducts();
+
   return products.map((product) => ({ id: product.id }));
 }
 
@@ -15,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = products.find((item) => item.id === id);
+  const product = await getOlffyProduct(id);
 
   return {
     title: product?.name ?? "Producto",
@@ -28,12 +34,15 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = products.find((item) => item.id === id);
+  const product = await getOlffyProduct(id);
 
   if (!product) notFound();
 
+  const products = await getOlffyProducts();
   const related = products
-    .filter((item) => item.category === product.category && item.id !== product.id)
+    .filter(
+      (item) => item.category === product.category && item.handle !== product.handle,
+    )
     .slice(0, 3);
 
   return (
@@ -61,13 +70,25 @@ export default async function ProductPage({
               {formatPrice(product.price)}
             </p>
             <p className="mt-6 max-w-xl leading-8 text-olffy-muted">
-              Producto demo para el MVP Olffy. Ideal para ordenar ideas,
-              decorar agendas y regalar una pieza de papeleria con identidad
-              local.
+              {product.description ||
+                "Producto Olffy ideal para ordenar ideas, decorar agendas y regalar una pieza de papeleria con identidad local."}
             </p>
+            <div className="mt-6 flex flex-wrap gap-3 text-sm font-semibold">
+              <span className="rounded-full bg-olffy-cream px-4 py-2 text-olffy-ink">
+                {product.availableForSale ? "Disponible" : "Sin stock"}
+              </span>
+              {typeof product.quantityAvailable === "number" ? (
+                <span className="rounded-full bg-white px-4 py-2 text-olffy-purple ring-2 ring-olffy-ink">
+                  Stock: {product.quantityAvailable}
+                </span>
+              ) : null}
+            </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <button className="h-12 rounded-[6px] bg-olffy-ink font-brand font-black text-white">
-                Agregar al carrito
+              <button
+                disabled={!product.availableForSale}
+                className="h-12 rounded-[6px] bg-olffy-ink font-brand font-black text-white disabled:cursor-not-allowed disabled:bg-neutral-400"
+              >
+                {product.availableForSale ? "Agregar al carrito" : "Sin stock"}
               </button>
               <Link
                 href="/carrito"
@@ -77,8 +98,9 @@ export default async function ProductPage({
               </Link>
             </div>
             <div className="mt-8 rounded-[8px] border-2 border-olffy-ink bg-white p-5 text-sm leading-6 text-olffy-muted">
-              <strong className="text-olffy-ink">Detalle MVP:</strong> stock,
-              variantes y checkout se conectan a Shopify en la siguiente etapa.
+              <strong className="text-olffy-ink">Inventario Shopify:</strong>{" "}
+              esta ficha lee la disponibilidad desde la API Storefront. El
+              checkout queda como siguiente etapa del MVP.
             </div>
           </div>
         </div>

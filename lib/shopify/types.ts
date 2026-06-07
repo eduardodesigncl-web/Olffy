@@ -83,6 +83,7 @@ export type ProductVariant = {
   id: string;
   title: string;
   availableForSale: boolean;
+  quantityAvailable?: number | null;
   selectedOptions: {
     name: string;
     value: string;

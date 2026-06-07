@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { products } from "components/olffy/data";
 import { ProductCard } from "components/olffy/product-card";
 import { SectionHeading } from "components/olffy/section-heading";
+import { getOlffyProducts } from "components/olffy/shopify-products";
 import { SiteFooter } from "components/olffy/site-footer";
 
 const giftGroups = [
@@ -20,10 +20,12 @@ export const metadata = {
   title: "Regalos",
 };
 
-export default function GiftsPage() {
+export default async function GiftsPage() {
+  const products = await getOlffyProducts();
   const gifts = products.filter(
     (product) => product.tag === "Regalo" || product.price <= 10000,
   );
+  const visibleGifts = gifts.length ? gifts : products.slice(0, 8);
 
   return (
     <>
@@ -73,7 +75,7 @@ export default function GiftsPage() {
             copy="Seleccionamos productos accesibles, utiles y llenos de color."
           />
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {gifts.map((product) => (
+            {visibleGifts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
-import { products } from "components/olffy/data";
 import { ProductCard } from "components/olffy/product-card";
+import { getOlffyProducts } from "components/olffy/shopify-products";
 import { SiteFooter } from "components/olffy/site-footer";
 
 const filters = ["Categoria", "Precio", "Ordenar"];
@@ -10,7 +10,9 @@ export const metadata = {
   title: "Tienda",
 };
 
-export default function StorePage() {
+export default async function StorePage() {
+  const products = await getOlffyProducts();
+
   return (
     <>
       <section className="px-5 py-10">

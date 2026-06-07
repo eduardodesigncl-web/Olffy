@@ -1,16 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-import { products } from "components/olffy/data";
 import { ProductCard } from "components/olffy/product-card";
 import { SectionHeading } from "components/olffy/section-heading";
+import { getOlffyProducts } from "components/olffy/shopify-products";
 import { SiteFooter } from "components/olffy/site-footer";
 
 export const metadata = {
   title: "Novedades",
 };
 
-export default function NewsPage() {
+export default async function NewsPage() {
+  const products = await getOlffyProducts();
   const newProducts = products.filter((product) => product.tag === "Nuevo");
+  const visibleProducts = newProducts.length ? newProducts : products.slice(0, 6);
 
   return (
     <>
@@ -46,7 +48,7 @@ export default function NewsPage() {
             </div>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {newProducts.map((product) => (
+            {visibleProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
