@@ -9,9 +9,9 @@ Las paginas de tienda, novedades, regalos, carrito MVP y ficha de producto leen 
 Configura estas variables en Vercel para conectar el inventario:
 
 - `SHOPIFY_STORE_DOMAIN`: dominio `.myshopify.com` de la tienda, por ejemplo `tu-tienda.myshopify.com`.
-- `SHOPIFY_STOREFRONT_ACCESS_TOKEN`: token privado de Headless Storefront API.
-- `SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN`: alternativa explicita para el token privado.
-- `SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN`: solo si usas token publico.
+- `SHOPIFY_STOREFRONT_ACCESS_TOKEN`: token Storefront publico compatible con Next Commerce.
+- `SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN`: usa esta variable si tienes un token privado de Headless.
+- `SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN`: alternativa explicita para token publico.
 - `SHOPIFY_REVALIDATION_SECRET`: opcional para webhooks de revalidacion.
 
 No subas un archivo `.env` real al repositorio.

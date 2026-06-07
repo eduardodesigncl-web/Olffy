@@ -62,10 +62,16 @@ const domain = process.env.SHOPIFY_STORE_DOMAIN
   ? ensureStartsWith(process.env.SHOPIFY_STORE_DOMAIN, "https://")
   : "";
 const endpoint = domain ? `${domain}${SHOPIFY_GRAPHQL_API_ENDPOINT}` : "";
+const storefrontAccessToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const accessTokenIsPrivate =
+  storefrontAccessToken?.startsWith("shpat_") ||
+  storefrontAccessToken?.startsWith("shpss_");
 const privateKey =
   process.env.SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN ||
-  process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-const publicKey = process.env.SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN;
+  (accessTokenIsPrivate ? storefrontAccessToken : undefined);
+const publicKey =
+  process.env.SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN ||
+  (accessTokenIsPrivate ? undefined : storefrontAccessToken);
 
 type ExtractVariables<T> = T extends { variables: object }
   ? T["variables"]
