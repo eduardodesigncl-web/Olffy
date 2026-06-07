@@ -21,7 +21,23 @@ export default async function AdminDashboardPage() {
     draftProducts = products.filter((p) => p.status === "DRAFT").length;
   } catch (e) {
     console.error("Error loading admin stats:", e);
-    error = "Error al conectar con Shopify. Asegúrate de configurar SHOPIFY_ADMIN_API_ACCESS_TOKEN.";
+    const message =
+      e instanceof Error
+        ? e.message
+        : typeof e === "object" && e && "error" in e && e.error instanceof Error
+          ? e.error.message
+          : "";
+
+    if (message.includes("SHOPIFY_STORE_DOMAIN")) {
+      error =
+        "Error al conectar con Shopify. Falta SHOPIFY_STORE_DOMAIN o SHOPIFY_STORE_DOMINIO.";
+    } else if (message.includes("SHOPIFY_ADMIN_API_ACCESS_TOKEN")) {
+      error =
+        "Error al conectar con Shopify. Falta SHOPIFY_ADMIN_API_ACCESS_TOKEN.";
+    } else {
+      error =
+        "Error al conectar con Shopify Admin API. Revisa el token Admin API y los permisos de productos/colecciones.";
+    }
   }
 
   return (

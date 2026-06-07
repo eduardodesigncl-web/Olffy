@@ -58,8 +58,10 @@ import {
   ShopifyUpdateCartOperation,
 } from "./types";
 
-const domain = process.env.SHOPIFY_STORE_DOMAIN
-  ? ensureStartsWith(process.env.SHOPIFY_STORE_DOMAIN, "https://")
+const shopifyStoreDomain =
+  process.env.SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMINIO;
+const domain = shopifyStoreDomain
+  ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
 const endpoint = domain ? `${domain}${SHOPIFY_GRAPHQL_API_ENDPOINT}` : "";
 const storefrontAccessToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;

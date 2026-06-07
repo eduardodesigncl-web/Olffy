@@ -4,7 +4,11 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const { password } = await request.json();
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminPassword =
+      process.env.ADMIN_PASSWORD ||
+      process.env.ADMIN_CONTRASENA ||
+      process.env.ADMIN_CONTRASEÑA ||
+      process.env.olffy2026;
 
     if (!adminPassword) {
       return NextResponse.json(
