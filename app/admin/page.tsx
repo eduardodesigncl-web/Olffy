@@ -36,7 +36,7 @@ export default async function AdminDashboardPage() {
         "Error al conectar con Shopify. Falta SHOPIFY_ADMIN_API_ACCESS_TOKEN.";
     } else {
       error =
-        "Error al conectar con Shopify Admin API. Revisa el token Admin API y los permisos de productos/colecciones.";
+        `Error al conectar con Shopify Admin API. ${message || "Revisa el token Admin API y los permisos de productos/colecciones."}`;
     }
   }
 

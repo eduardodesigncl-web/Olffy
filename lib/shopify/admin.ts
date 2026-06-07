@@ -57,8 +57,28 @@ export async function adminFetch<T>({
 
     const body = await result.json();
 
+    if (!result.ok) {
+      const message =
+        body?.errors?.[0]?.message ||
+        body?.error ||
+        body?.message ||
+        result.statusText;
+      throw new Error(`Shopify Admin API ${result.status}: ${message}`);
+    }
+
     if (body.errors) {
-      throw body.errors[0];
+      const firstError = body.errors[0];
+      const code = firstError?.extensions?.code;
+      const field = firstError?.path?.join(".");
+      const details = [
+        firstError?.message || "GraphQL error",
+        code ? `code: ${code}` : "",
+        field ? `field: ${field}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
+      throw new Error(details);
     }
 
     return {
@@ -66,6 +86,10 @@ export async function adminFetch<T>({
       body,
     };
   } catch (e) {
+    if (e instanceof Error) {
+      throw e;
+    }
+
     if (isShopifyError(e)) {
       throw {
         cause: e.cause?.toString() || "unknown",
@@ -117,21 +141,6 @@ const getProductsQuery = /* GraphQL */ `
                 title
                 price
                 inventoryQuantity
-                inventoryItem {
-                  id
-                  inventoryLevels(first: 5) {
-                    edges {
-                      node {
-                        id
-                        available
-                        location {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
               }
             }
           }
@@ -168,21 +177,6 @@ const getProductQuery = /* GraphQL */ `
             title
             price
             inventoryQuantity
-            inventoryItem {
-              id
-              inventoryLevels(first: 5) {
-                edges {
-                  node {
-                    id
-                    available
-                    location {
-                      id
-                      name
-                    }
-                  }
-                }
-              }
-            }
           }
         }
       }
