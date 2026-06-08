@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  // Solo aplicamos el middleware a las rutas que empiezan con /admin
+export function proxy(request: NextRequest) {
+  // Solo aplicamos el proxy a las rutas que empiezan con /admin
   if (request.nextUrl.pathname.startsWith("/admin")) {
     // Si ya estamos en la página de login, no hacemos nada para evitar bucles
     if (request.nextUrl.pathname === "/admin/login") {
