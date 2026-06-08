@@ -16,13 +16,39 @@ const shopifyStoreDomain =
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
+const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION?.trim() || "2026-04";
 // La Admin API usa un endpoint diferente
-const endpoint = domain ? `${domain}/admin/api/2025-01/graphql.json` : "";
+const endpoint = domain ? `${domain}/admin/api/${adminApiVersion}/graphql.json` : "";
 const adminToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim();
 
 type ExtractVariables<T> = T extends { variables: object }
   ? T["variables"]
   : never;
+
+const adminAccessDeniedHelp =
+  "El token no tiene permisos Admin API suficientes para ese recurso. " +
+  "El token de automatizacion de la app no sirve como Admin API access token. " +
+  "Usa un Admin API access token generado desde una Custom App instalada en Shopify Admin con read_products/write_products, " +
+  "o implementa OAuth si estas usando una app del Dev Dashboard.";
+
+function formatGraphQLError(error: any) {
+  const code = error?.extensions?.code;
+  const field = error?.path?.join(".");
+  const message = error?.message || "GraphQL error";
+  const details = [
+    message,
+    code ? `code: ${code}` : "",
+    field ? `field: ${field}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  if (code === "ACCESS_DENIED") {
+    return `${details}. ${adminAccessDeniedHelp}`;
+  }
+
+  return details;
+}
 
 export async function adminFetch<T>({
   headers,
@@ -68,18 +94,7 @@ export async function adminFetch<T>({
     }
 
     if (body.errors) {
-      const firstError = body.errors[0];
-      const code = firstError?.extensions?.code;
-      const field = firstError?.path?.join(".");
-      const details = [
-        firstError?.message || "GraphQL error",
-        code ? `code: ${code}` : "",
-        field ? `field: ${field}` : "",
-      ]
-        .filter(Boolean)
-        .join(" | ");
-
-      throw new Error(details);
+      throw new Error(formatGraphQLError(body.errors[0]));
     }
 
     return {
@@ -112,6 +127,15 @@ const removeEdgesAndNodes = <T>(array: AdminConnection<T>): T[] => {
 };
 
 // --- QUERIES ---
+
+const checkAdminShopifyConnectionQuery = /* GraphQL */ `
+  query checkAdminShopifyConnection {
+    shop {
+      name
+      myshopifyDomain
+    }
+  }
+`;
 
 const getProductsQuery = /* GraphQL */ `
   query getAdminProducts($first: Int!, $query: String) {
@@ -305,6 +329,24 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
     variables: { first: 50 },
   });
   return removeEdgesAndNodes(res.body.data.products);
+}
+
+export async function checkAdminShopifyConnection(): Promise<{
+  name: string;
+  myshopifyDomain: string;
+}> {
+  const res = await adminFetch<{
+    data: {
+      shop: {
+        name: string;
+        myshopifyDomain: string;
+      };
+    };
+  }>({
+    query: checkAdminShopifyConnectionQuery,
+  });
+
+  return res.body.data.shop;
 }
 
 export async function getAdminProduct(id: string): Promise<AdminProduct | null> {
