@@ -15,6 +15,9 @@ Configura estas variables en Vercel para conectar el inventario:
 - `SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN`: alternativa explicita para token publico.
 - `SHOPIFY_REVALIDATION_SECRET`: opcional para webhooks de revalidacion.
 - `SHOPIFY_ADMIN_API_ACCESS_TOKEN`: token Admin API para el panel personalizado.
+- `SHOPIFY_ADMIN_API_CLIENT_ID` y `SHOPIFY_ADMIN_API_CLIENT_SECRET`: alternativa
+  recomendada para una app propia instalada. El backend obtiene y renueva el
+  access token automaticamente.
 - `SHOPIFY_ADMIN_API_VERSION`: version Admin API. Por defecto usa `2026-04`.
 - `ADMIN_PASSWORD`: contrasena para entrar a `/admin/login`.
 

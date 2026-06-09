@@ -16,10 +16,29 @@ const shopifyStoreDomain =
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
-const adminApiVersion = process.env.SHOPIFY_ADMIN_API_VERSION?.trim() || "2026-04";
+const adminApiVersion =
+  process.env.SHOPIFY_ADMIN_API_VERSION?.trim() || "2026-04";
 // La Admin API usa un endpoint diferente
-const endpoint = domain ? `${domain}/admin/api/${adminApiVersion}/graphql.json` : "";
-const adminToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim();
+const endpoint = domain
+  ? `${domain}/admin/api/${adminApiVersion}/graphql.json`
+  : "";
+const configuredAdminToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim();
+const adminClientId =
+  process.env.SHOPIFY_ADMIN_API_CLIENT_ID?.trim() ||
+  process.env.SHOPIFY_API_KEY?.trim();
+const adminClientSecret =
+  process.env.SHOPIFY_ADMIN_API_CLIENT_SECRET?.trim() ||
+  process.env.SHOPIFY_API_SECRET?.trim() ||
+  (configuredAdminToken?.startsWith("shpss_")
+    ? configuredAdminToken
+    : undefined);
+
+let cachedAdminToken:
+  | {
+      accessToken: string;
+      expiresAt: number;
+    }
+  | undefined;
 
 type ExtractVariables<T> = T extends { variables: object }
   ? T["variables"]
@@ -50,6 +69,72 @@ function formatGraphQLError(error: any) {
   return details;
 }
 
+async function getAdminAccessToken(): Promise<string> {
+  if (configuredAdminToken && !configuredAdminToken.startsWith("shpss_")) {
+    return configuredAdminToken;
+  }
+
+  if (!adminClientId || !adminClientSecret) {
+    if (configuredAdminToken?.startsWith("shpss_")) {
+      throw new Error(
+        "SHOPIFY_ADMIN_API_ACCESS_TOKEN contiene un Client Secret (shpss_), no un access token. Configura SHOPIFY_ADMIN_API_CLIENT_ID y SHOPIFY_ADMIN_API_CLIENT_SECRET con credenciales de la misma app instalada.",
+      );
+    }
+
+    throw new Error(
+      "Falta SHOPIFY_ADMIN_API_ACCESS_TOKEN o el par SHOPIFY_ADMIN_API_CLIENT_ID y SHOPIFY_ADMIN_API_CLIENT_SECRET.",
+    );
+  }
+
+  if (
+    cachedAdminToken &&
+    cachedAdminToken.expiresAt > Date.now() + 5 * 60 * 1000
+  ) {
+    return cachedAdminToken.accessToken;
+  }
+
+  if (!domain) {
+    throw new Error(
+      "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_STORE_DOMINIO is also accepted as a fallback.",
+    );
+  }
+
+  const tokenResponse = await fetch(`${domain}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: adminClientId,
+      client_secret: adminClientSecret,
+    }),
+    cache: "no-store",
+  });
+
+  if (!tokenResponse.ok) {
+    throw new Error(
+      `Shopify no pudo autenticar las credenciales de la app (${tokenResponse.status}). Verifica que el Client ID y Client Secret pertenezcan a la misma app y que esa app este instalada en la tienda.`,
+    );
+  }
+
+  const tokenBody = (await tokenResponse.json()) as {
+    access_token?: string;
+    expires_in?: number;
+  };
+
+  if (!tokenBody.access_token) {
+    throw new Error("Shopify no devolvio un access token para la Admin API.");
+  }
+
+  cachedAdminToken = {
+    accessToken: tokenBody.access_token,
+    expiresAt: Date.now() + (tokenBody.expires_in ?? 86_399) * 1000,
+  };
+
+  return cachedAdminToken.accessToken;
+}
+
 export async function adminFetch<T>({
   headers,
   query,
@@ -65,9 +150,8 @@ export async function adminFetch<T>({
         "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_STORE_DOMINIO is also accepted as a fallback.",
       );
     }
-    if (!adminToken) {
-      throw new Error("SHOPIFY_ADMIN_API_ACCESS_TOKEN environment variable is not set");
-    }
+
+    const adminToken = await getAdminAccessToken();
 
     const result = await fetch(endpoint, {
       method: "POST",
@@ -349,7 +433,9 @@ export async function checkAdminShopifyConnection(): Promise<{
   return res.body.data.shop;
 }
 
-export async function getAdminProduct(id: string): Promise<AdminProduct | null> {
+export async function getAdminProduct(
+  id: string,
+): Promise<AdminProduct | null> {
   const res = await adminFetch<AdminProductOperation>({
     query: getProductQuery,
     variables: { id },
@@ -389,7 +475,9 @@ export async function getAdminCollections(): Promise<AdminCollection[]> {
   return removeEdgesAndNodes(res.body.data.collections);
 }
 
-export async function getAdminCollection(id: string): Promise<AdminCollection | null> {
+export async function getAdminCollection(
+  id: string,
+): Promise<AdminCollection | null> {
   const res = await adminFetch<AdminCollectionOperation>({
     query: getCollectionQuery,
     variables: { id },

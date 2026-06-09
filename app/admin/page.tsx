@@ -31,18 +31,22 @@ export default async function AdminDashboardPage() {
     if (message.includes("SHOPIFY_STORE_DOMAIN")) {
       error =
         "Error al conectar con Shopify. Falta SHOPIFY_STORE_DOMAIN o SHOPIFY_STORE_DOMINIO.";
-    } else if (message.includes("SHOPIFY_ADMIN_API_ACCESS_TOKEN")) {
-      error =
-        "Error al conectar con Shopify. Falta SHOPIFY_ADMIN_API_ACCESS_TOKEN.";
+    } else if (
+      message.includes("SHOPIFY_ADMIN_API_ACCESS_TOKEN") ||
+      message.includes("SHOPIFY_ADMIN_API_CLIENT_ID") ||
+      message.includes("Client ID")
+    ) {
+      error = `Error de autenticacion con Shopify Admin API. ${message}`;
     } else {
-      error =
-        `Error al conectar con Shopify Admin API. ${message || "Revisa el token Admin API y los permisos de productos/colecciones."}`;
+      error = `Error al conectar con Shopify Admin API. ${message || "Revisa el token Admin API y los permisos de productos/colecciones."}`;
     }
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-brand font-black text-olffy-ink">Dashboard</h1>
+      <h1 className="text-3xl font-brand font-black text-olffy-ink">
+        Dashboard
+      </h1>
 
       {error ? (
         <div className="rounded-md bg-red-50 p-4 border border-red-200">
@@ -52,19 +56,29 @@ export default async function AdminDashboardPage() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-gray-500">Total Productos</p>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">{productsCount}</p>
+            <p className="mt-2 text-3xl font-semibold text-gray-900">
+              {productsCount}
+            </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">Productos Activos</p>
-            <p className="mt-2 text-3xl font-semibold text-green-600">{activeProducts}</p>
+            <p className="text-sm font-medium text-gray-500">
+              Productos Activos
+            </p>
+            <p className="mt-2 text-3xl font-semibold text-green-600">
+              {activeProducts}
+            </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-gray-500">Borradores</p>
-            <p className="mt-2 text-3xl font-semibold text-yellow-600">{draftProducts}</p>
+            <p className="mt-2 text-3xl font-semibold text-yellow-600">
+              {draftProducts}
+            </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-gray-500">Colecciones</p>
-            <p className="mt-2 text-3xl font-semibold text-olffy-purple">{collectionsCount}</p>
+            <p className="mt-2 text-3xl font-semibold text-olffy-purple">
+              {collectionsCount}
+            </p>
           </div>
         </div>
       )}
@@ -72,7 +86,9 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-6 sm:grid-cols-2 mt-8">
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-medium text-gray-900">Gestión de Productos</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Gestión de Productos
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Crea, edita o elimina productos de tu inventario.
             </p>
@@ -87,7 +103,9 @@ export default async function AdminDashboardPage() {
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-medium text-gray-900">Gestión de Colecciones</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Gestión de Colecciones
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Organiza tus productos en categorías.
             </p>
