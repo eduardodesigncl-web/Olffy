@@ -19,6 +19,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { name: "Dashboard", href: "/admin" },
+    { name: "Puntos", href: "/admin/puntos" },
     { name: "Productos", href: "/admin/productos" },
     { name: "Colecciones", href: "/admin/colecciones" },
   ];
