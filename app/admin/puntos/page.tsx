@@ -1,5 +1,6 @@
 import { getLoyaltyStats, type LoyaltyStats } from "lib/loyalty/service";
 import { connection } from "next/server";
+import Link from "next/link";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
 const currencyFormatter = new Intl.NumberFormat("es-CL", {
@@ -121,6 +122,24 @@ export default async function AdminPointsPage() {
         </>
       ) : null}
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <OperationLink
+          href="/admin/puntos/clientes"
+          title="Clientes e historial"
+          detail="Crear clientes, revisar saldo, ajustar puntos y registrar canjes."
+        />
+        <OperationLink
+          href="/admin/puntos/ventas"
+          title="Registrar venta TUU"
+          detail="Cargar una compra presencial y calcular puntos automaticamente."
+        />
+        <OperationLink
+          href="/admin/puntos/recompensas"
+          title="Recompensas"
+          detail="Administrar los beneficios disponibles para canje."
+        />
+      </div>
+
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Base operativa</h2>
         <div className="mt-4 grid gap-4 text-sm text-gray-600 sm:grid-cols-3">
@@ -145,5 +164,26 @@ export default async function AdminPointsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function OperationLink({
+  href,
+  title,
+  detail,
+}: {
+  href: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-olffy-purple hover:shadow"
+    >
+      <p className="font-semibold text-gray-900">{title}</p>
+      <p className="mt-2 text-sm text-gray-500">{detail}</p>
+      <p className="mt-4 text-sm font-semibold text-olffy-purple">Abrir</p>
+    </Link>
   );
 }

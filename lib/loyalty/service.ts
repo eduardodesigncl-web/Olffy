@@ -20,6 +20,7 @@ export type LoyaltyCustomer = {
   email: string;
   full_name: string | null;
   phone: string | null;
+  qr_token: string;
   status: "active" | "blocked";
   points_balance: number;
   lifetime_points_earned: number;
@@ -68,14 +69,14 @@ export type PhysicalSaleItemInput = {
 };
 
 export type RegisterPhysicalSaleInput = {
-  customerId: number;
+  customerId?: number;
   tuuTransactionId: string;
   receiptNumber?: string;
   subtotal: number;
   discount?: number;
   total: number;
   pointsEarned?: number;
-  items: PhysicalSaleItemInput[];
+  items?: PhysicalSaleItemInput[];
   notes?: string;
   soldAt?: string;
   createdBy?: string;
@@ -91,6 +92,93 @@ export type AddPointsTransactionInput = {
   physicalSaleId?: number;
   description?: string;
   createdBy?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type LoyaltyRule = {
+  id: number;
+  name: string;
+  spending_unit_clp: number;
+  points_per_unit: number;
+  points_expiry_months: number;
+  redemption_expiry_days: number;
+  is_active: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LoyaltyReward = {
+  id: number;
+  name: string;
+  description: string | null;
+  reward_type: "discount" | "product" | "experience" | "other";
+  points_cost: number;
+  discount_amount_clp: number | null;
+  minimum_purchase_clp: number;
+  validity_days: number;
+  shopify_product_id: string | null;
+  is_active: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RewardRedemption = {
+  id: number;
+  customer_id: number;
+  reward_id: number;
+  loyalty_transaction_id: number | null;
+  points_spent: number;
+  status: "requested" | "approved" | "fulfilled" | "cancelled";
+  redemption_code: string | null;
+  metadata: Record<string, unknown>;
+  redeemed_at: string;
+  expires_at: string | null;
+  fulfilled_at: string | null;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  rewards?: Pick<LoyaltyReward, "name" | "discount_amount_clp"> | null;
+};
+
+export type PhysicalSale = {
+  id: number;
+  customer_id: number | null;
+  tuu_transaction_id: string;
+  receipt_number: string | null;
+  payment_method: "tuu";
+  currency: "CLP";
+  subtotal: number;
+  discount: number;
+  total: number;
+  points_earned: number;
+  notes: string | null;
+  sold_at: string;
+  created_by: string | null;
+  created_at: string;
+  loyalty_customers?: Pick<LoyaltyCustomer, "email" | "full_name"> | null;
+};
+
+export type UpdateLoyaltyCustomerInput = {
+  fullName?: string;
+  phone?: string;
+  status?: LoyaltyCustomer["status"];
+  shopifyCustomerId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type CreateRewardInput = {
+  name: string;
+  description?: string;
+  rewardType?: LoyaltyReward["reward_type"];
+  pointsCost: number;
+  discountAmountClp?: number;
+  minimumPurchaseClp?: number;
+  validityDays?: number;
+  shopifyProductId?: string;
+  isActive?: boolean;
   metadata?: Record<string, unknown>;
 };
 
@@ -181,19 +269,97 @@ export async function createLoyaltyCustomer(
   return data as LoyaltyCustomer;
 }
 
+export async function getLoyaltyCustomer(
+  customerId: number,
+): Promise<LoyaltyCustomer> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("loyalty_customers")
+    .select("*")
+    .eq("id", customerId)
+    .single();
+
+  if (error) {
+    throwSupabaseError("No se pudo cargar el cliente de puntos", error);
+  }
+
+  return data as LoyaltyCustomer;
+}
+
+export async function updateLoyaltyCustomer(
+  customerId: number,
+  input: UpdateLoyaltyCustomerInput,
+): Promise<LoyaltyCustomer> {
+  const changes: Record<string, unknown> = {};
+
+  if (input.fullName !== undefined) {
+    changes.full_name = input.fullName.trim() || null;
+  }
+  if (input.phone !== undefined) {
+    changes.phone = input.phone.trim() || null;
+  }
+  if (input.status !== undefined) {
+    changes.status = input.status;
+  }
+  if (input.shopifyCustomerId !== undefined) {
+    changes.shopify_customer_id = input.shopifyCustomerId.trim() || null;
+  }
+  if (input.metadata !== undefined) {
+    changes.metadata = input.metadata;
+  }
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("loyalty_customers")
+    .update(changes)
+    .eq("id", customerId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throwSupabaseError("No se pudo actualizar el cliente de puntos", error);
+  }
+
+  return data as LoyaltyCustomer;
+}
+
+export async function getActiveLoyaltyRule(): Promise<LoyaltyRule> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("loyalty_rules")
+    .select("*")
+    .eq("is_active", true)
+    .single();
+
+  if (error) {
+    throwSupabaseError("No se pudo cargar la regla activa de puntos", error);
+  }
+
+  return data as LoyaltyRule;
+}
+
+export function calculatePointsForAmount(
+  amountPaid: number,
+  rule: Pick<LoyaltyRule, "spending_unit_clp" | "points_per_unit">,
+): number {
+  if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
+    return 0;
+  }
+
+  return Math.floor(amountPaid / rule.spending_unit_clp) * rule.points_per_unit;
+}
+
 export async function registerPhysicalSale(
   input: RegisterPhysicalSaleInput,
 ): Promise<number> {
+  const items = input.items ?? [];
   const { data, error } = await getSupabaseAdmin().rpc(
     "register_physical_sale",
     {
-      p_customer_id: input.customerId,
+      p_customer_id: input.customerId ?? null,
       p_tuu_transaction_id: input.tuuTransactionId.trim(),
       p_receipt_number: input.receiptNumber?.trim() || null,
       p_subtotal: input.subtotal,
       p_discount: input.discount ?? 0,
       p_total: input.total,
-      p_items: input.items.map((item) => ({
+      p_items: items.map((item) => ({
         shopify_product_id: item.shopifyProductId,
         shopify_variant_id: item.shopifyVariantId ?? null,
         sku: item.sku ?? null,
@@ -215,6 +381,20 @@ export async function registerPhysicalSale(
   }
 
   return toNumber(data);
+}
+
+export async function listPhysicalSales(limit = 50): Promise<PhysicalSale[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("physical_sales")
+    .select("*, loyalty_customers(email, full_name)")
+    .order("sold_at", { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 100));
+
+  if (error) {
+    throwSupabaseError("No se pudieron cargar las ventas fisicas TUU", error);
+  }
+
+  return (data ?? []) as PhysicalSale[];
 }
 
 export async function addPointsTransaction(
@@ -242,6 +422,54 @@ export async function addPointsTransaction(
   }
 
   return data as LoyaltyTransaction;
+}
+
+export async function adjustCustomerPoints(input: {
+  customerId: number;
+  points: number;
+  reason: string;
+  createdBy: string;
+  externalReference?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<number> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "adjust_loyalty_points",
+    {
+      p_customer_id: input.customerId,
+      p_points: input.points,
+      p_reason: input.reason.trim(),
+      p_created_by: input.createdBy.trim(),
+      p_external_reference: input.externalReference?.trim() || null,
+      p_metadata: input.metadata ?? {},
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo ajustar el saldo de puntos", error);
+  }
+
+  return toNumber(data);
+}
+
+export async function reversePointsTransaction(input: {
+  transactionId: number;
+  reason: string;
+  createdBy: string;
+}): Promise<number> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "reverse_loyalty_transaction",
+    {
+      p_transaction_id: input.transactionId,
+      p_reason: input.reason.trim(),
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo reversar la transaccion de puntos", error);
+  }
+
+  return toNumber(data);
 }
 
 export async function getCustomerBalance(customerId: number): Promise<number> {
@@ -280,4 +508,186 @@ export async function getCustomerTransactions(
   }
 
   return (data ?? []) as LoyaltyTransaction[];
+}
+
+export async function listRewards(
+  activeOnly = false,
+): Promise<LoyaltyReward[]> {
+  let request = getSupabaseAdmin()
+    .from("rewards")
+    .select("*")
+    .order("points_cost", { ascending: true });
+
+  if (activeOnly) {
+    request = request.eq("is_active", true);
+  }
+
+  const { data, error } = await request;
+
+  if (error) {
+    throwSupabaseError("No se pudieron cargar las recompensas", error);
+  }
+
+  return (data ?? []) as LoyaltyReward[];
+}
+
+export async function createReward(
+  input: CreateRewardInput,
+): Promise<LoyaltyReward> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("rewards")
+    .insert({
+      name: input.name.trim(),
+      description: input.description?.trim() || null,
+      reward_type: input.rewardType ?? "discount",
+      points_cost: input.pointsCost,
+      discount_amount_clp: input.discountAmountClp ?? null,
+      minimum_purchase_clp: input.minimumPurchaseClp ?? 0,
+      validity_days: input.validityDays ?? 30,
+      shopify_product_id: input.shopifyProductId?.trim() || null,
+      is_active: input.isActive ?? true,
+      metadata: input.metadata ?? {},
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throwSupabaseError("No se pudo crear la recompensa", error);
+  }
+
+  return data as LoyaltyReward;
+}
+
+export async function updateReward(
+  rewardId: number,
+  input: Partial<CreateRewardInput>,
+): Promise<LoyaltyReward> {
+  const changes: Record<string, unknown> = {};
+
+  if (input.name !== undefined) changes.name = input.name.trim();
+  if (input.description !== undefined) {
+    changes.description = input.description.trim() || null;
+  }
+  if (input.rewardType !== undefined) changes.reward_type = input.rewardType;
+  if (input.pointsCost !== undefined) changes.points_cost = input.pointsCost;
+  if (input.discountAmountClp !== undefined) {
+    changes.discount_amount_clp = input.discountAmountClp;
+  }
+  if (input.minimumPurchaseClp !== undefined) {
+    changes.minimum_purchase_clp = input.minimumPurchaseClp;
+  }
+  if (input.validityDays !== undefined) {
+    changes.validity_days = input.validityDays;
+  }
+  if (input.shopifyProductId !== undefined) {
+    changes.shopify_product_id = input.shopifyProductId.trim() || null;
+  }
+  if (input.isActive !== undefined) changes.is_active = input.isActive;
+  if (input.metadata !== undefined) changes.metadata = input.metadata;
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("rewards")
+    .update(changes)
+    .eq("id", rewardId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throwSupabaseError("No se pudo actualizar la recompensa", error);
+  }
+
+  return data as LoyaltyReward;
+}
+
+export async function redeemReward(input: {
+  customerId: number;
+  rewardId: number;
+  createdBy: string;
+  metadata?: Record<string, unknown>;
+}): Promise<{
+  redemptionId: number;
+  transactionId: number;
+  redemptionCode: string;
+  expiresAt: string;
+}> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "redeem_loyalty_reward",
+    {
+      p_customer_id: input.customerId,
+      p_reward_id: input.rewardId,
+      p_created_by: input.createdBy.trim(),
+      p_metadata: input.metadata ?? {},
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo registrar el canje", error);
+  }
+
+  const result = data as Record<string, unknown>;
+
+  return {
+    redemptionId: toNumber(result.redemption_id),
+    transactionId: toNumber(result.transaction_id),
+    redemptionCode: String(result.redemption_code),
+    expiresAt: String(result.expires_at),
+  };
+}
+
+export async function getCustomerRedemptions(
+  customerId: number,
+): Promise<RewardRedemption[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("reward_redemptions")
+    .select("*, rewards(name, discount_amount_clp)")
+    .eq("customer_id", customerId)
+    .order("redeemed_at", { ascending: false });
+
+  if (error) {
+    throwSupabaseError("No se pudieron cargar los canjes del cliente", error);
+  }
+
+  return (data ?? []) as RewardRedemption[];
+}
+
+export async function updateRedemptionStatus(input: {
+  redemptionId: number;
+  status: "approved" | "fulfilled";
+  createdBy: string;
+}): Promise<RewardRedemption> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "update_reward_redemption_status",
+    {
+      p_redemption_id: input.redemptionId,
+      p_status: input.status,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo actualizar el estado del canje", error);
+  }
+
+  return data as RewardRedemption;
+}
+
+export async function cancelRewardRedemption(input: {
+  redemptionId: number;
+  reason: string;
+  createdBy: string;
+}): Promise<number> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "cancel_reward_redemption",
+    {
+      p_redemption_id: input.redemptionId,
+      p_reason: input.reason.trim(),
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo cancelar el canje", error);
+  }
+
+  return toNumber(data);
 }
