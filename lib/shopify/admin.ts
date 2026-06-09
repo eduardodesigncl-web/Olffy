@@ -70,11 +70,11 @@ function formatGraphQLError(error: any) {
 }
 
 async function getAdminAccessToken(): Promise<string> {
-  if (configuredAdminToken && !configuredAdminToken.startsWith("shpss_")) {
-    return configuredAdminToken;
-  }
-
   if (!adminClientId || !adminClientSecret) {
+    if (configuredAdminToken && !configuredAdminToken.startsWith("shpss_")) {
+      return configuredAdminToken;
+    }
+
     if (configuredAdminToken?.startsWith("shpss_")) {
       throw new Error(
         "SHOPIFY_ADMIN_API_ACCESS_TOKEN contiene un Client Secret (shpss_), no un access token. Configura SHOPIFY_ADMIN_API_CLIENT_ID y SHOPIFY_ADMIN_API_CLIENT_SECRET con credenciales de la misma app instalada.",
