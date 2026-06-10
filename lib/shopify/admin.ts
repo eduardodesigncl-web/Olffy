@@ -372,27 +372,44 @@ const getCollectionQuery = /* GraphQL */ `
 `;
 
 const searchProductVariantsQuery = /* GraphQL */ `
-  query searchAdminProductVariants($first: Int!, $query: String!) {
-    productVariants(
-      first: $first
-      query: $query
-      sortKey: RELEVANCE
-    ) {
+  query searchAdminProductVariants(
+    $productsFirst: Int!
+    $variantsFirst: Int!
+    $query: String!
+  ) {
+    products(first: $productsFirst, query: $query, sortKey: RELEVANCE) {
       nodes {
         id
         title
-        sku
-        price
-        inventoryQuantity
-        product {
-          id
-          title
-          status
+        status
+        variants(first: $variantsFirst) {
+          nodes {
+            id
+            title
+            sku
+            price
+            inventoryQuantity
+          }
         }
       }
     }
   }
 `;
+
+type AdminPosProductSearchNode = {
+  id: string;
+  title: string;
+  status: "ACTIVE" | "ARCHIVED" | "DRAFT";
+  variants: {
+    nodes: Array<{
+      id: string;
+      title: string;
+      sku: string | null;
+      price: string;
+      inventoryQuantity: number;
+    }>;
+  };
+};
 
 const getProductVariantsByIdsQuery = /* GraphQL */ `
   query getAdminProductVariantsByIds($ids: [ID!]!) {
@@ -557,20 +574,36 @@ export async function searchAdminProductVariants(
 ): Promise<AdminPosVariant[]> {
   const normalized = query.trim().replace(/["\\]/g, " ");
   const shopifyQuery = normalized
-    ? `${normalized} AND product_status:ACTIVE`
-    : "product_status:ACTIVE";
+    ? `${normalized} AND status:active`
+    : "status:active";
   const res = await adminFetch<{
-    data: { productVariants: { nodes: AdminPosVariant[] } };
-    variables: { first: number; query: string };
+    data: { products: { nodes: AdminPosProductSearchNode[] } };
+    variables: {
+      productsFirst: number;
+      variantsFirst: number;
+      query: string;
+    };
   }>({
     query: searchProductVariantsQuery,
     variables: {
-      first: Math.min(Math.max(limit, 1), 50),
+      productsFirst: Math.min(Math.max(limit, 1), 50),
+      variantsFirst: 50,
       query: shopifyQuery,
     },
   });
 
-  return res.body.data.productVariants.nodes;
+  return res.body.data.products.nodes
+    .flatMap((product) =>
+      product.variants.nodes.map((variant) => ({
+        ...variant,
+        product: {
+          id: product.id,
+          title: product.title,
+          status: product.status,
+        },
+      })),
+    )
+    .slice(0, Math.min(Math.max(limit, 1), 50));
 }
 
 export async function getAdminProductVariantsByIds(
