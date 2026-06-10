@@ -376,8 +376,7 @@ const searchProductVariantsQuery = /* GraphQL */ `
     productVariants(
       first: $first
       query: $query
-      sortKey: UPDATED_AT
-      reverse: true
+      sortKey: RELEVANCE
     ) {
       nodes {
         id
