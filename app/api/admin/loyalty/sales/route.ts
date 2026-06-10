@@ -10,6 +10,7 @@ import {
   type PhysicalSalePosBenefit,
 } from "lib/loyalty/service";
 import {
+  checkAdminOrderAccess,
   createOrFindPaidPhysicalOrder,
   getAdminProductVariantsByIds,
 } from "lib/shopify/admin";
@@ -54,6 +55,21 @@ function positiveAmount(value: unknown, label: string): number {
   }
 
   return amount;
+}
+
+export async function GET() {
+  try {
+    await requireAdminSession();
+    await checkAdminOrderAccess();
+
+    return NextResponse.json({ ordersAccess: true });
+  } catch (error) {
+    console.error("Error checking Shopify order access:", error);
+    return NextResponse.json(
+      { ordersAccess: false, error: errorMessage(error) },
+      { status: 503 },
+    );
+  }
 }
 
 export async function POST(request: Request) {

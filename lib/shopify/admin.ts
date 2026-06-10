@@ -768,6 +768,22 @@ export async function createOrFindPaidPhysicalOrder(
   );
 }
 
+export async function checkAdminOrderAccess(): Promise<boolean> {
+  await adminFetch<{
+    data: {
+      orders: {
+        nodes: Array<{ id: string }>;
+      };
+    };
+    variables: { query: string };
+  }>({
+    query: findPhysicalOrderQuery,
+    variables: { query: "tag:OLFFY_POS" },
+  });
+
+  return true;
+}
+
 const collectionCreateMutation = /* GraphQL */ `
   mutation collectionCreate($input: CollectionInput!) {
     collectionCreate(input: $input) {
