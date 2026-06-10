@@ -28,6 +28,7 @@ export type AdminImage = {
 export type AdminVariant = {
   id: string;
   title: string;
+  sku: string | null;
   price: string;
   inventoryQuantity: number;
   inventoryItem?: {

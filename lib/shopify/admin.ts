@@ -1,5 +1,6 @@
 import { ensureStartsWith } from "lib/utils";
 import { isShopifyError } from "lib/type-guards";
+import { createHash } from "node:crypto";
 import type {
   AdminConnection,
   AdminProduct,
@@ -47,7 +48,8 @@ type ExtractVariables<T> = T extends { variables: object }
 const adminAccessDeniedHelp =
   "El token no tiene permisos Admin API suficientes para ese recurso. " +
   "El token de automatizacion de la app no sirve como Admin API access token. " +
-  "Usa un Admin API access token generado desde una Custom App instalada en Shopify Admin con read_products/write_products, " +
+  "Para el POS se requieren read_products, read_inventory, read_orders y write_orders. " +
+  "Usa un Admin API access token generado desde una Custom App instalada en Shopify Admin con esos permisos, " +
   "o implementa OAuth si estas usando una app del Dev Dashboard.";
 
 function formatGraphQLError(error: any) {
@@ -248,6 +250,7 @@ const getProductsQuery = /* GraphQL */ `
               node {
                 id
                 title
+                sku
                 price
                 inventoryQuantity
               }
@@ -284,6 +287,7 @@ const getProductQuery = /* GraphQL */ `
           node {
             id
             title
+            sku
             price
             inventoryQuantity
           }
@@ -366,6 +370,371 @@ const getCollectionQuery = /* GraphQL */ `
     }
   }
 `;
+
+const searchProductVariantsQuery = /* GraphQL */ `
+  query searchAdminProductVariants($first: Int!, $query: String!) {
+    productVariants(
+      first: $first
+      query: $query
+      sortKey: UPDATED_AT
+      reverse: true
+    ) {
+      nodes {
+        id
+        title
+        sku
+        price
+        inventoryQuantity
+        product {
+          id
+          title
+          status
+        }
+      }
+    }
+  }
+`;
+
+const getProductVariantsByIdsQuery = /* GraphQL */ `
+  query getAdminProductVariantsByIds($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on ProductVariant {
+        id
+        title
+        sku
+        price
+        inventoryQuantity
+        product {
+          id
+          title
+          status
+        }
+      }
+    }
+  }
+`;
+
+const findPhysicalOrderQuery = /* GraphQL */ `
+  query findPhysicalOrder($query: String!) {
+    orders(first: 1, query: $query, reverse: true) {
+      nodes {
+        id
+        name
+        displayFinancialStatus
+        totalPriceSet {
+          shopMoney {
+            amount
+            currencyCode
+          }
+        }
+      }
+    }
+  }
+`;
+
+const createPhysicalOrderMutation = /* GraphQL */ `
+  mutation createPhysicalOrder(
+    $order: OrderCreateOrderInput!
+    $options: OrderCreateOptionsInput
+  ) {
+    orderCreate(order: $order, options: $options) {
+      order {
+        id
+        name
+        displayFinancialStatus
+        totalPriceSet {
+          shopMoney {
+            amount
+            currencyCode
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export type AdminPosVariant = {
+  id: string;
+  title: string;
+  sku: string | null;
+  price: string;
+  inventoryQuantity: number;
+  product: {
+    id: string;
+    title: string;
+    status: "ACTIVE" | "ARCHIVED" | "DRAFT";
+  };
+};
+
+export type AdminPhysicalOrder = {
+  id: string;
+  name: string;
+  displayFinancialStatus: string;
+  total: number;
+  currencyCode: string;
+  reused: boolean;
+};
+
+export type CreatePhysicalOrderInput = {
+  tuuTransactionId: string;
+  receiptNumber?: string;
+  responsible: string;
+  notes?: string;
+  customer?: {
+    email: string;
+    shopifyCustomerId?: string | null;
+  };
+  items: Array<{
+    variantId: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+  discount?: {
+    code: string;
+    amount: number;
+  };
+  total: number;
+};
+
+function physicalOrderTag(tuuTransactionId: string): string {
+  const digest = createHash("sha256")
+    .update(tuuTransactionId.trim())
+    .digest("hex")
+    .slice(0, 20);
+
+  return `OLFFY_TUU_${digest}`;
+}
+
+function toAdminPhysicalOrder(
+  order: {
+    id: string;
+    name: string;
+    displayFinancialStatus: string;
+    totalPriceSet: {
+      shopMoney: { amount: string; currencyCode: string };
+    };
+  },
+  reused: boolean,
+): AdminPhysicalOrder {
+  return {
+    id: order.id,
+    name: order.name,
+    displayFinancialStatus: order.displayFinancialStatus,
+    total: Number(order.totalPriceSet.shopMoney.amount),
+    currencyCode: order.totalPriceSet.shopMoney.currencyCode,
+    reused,
+  };
+}
+
+function assertPhysicalOrder(
+  order: AdminPhysicalOrder,
+  expectedTotal: number,
+): AdminPhysicalOrder {
+  if (order.displayFinancialStatus !== "PAID") {
+    throw new Error(
+      `La orden ${order.name} existe, pero Shopify no la considera pagada.`,
+    );
+  }
+
+  if (
+    order.currencyCode !== "CLP" ||
+    Math.abs(order.total - expectedTotal) > 0.01
+  ) {
+    throw new Error(
+      `La orden ${order.name} no coincide con el total TUU esperado.`,
+    );
+  }
+
+  return order;
+}
+
+export async function searchAdminProductVariants(
+  query: string,
+  limit = 25,
+): Promise<AdminPosVariant[]> {
+  const normalized = query.trim().replace(/["\\]/g, " ");
+  const shopifyQuery = normalized
+    ? `${normalized} AND product_status:ACTIVE`
+    : "product_status:ACTIVE";
+  const res = await adminFetch<{
+    data: { productVariants: { nodes: AdminPosVariant[] } };
+    variables: { first: number; query: string };
+  }>({
+    query: searchProductVariantsQuery,
+    variables: {
+      first: Math.min(Math.max(limit, 1), 50),
+      query: shopifyQuery,
+    },
+  });
+
+  return res.body.data.productVariants.nodes;
+}
+
+export async function getAdminProductVariantsByIds(
+  ids: string[],
+): Promise<AdminPosVariant[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const res = await adminFetch<{
+    data: { nodes: Array<AdminPosVariant | null> };
+    variables: { ids: string[] };
+  }>({
+    query: getProductVariantsByIdsQuery,
+    variables: { ids },
+  });
+
+  return res.body.data.nodes.filter(
+    (node): node is AdminPosVariant => node !== null,
+  );
+}
+
+export async function createOrFindPaidPhysicalOrder(
+  input: CreatePhysicalOrderInput,
+): Promise<AdminPhysicalOrder> {
+  const tag = physicalOrderTag(input.tuuTransactionId);
+  const existing = await adminFetch<{
+    data: {
+      orders: {
+        nodes: Array<{
+          id: string;
+          name: string;
+          displayFinancialStatus: string;
+          totalPriceSet: {
+            shopMoney: { amount: string; currencyCode: string };
+          };
+        }>;
+      };
+    };
+    variables: { query: string };
+  }>({
+    query: findPhysicalOrderQuery,
+    variables: { query: `tag:${tag}` },
+  });
+  const existingOrder = existing.body.data.orders.nodes[0];
+
+  if (existingOrder) {
+    return assertPhysicalOrder(
+      toAdminPhysicalOrder(existingOrder, true),
+      input.total,
+    );
+  }
+
+  const order: Record<string, unknown> = {
+    currency: "CLP",
+    lineItems: input.items.map((item) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+      priceSet: {
+        shopMoney: {
+          amount: item.unitPrice.toFixed(2),
+          currencyCode: "CLP",
+        },
+      },
+    })),
+    transactions: [
+      {
+        kind: "SALE",
+        status: "SUCCESS",
+        amountSet: {
+          shopMoney: {
+            amount: input.total.toFixed(2),
+            currencyCode: "CLP",
+          },
+        },
+      },
+    ],
+    tags: [tag, "OLFFY_POS", "TUU"],
+    sourceIdentifier: input.tuuTransactionId.trim(),
+    note: input.notes?.trim() || "Venta fisica OLFFY pagada mediante TUU",
+    customAttributes: [
+      { key: "Medio de pago", value: "TUU" },
+      { key: "Referencia TUU", value: input.tuuTransactionId.trim() },
+      {
+        key: "Comprobante TUU",
+        value: input.receiptNumber?.trim() || "Sin comprobante",
+      },
+      { key: "Responsable", value: input.responsible.trim() },
+    ],
+  };
+
+  if (input.customer) {
+    order.email = input.customer.email;
+
+    if (input.customer.shopifyCustomerId) {
+      order.customer = {
+        toAssociate: { id: input.customer.shopifyCustomerId },
+      };
+    }
+  }
+
+  if (input.discount && input.discount.amount > 0) {
+    order.discountCode = {
+      itemFixedDiscountCode: {
+        code: input.discount.code,
+        amountSet: {
+          shopMoney: {
+            amount: input.discount.amount.toFixed(2),
+            currencyCode: "CLP",
+          },
+        },
+      },
+    };
+  }
+
+  const created = await adminFetch<{
+    data: {
+      orderCreate: {
+        order: {
+          id: string;
+          name: string;
+          displayFinancialStatus: string;
+          totalPriceSet: {
+            shopMoney: { amount: string; currencyCode: string };
+          };
+        } | null;
+        userErrors: Array<{ field?: string[]; message: string }>;
+      };
+    };
+    variables: {
+      order: Record<string, unknown>;
+      options: Record<string, unknown>;
+    };
+  }>({
+    query: createPhysicalOrderMutation,
+    variables: {
+      order,
+      options: {
+        inventoryBehaviour: "DECREMENT_OBEYING_POLICY",
+        sendReceipt: false,
+        sendFulfillmentReceipt: false,
+      },
+    },
+  });
+  const payload = created.body.data.orderCreate;
+
+  if (payload.userErrors.length > 0) {
+    throw new Error(
+      `Shopify no pudo crear la orden: ${payload.userErrors
+        .map((error) => error.message)
+        .join("; ")}`,
+    );
+  }
+
+  if (!payload.order) {
+    throw new Error("Shopify no devolvio la orden creada.");
+  }
+
+  return assertPhysicalOrder(
+    toAdminPhysicalOrder(payload.order, false),
+    input.total,
+  );
+}
 
 const collectionCreateMutation = /* GraphQL */ `
   mutation collectionCreate($input: CollectionInput!) {

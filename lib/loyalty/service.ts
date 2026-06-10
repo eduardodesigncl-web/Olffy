@@ -100,6 +100,7 @@ export type LoyaltyRule = {
   name: string;
   spending_unit_clp: number;
   points_per_unit: number;
+  point_redemption_value_clp: number;
   points_expiry_months: number;
   redemption_expiry_days: number;
   is_active: boolean;
@@ -154,11 +155,55 @@ export type PhysicalSale = {
   discount: number;
   total: number;
   points_earned: number;
+  points_spent: number;
+  shopify_order_id: string | null;
+  shopify_order_name: string | null;
+  benefit_type: "none" | "points" | "discount_code" | "manual_discount";
+  benefit_amount: number;
+  discount_code: string | null;
+  manual_discount_reason: string | null;
   notes: string | null;
   sold_at: string;
   created_by: string | null;
   created_at: string;
   loyalty_customers?: Pick<LoyaltyCustomer, "email" | "full_name"> | null;
+};
+
+export type PhysicalSalePosBenefit =
+  | "none"
+  | "points"
+  | "discount_code"
+  | "manual_discount";
+
+export type PhysicalSaleAttempt = {
+  attemptId: string;
+  claimToken?: string;
+  status: "pending" | "completed" | "failed";
+  shopifyOrderId?: string;
+  shopifyOrderName?: string;
+  physicalSaleId?: number;
+};
+
+export type FinalizePhysicalSalePosInput = {
+  attemptId: string;
+  claimToken: string;
+  customerId?: number;
+  tuuTransactionId: string;
+  receiptNumber?: string;
+  shopifyOrderId: string;
+  shopifyOrderName?: string;
+  subtotal: number;
+  discount: number;
+  total: number;
+  benefitType: PhysicalSalePosBenefit;
+  pointsSpent: number;
+  pointsEarned: number;
+  discountCode?: string;
+  manualDiscountReason?: string;
+  items: PhysicalSaleItemInput[];
+  notes?: string;
+  createdBy: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type UpdateLoyaltyCustomerInput = {
@@ -381,6 +426,118 @@ export async function registerPhysicalSale(
   }
 
   return toNumber(data);
+}
+
+export async function claimPhysicalSalePosAttempt(input: {
+  tuuTransactionId: string;
+  payloadFingerprint: string;
+  createdBy: string;
+}): Promise<PhysicalSaleAttempt> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "claim_physical_sale_pos_attempt",
+    {
+      p_tuu_transaction_id: input.tuuTransactionId.trim(),
+      p_payload_fingerprint: input.payloadFingerprint.trim(),
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo reservar la venta TUU", error);
+  }
+
+  const result = data as Record<string, unknown>;
+
+  return {
+    attemptId: String(result.attempt_id),
+    claimToken: result.claim_token ? String(result.claim_token) : undefined,
+    status: String(result.status) as PhysicalSaleAttempt["status"],
+    shopifyOrderId: result.shopify_order_id
+      ? String(result.shopify_order_id)
+      : undefined,
+    shopifyOrderName: result.shopify_order_name
+      ? String(result.shopify_order_name)
+      : undefined,
+    physicalSaleId: result.physical_sale_id
+      ? toNumber(result.physical_sale_id)
+      : undefined,
+  };
+}
+
+export async function failPhysicalSalePosAttempt(input: {
+  attemptId: string;
+  claimToken: string;
+  error: string;
+}): Promise<void> {
+  const { error } = await getSupabaseAdmin().rpc(
+    "fail_physical_sale_pos_attempt",
+    {
+      p_attempt_id: input.attemptId,
+      p_claim_token: input.claimToken,
+      p_error: input.error,
+    },
+  );
+
+  if (error) {
+    console.error("No se pudo marcar el intento TUU como fallido:", error);
+  }
+}
+
+export async function finalizePhysicalSalePos(
+  input: FinalizePhysicalSalePosInput,
+): Promise<{
+  physicalSaleId: number;
+  shopifyOrderId: string;
+  shopifyOrderName?: string;
+  alreadyCompleted: boolean;
+}> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "finalize_physical_sale_pos",
+    {
+      p_attempt_id: input.attemptId,
+      p_claim_token: input.claimToken,
+      p_customer_id: input.customerId ?? null,
+      p_tuu_transaction_id: input.tuuTransactionId.trim(),
+      p_receipt_number: input.receiptNumber?.trim() || null,
+      p_shopify_order_id: input.shopifyOrderId.trim(),
+      p_shopify_order_name: input.shopifyOrderName?.trim() || null,
+      p_subtotal: input.subtotal,
+      p_discount: input.discount,
+      p_total: input.total,
+      p_benefit_type: input.benefitType,
+      p_points_spent: input.pointsSpent,
+      p_points_earned: input.pointsEarned,
+      p_discount_code: input.discountCode?.trim() || null,
+      p_manual_discount_reason: input.manualDiscountReason?.trim() || null,
+      p_items: input.items.map((item) => ({
+        shopify_product_id: item.shopifyProductId,
+        shopify_variant_id: item.shopifyVariantId ?? null,
+        sku: item.sku ?? null,
+        product_title: item.productTitle,
+        variant_title: item.variantTitle ?? null,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+      })),
+      p_notes: input.notes?.trim() || null,
+      p_created_by: input.createdBy.trim(),
+      p_metadata: input.metadata ?? {},
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo completar la venta fisica TUU", error);
+  }
+
+  const result = data as Record<string, unknown>;
+
+  return {
+    physicalSaleId: toNumber(result.physical_sale_id),
+    shopifyOrderId: String(result.shopify_order_id),
+    shopifyOrderName: result.shopify_order_name
+      ? String(result.shopify_order_name)
+      : undefined,
+    alreadyCompleted: Boolean(result.already_completed),
+  };
 }
 
 export async function listPhysicalSales(limit = 50): Promise<PhysicalSale[]> {

@@ -1,30 +1,31 @@
+import {
+  ADMIN_SESSION_MAX_AGE,
+  createAdminSessionToken,
+  getAdminPassword,
+} from "lib/admin/auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
     const { password } = await request.json();
-    const adminPassword =
-      process.env.ADMIN_PASSWORD ||
-      process.env.ADMIN_CONTRASENA ||
-      process.env.ADMIN_CONTRASEÑA ||
-      process.env.olffy2026;
+    const adminPassword = getAdminPassword();
 
     if (!adminPassword) {
       return NextResponse.json(
         { error: "La contraseña de administrador no está configurada." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (password === adminPassword) {
       const cookieStore = await cookies();
-      cookieStore.set("admin_session", "true", {
+      cookieStore.set("admin_session", createAdminSessionToken(), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        path: "/admin",
-        maxAge: 60 * 60 * 24 * 7, // 1 semana
+        path: "/",
+        maxAge: ADMIN_SESSION_MAX_AGE,
       });
 
       return NextResponse.json({ success: true });
@@ -32,18 +33,24 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { error: "Contraseña incorrecta." },
-      { status: 401 }
+      { status: 401 },
     );
   } catch (error) {
     return NextResponse.json(
       { error: "Error procesando la solicitud." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE() {
   const cookieStore = await cookies();
-  cookieStore.delete("admin_session");
+  cookieStore.set("admin_session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return NextResponse.json({ success: true });
 }
