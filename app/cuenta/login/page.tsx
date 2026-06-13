@@ -1,13 +1,16 @@
 import {
+  ArrowRightIcon,
+  CheckCircleIcon,
   EnvelopeIcon,
   LockClosedIcon,
   SparklesIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import { getCustomerAccountState } from "lib/customer/auth";
 import { hasSupabasePublicConfig } from "lib/supabase/config";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requestMagicLinkAction } from "../actions";
+import { registerCustomerAction, requestMagicLinkAction } from "../actions";
 
 export const metadata = {
   title: "Entrar a mi cuenta",
@@ -29,10 +32,13 @@ export default async function CustomerLoginPage({
     error?: string;
     sent?: string;
     signedOut?: string;
+    created?: string;
+    mode?: string;
   }>;
 }) {
   const params = await searchParams;
   const configured = hasSupabasePublicConfig();
+  const isRegister = params.mode === "register";
 
   if (configured) {
     const state = await getCustomerAccountState();
@@ -42,7 +48,7 @@ export default async function CustomerLoginPage({
   }
 
   return (
-    <div className="px-5 py-12 md:py-20">
+    <div className="px-5 py-10 md:py-16">
       <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[10px] border-2 border-olffy-ink bg-white shadow-[8px_8px_0_#343434] lg:grid-cols-[1fr_0.9fr]">
         <section className="bg-olffy-purple px-7 py-10 text-white md:px-12 md:py-14">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-olffy-yellow text-olffy-ink">
@@ -65,25 +71,59 @@ export default async function CustomerLoginPage({
             </p>
             <p className="flex items-center gap-3">
               <EnvelopeIcon className="h-5 w-5 text-olffy-yellow" />
-              Sin contrasena: solo necesitas tu correo inscrito.
+              Sin contraseña: entra o crea tu cuenta con tu correo.
             </p>
           </div>
         </section>
 
         <section className="px-7 py-10 md:px-12 md:py-14">
-          <p className="text-sm font-bold text-olffy-orange">MI CUENTA</p>
+          <p className="text-sm font-bold text-olffy-orange">
+            {isRegister ? "NUEVA CUENTA" : "MI CUENTA"}
+          </p>
           <h2 className="mt-2 font-brand text-3xl font-black text-olffy-ink">
-            Entrar por correo
+            {isRegister ? "Únete a OLFFY Puntos" : "Entra a tu cuenta"}
           </h2>
           <p className="mt-3 text-sm leading-6 text-olffy-muted">
-            Te enviaremos un enlace seguro. Debes usar el mismo correo que
-            registraste en OLFFY Puntos.
+            {isRegister
+              ? "Crea tu cuenta gratis. Te enviaremos un enlace para entrar a tu nuevo dashboard."
+              : "Te enviaremos un enlace seguro al correo asociado a tus puntos."}
           </p>
+
+          <div className="mt-6 grid grid-cols-2 rounded-[7px] border-2 border-olffy-ink bg-olffy-cream p-1">
+            <Link
+              href="/cuenta/login?mode=login"
+              className={`flex items-center justify-center gap-2 rounded-[4px] px-3 py-2.5 text-sm font-bold transition ${
+                !isRegister
+                  ? "bg-olffy-ink text-white"
+                  : "text-olffy-ink hover:bg-white"
+              }`}
+            >
+              <LockClosedIcon className="h-4 w-4" />
+              Iniciar sesión
+            </Link>
+            <Link
+              href="/cuenta/login?mode=register"
+              className={`flex items-center justify-center gap-2 rounded-[4px] px-3 py-2.5 text-sm font-bold transition ${
+                isRegister
+                  ? "bg-olffy-purple text-white"
+                  : "text-olffy-ink hover:bg-white"
+              }`}
+            >
+              <UserPlusIcon className="h-4 w-4" />
+              Crear cuenta
+            </Link>
+          </div>
 
           {params.sent ? (
             <div className="mt-6 rounded-[6px] border-2 border-green-700 bg-green-50 p-4 text-sm text-green-800">
-              Revisa <strong>{params.sent}</strong>. El enlace vence pronto y
-              solo puede usarse una vez.
+              <p className="flex items-center gap-2 font-bold">
+                <CheckCircleIcon className="h-5 w-5" />
+                {params.created ? "Tu cuenta fue creada." : "Enlace enviado."}
+              </p>
+              <p className="mt-1">
+                Revisa <strong>{params.sent}</strong>. Al abrir el enlace
+                entrarás directamente a tu dashboard.
+              </p>
             </div>
           ) : null}
           {params.signedOut ? (
@@ -103,7 +143,44 @@ export default async function CustomerLoginPage({
             </div>
           ) : null}
 
-          <form action={requestMagicLinkAction} className="mt-7 space-y-4">
+          <form
+            action={
+              isRegister ? registerCustomerAction : requestMagicLinkAction
+            }
+            className="mt-7 space-y-4"
+          >
+            {isRegister ? (
+              <>
+                <label className="block">
+                  <span className="text-sm font-bold text-olffy-ink">
+                    Nombre completo
+                  </span>
+                  <input
+                    required
+                    type="text"
+                    name="fullName"
+                    autoComplete="name"
+                    placeholder="Tu nombre"
+                    disabled={!configured}
+                    className="mt-2 h-12 w-full rounded-[6px] border-2 border-olffy-ink bg-white px-4 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold text-olffy-ink">
+                    Teléfono
+                  </span>
+                  <input
+                    required
+                    type="tel"
+                    name="phone"
+                    autoComplete="tel"
+                    placeholder="+56 9 1234 5678"
+                    disabled={!configured}
+                    className="mt-2 h-12 w-full rounded-[6px] border-2 border-olffy-ink bg-white px-4 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  />
+                </label>
+              </>
+            ) : null}
             <label className="block">
               <span className="text-sm font-bold text-olffy-ink">Correo</span>
               <input
@@ -120,16 +197,20 @@ export default async function CustomerLoginPage({
               disabled={!configured}
               className="h-12 w-full rounded-[6px] bg-olffy-ink px-5 font-brand font-black text-white transition hover:bg-olffy-purple disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              Enviarme el enlace
+              {isRegister ? "Crear cuenta y continuar" : "Entrar a mi cuenta"}
+              <ArrowRightIcon className="ml-2 inline h-4 w-4" />
             </button>
           </form>
 
           <p className="mt-6 text-xs leading-5 text-olffy-muted">
-            Si cambiaste de correo o aun no estas inscrita,{" "}
-            <Link href="/contacto" className="font-bold text-olffy-purple">
-              contactanos
-            </Link>
-            .
+            {isRegister
+              ? "Al crear tu cuenta aceptas que OLFFY use estos datos para administrar tus puntos y beneficios."
+              : "Usa el correo con el que compraste o te registraste. Si necesitas ayuda, "}
+            {!isRegister ? (
+              <Link href="/contacto" className="font-bold text-olffy-purple">
+                contáctanos
+              </Link>
+            ) : null}
           </p>
         </section>
       </div>

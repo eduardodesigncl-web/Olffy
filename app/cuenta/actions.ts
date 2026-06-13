@@ -1,6 +1,7 @@
 "use server";
 
 import { isEnrolledCustomer, requireCustomerAccount } from "lib/customer/auth";
+import { createLoyaltyCustomer } from "lib/loyalty/service";
 import { requestCustomerReward } from "lib/customer/redemptions";
 import { getSupabaseServer } from "lib/supabase/server";
 import { baseUrl } from "lib/utils";
@@ -31,18 +32,7 @@ export async function requestMagicLinkAction(formData: FormData) {
       redirect("/cuenta/login?error=no-inscrita");
     }
 
-    const supabase = await getSupabaseServer();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${baseUrl}/auth/confirm?next=/cuenta`,
-        shouldCreateUser: true,
-      },
-    });
-
-    if (error) {
-      throw error;
-    }
+    await sendCustomerAccessLink(email);
   } catch (cause) {
     if (
       cause &&
@@ -57,6 +47,62 @@ export async function requestMagicLinkAction(formData: FormData) {
   }
 
   redirect(`/cuenta/login?sent=${encodeURIComponent(email)}`);
+}
+
+export async function registerCustomerAction(formData: FormData) {
+  const email = requiredString(formData, "email").toLowerCase();
+  const fullName = requiredString(formData, "fullName");
+  const phone = requiredString(formData, "phone");
+
+  try {
+    if (await isEnrolledCustomer(email)) {
+      redirect(
+        `/cuenta/login?mode=login&error=${encodeURIComponent("Este correo ya tiene una cuenta. Ingresa para continuar.")}`,
+      );
+    }
+
+    await createLoyaltyCustomer({
+      email,
+      fullName,
+      phone,
+      metadata: {
+        registration_source: "customer_account",
+      },
+    });
+    await sendCustomerAccessLink(email);
+  } catch (cause) {
+    if (
+      cause &&
+      typeof cause === "object" &&
+      "digest" in cause &&
+      String(cause.digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw cause;
+    }
+
+    redirect(
+      `/cuenta/login?mode=register&error=${encodeURIComponent(message(cause))}`,
+    );
+  }
+
+  redirect(
+    `/cuenta/login?mode=register&created=1&sent=${encodeURIComponent(email)}`,
+  );
+}
+
+async function sendCustomerAccessLink(email: string) {
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${baseUrl}/auth/confirm?next=/cuenta`,
+      shouldCreateUser: true,
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function signOutCustomerAction() {
