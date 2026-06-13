@@ -1,11 +1,10 @@
 "use server";
 
-import { isEnrolledCustomer, requireCustomerAccount } from "lib/customer/auth";
+import { requireCustomerAccount } from "lib/customer/auth";
 import { createLoyaltyCustomer } from "lib/loyalty/service";
 import { requestCustomerReward } from "lib/customer/redemptions";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getSupabaseServer } from "lib/supabase/server";
-import { baseUrl } from "lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -17,10 +16,14 @@ function message(cause: unknown) {
   const normalized = cause.message.toLowerCase();
 
   if (
-    normalized.includes("email rate limit exceeded") ||
-    normalized.includes("over_email_send_rate_limit")
+    normalized.includes("invalid login credentials") ||
+    normalized.includes("invalid_credentials")
   ) {
-    return "Se alcanzó temporalmente el límite de correos. Espera unos minutos antes de solicitar otro enlace.";
+    return "El correo o la contraseña no son correctos.";
+  }
+
+  if (normalized.includes("password")) {
+    return "La contraseña debe tener al menos 8 caracteres.";
   }
 
   return cause.message;
@@ -38,13 +41,18 @@ function requiredString(formData: FormData, key: string) {
 
 export async function requestMagicLinkAction(formData: FormData) {
   const email = requiredString(formData, "email").toLowerCase();
+  const password = requiredString(formData, "password");
 
   try {
-    if (!(await isEnrolledCustomer(email))) {
-      redirect("/cuenta/login?error=no-inscrita");
-    }
+    const supabase = await getSupabaseServer();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    await sendCustomerAccessLink(email);
+    if (error) {
+      throw error;
+    }
   } catch (cause) {
     if (
       cause &&
@@ -58,32 +66,129 @@ export async function requestMagicLinkAction(formData: FormData) {
     redirect(`/cuenta/login?error=${encodeURIComponent(message(cause))}`);
   }
 
-  redirect(`/cuenta/login?sent=${encodeURIComponent(email)}`);
+  redirect("/cuenta");
 }
 
 export async function registerCustomerAction(formData: FormData) {
   const email = requiredString(formData, "email").toLowerCase();
   const fullName = requiredString(formData, "fullName");
   const phone = requiredString(formData, "phone");
+  const password = requiredString(formData, "password");
+  const passwordConfirmation = requiredString(formData, "passwordConfirmation");
   let createdCustomerId: number | null = null;
+  let createdAuthUserId: string | null = null;
 
   try {
-    if (await isEnrolledCustomer(email)) {
+    if (password.length < 8) {
+      throw new Error("La contraseña debe tener al menos 8 caracteres.");
+    }
+
+    if (password !== passwordConfirmation) {
+      throw new Error("Las contraseñas no coinciden.");
+    }
+
+    const admin = getSupabaseAdmin();
+    const { data: existingCustomer, error: customerError } = await admin
+      .from("loyalty_customers")
+      .select("id, auth_user_id")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (customerError) {
+      throw customerError;
+    }
+
+    if (existingCustomer?.auth_user_id) {
       redirect(
-        `/cuenta/login?mode=login&error=${encodeURIComponent("Este correo ya tiene una cuenta. Ingresa para continuar.")}`,
+        `/cuenta/login?mode=login&error=${encodeURIComponent("Este correo ya tiene una cuenta. Ingresa con tu contraseña.")}`,
       );
     }
 
-    const customer = await createLoyaltyCustomer({
+    const { data: usersData, error: usersError } =
+      await admin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+
+    if (usersError) {
+      throw usersError;
+    }
+
+    const existingAuthUser = usersData.users.find(
+      (user) => user.email?.toLowerCase() === email,
+    );
+    const { data: authData, error: authError } = existingAuthUser
+      ? await admin.auth.admin.updateUserById(existingAuthUser.id, {
+          password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName,
+            phone,
+          },
+        })
+      : await admin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName,
+            phone,
+          },
+        });
+
+    if (authError || !authData.user) {
+      throw authError ?? new Error("No se pudo crear el acceso.");
+    }
+
+    if (!existingAuthUser) {
+      createdAuthUserId = authData.user.id;
+    }
+
+    if (existingCustomer) {
+      const { error: updateError } = await admin
+        .from("loyalty_customers")
+        .update({
+          auth_user_id: authData.user.id,
+          full_name: fullName,
+          phone,
+        })
+        .eq("id", existingCustomer.id)
+        .is("auth_user_id", null);
+
+      if (updateError) {
+        throw updateError;
+      }
+    } else {
+      const customer = await createLoyaltyCustomer({
+        email,
+        fullName,
+        phone,
+        metadata: {
+          registration_source: "customer_account",
+        },
+      });
+      createdCustomerId = customer.id;
+
+      const { error: linkError } = await admin
+        .from("loyalty_customers")
+        .update({ auth_user_id: authData.user.id })
+        .eq("id", customer.id)
+        .is("auth_user_id", null);
+
+      if (linkError) {
+        throw linkError;
+      }
+    }
+
+    const supabase = await getSupabaseServer();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      fullName,
-      phone,
-      metadata: {
-        registration_source: "customer_account",
-      },
+      password,
     });
-    createdCustomerId = customer.id;
-    await sendCustomerAccessLink(email);
+
+    if (signInError) {
+      throw signInError;
+    }
   } catch (cause) {
     if (
       cause &&
@@ -92,6 +197,10 @@ export async function registerCustomerAction(formData: FormData) {
       String(cause.digest).startsWith("NEXT_REDIRECT")
     ) {
       throw cause;
+    }
+
+    if (createdAuthUserId) {
+      await getSupabaseAdmin().auth.admin.deleteUser(createdAuthUserId);
     }
 
     if (createdCustomerId) {
@@ -107,24 +216,7 @@ export async function registerCustomerAction(formData: FormData) {
     );
   }
 
-  redirect(
-    `/cuenta/login?mode=register&created=1&sent=${encodeURIComponent(email)}`,
-  );
-}
-
-async function sendCustomerAccessLink(email: string) {
-  const supabase = await getSupabaseServer();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${baseUrl}/auth/confirm?next=/cuenta`,
-      shouldCreateUser: true,
-    },
-  });
-
-  if (error) {
-    throw error;
-  }
+  redirect("/cuenta");
 }
 
 export async function signOutCustomerAction() {

@@ -1,6 +1,5 @@
 import {
   ArrowRightIcon,
-  CheckCircleIcon,
   EnvelopeIcon,
   LockClosedIcon,
   SparklesIcon,
@@ -30,9 +29,7 @@ export default async function CustomerLoginPage({
 }: {
   searchParams: Promise<{
     error?: string;
-    sent?: string;
     signedOut?: string;
-    created?: string;
     mode?: string;
   }>;
 }) {
@@ -67,11 +64,11 @@ export default async function CustomerLoginPage({
           <div className="mt-10 space-y-4 text-sm text-white/85">
             <p className="flex items-center gap-3">
               <LockClosedIcon className="h-5 w-5 text-olffy-yellow" />
-              Acceso privado con enlace de un solo uso.
+              Acceso privado con correo y contraseña.
             </p>
             <p className="flex items-center gap-3">
               <EnvelopeIcon className="h-5 w-5 text-olffy-yellow" />
-              Sin contraseña: entra o crea tu cuenta con tu correo.
+              Sin esperas: entra directamente a tu dashboard.
             </p>
           </div>
         </section>
@@ -85,8 +82,8 @@ export default async function CustomerLoginPage({
           </h2>
           <p className="mt-3 text-sm leading-6 text-olffy-muted">
             {isRegister
-              ? "Crea tu cuenta gratis. Te enviaremos un enlace para entrar a tu nuevo dashboard."
-              : "Te enviaremos un enlace seguro al correo asociado a tus puntos."}
+              ? "Crea tu cuenta gratis y entra inmediatamente a tu nuevo dashboard."
+              : "Ingresa con el correo y la contraseña de tu cuenta OLFFY."}
           </p>
 
           <div className="mt-6 grid grid-cols-2 rounded-[7px] border-2 border-olffy-ink bg-olffy-cream p-1">
@@ -114,18 +111,6 @@ export default async function CustomerLoginPage({
             </Link>
           </div>
 
-          {params.sent ? (
-            <div className="mt-6 rounded-[6px] border-2 border-green-700 bg-green-50 p-4 text-sm text-green-800">
-              <p className="flex items-center gap-2 font-bold">
-                <CheckCircleIcon className="h-5 w-5" />
-                {params.created ? "Tu cuenta fue creada." : "Enlace enviado."}
-              </p>
-              <p className="mt-1">
-                Revisa <strong>{params.sent}</strong>. Al abrir el enlace
-                entrarás directamente a tu dashboard.
-              </p>
-            </div>
-          ) : null}
           {params.signedOut ? (
             <div className="mt-6 rounded-[6px] border border-olffy-purple/30 bg-olffy-purple/5 p-4 text-sm text-olffy-purple">
               Cerraste tu sesion correctamente.
@@ -193,6 +178,38 @@ export default async function CustomerLoginPage({
                 className="mt-2 h-12 w-full rounded-[6px] border-2 border-olffy-ink bg-white px-4 disabled:cursor-not-allowed disabled:bg-gray-100"
               />
             </label>
+            <label className="block">
+              <span className="text-sm font-bold text-olffy-ink">
+                Contraseña
+              </span>
+              <input
+                required
+                minLength={8}
+                type="password"
+                name="password"
+                autoComplete={isRegister ? "new-password" : "current-password"}
+                placeholder="Mínimo 8 caracteres"
+                disabled={!configured}
+                className="mt-2 h-12 w-full rounded-[6px] border-2 border-olffy-ink bg-white px-4 disabled:cursor-not-allowed disabled:bg-gray-100"
+              />
+            </label>
+            {isRegister ? (
+              <label className="block">
+                <span className="text-sm font-bold text-olffy-ink">
+                  Repetir contraseña
+                </span>
+                <input
+                  required
+                  minLength={8}
+                  type="password"
+                  name="passwordConfirmation"
+                  autoComplete="new-password"
+                  placeholder="Repite tu contraseña"
+                  disabled={!configured}
+                  className="mt-2 h-12 w-full rounded-[6px] border-2 border-olffy-ink bg-white px-4 disabled:cursor-not-allowed disabled:bg-gray-100"
+                />
+              </label>
+            ) : null}
             <button
               disabled={!configured}
               className="h-12 w-full rounded-[6px] bg-olffy-ink px-5 font-brand font-black text-white transition hover:bg-olffy-purple disabled:cursor-not-allowed disabled:bg-gray-300"
