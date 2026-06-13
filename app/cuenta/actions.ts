@@ -3,15 +3,27 @@
 import { isEnrolledCustomer, requireCustomerAccount } from "lib/customer/auth";
 import { createLoyaltyCustomer } from "lib/loyalty/service";
 import { requestCustomerReward } from "lib/customer/redemptions";
+import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getSupabaseServer } from "lib/supabase/server";
 import { baseUrl } from "lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 function message(cause: unknown) {
-  return cause instanceof Error
-    ? cause.message
-    : "Ocurrio un error inesperado.";
+  if (!(cause instanceof Error)) {
+    return "Ocurrió un error inesperado.";
+  }
+
+  const normalized = cause.message.toLowerCase();
+
+  if (
+    normalized.includes("email rate limit exceeded") ||
+    normalized.includes("over_email_send_rate_limit")
+  ) {
+    return "Se alcanzó temporalmente el límite de correos. Espera unos minutos antes de solicitar otro enlace.";
+  }
+
+  return cause.message;
 }
 
 function requiredString(formData: FormData, key: string) {
@@ -53,6 +65,7 @@ export async function registerCustomerAction(formData: FormData) {
   const email = requiredString(formData, "email").toLowerCase();
   const fullName = requiredString(formData, "fullName");
   const phone = requiredString(formData, "phone");
+  let createdCustomerId: number | null = null;
 
   try {
     if (await isEnrolledCustomer(email)) {
@@ -61,7 +74,7 @@ export async function registerCustomerAction(formData: FormData) {
       );
     }
 
-    await createLoyaltyCustomer({
+    const customer = await createLoyaltyCustomer({
       email,
       fullName,
       phone,
@@ -69,6 +82,7 @@ export async function registerCustomerAction(formData: FormData) {
         registration_source: "customer_account",
       },
     });
+    createdCustomerId = customer.id;
     await sendCustomerAccessLink(email);
   } catch (cause) {
     if (
@@ -78,6 +92,14 @@ export async function registerCustomerAction(formData: FormData) {
       String(cause.digest).startsWith("NEXT_REDIRECT")
     ) {
       throw cause;
+    }
+
+    if (createdCustomerId) {
+      await getSupabaseAdmin()
+        .from("loyalty_customers")
+        .delete()
+        .eq("id", createdCustomerId)
+        .is("auth_user_id", null);
     }
 
     redirect(

@@ -20,7 +20,7 @@ export const metadata = {
 function errorText(error?: string) {
   if (!error) return null;
   if (error === "no-inscrita") {
-    return "Este correo aun no esta inscrito en OLFFY Puntos. Pide ayuda en tienda para activar tu cuenta.";
+    return "Este correo aún no tiene una cuenta. Puedes crearla desde la opción Crear cuenta.";
   }
   return error;
 }
