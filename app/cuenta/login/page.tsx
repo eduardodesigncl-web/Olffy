@@ -1,0 +1,138 @@
+import {
+  EnvelopeIcon,
+  LockClosedIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
+import { getCustomerAccountState } from "lib/customer/auth";
+import { hasSupabasePublicConfig } from "lib/supabase/config";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { requestMagicLinkAction } from "../actions";
+
+export const metadata = {
+  title: "Entrar a mi cuenta",
+  robots: { index: false, follow: false },
+};
+
+function errorText(error?: string) {
+  if (!error) return null;
+  if (error === "no-inscrita") {
+    return "Este correo aun no esta inscrito en OLFFY Puntos. Pide ayuda en tienda para activar tu cuenta.";
+  }
+  return error;
+}
+
+export default async function CustomerLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    error?: string;
+    sent?: string;
+    signedOut?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const configured = hasSupabasePublicConfig();
+
+  if (configured) {
+    const state = await getCustomerAccountState();
+    if (state.status === "ready") {
+      redirect("/cuenta");
+    }
+  }
+
+  return (
+    <div className="px-5 py-12 md:py-20">
+      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-[10px] border-2 border-olffy-ink bg-white shadow-[8px_8px_0_#343434] lg:grid-cols-[1fr_0.9fr]">
+        <section className="bg-olffy-purple px-7 py-10 text-white md:px-12 md:py-14">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-olffy-yellow text-olffy-ink">
+            <SparklesIcon className="h-6 w-6" />
+          </div>
+          <p className="mt-8 text-sm font-bold uppercase tracking-[0.2em] text-white/70">
+            OLFFY Puntos
+          </p>
+          <h1 className="mt-3 font-brand text-4xl font-black leading-tight md:text-5xl">
+            Tus puntos, claritos y a mano.
+          </h1>
+          <p className="mt-5 max-w-md leading-7 text-white/80">
+            Revisa tu saldo, entiende cada movimiento y descubre las recompensas
+            que ya puedes pedir.
+          </p>
+          <div className="mt-10 space-y-4 text-sm text-white/85">
+            <p className="flex items-center gap-3">
+              <LockClosedIcon className="h-5 w-5 text-olffy-yellow" />
+              Acceso privado con enlace de un solo uso.
+            </p>
+            <p className="flex items-center gap-3">
+              <EnvelopeIcon className="h-5 w-5 text-olffy-yellow" />
+              Sin contrasena: solo necesitas tu correo inscrito.
+            </p>
+          </div>
+        </section>
+
+        <section className="px-7 py-10 md:px-12 md:py-14">
+          <p className="text-sm font-bold text-olffy-orange">MI CUENTA</p>
+          <h2 className="mt-2 font-brand text-3xl font-black text-olffy-ink">
+            Entrar por correo
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-olffy-muted">
+            Te enviaremos un enlace seguro. Debes usar el mismo correo que
+            registraste en OLFFY Puntos.
+          </p>
+
+          {params.sent ? (
+            <div className="mt-6 rounded-[6px] border-2 border-green-700 bg-green-50 p-4 text-sm text-green-800">
+              Revisa <strong>{params.sent}</strong>. El enlace vence pronto y
+              solo puede usarse una vez.
+            </div>
+          ) : null}
+          {params.signedOut ? (
+            <div className="mt-6 rounded-[6px] border border-olffy-purple/30 bg-olffy-purple/5 p-4 text-sm text-olffy-purple">
+              Cerraste tu sesion correctamente.
+            </div>
+          ) : null}
+          {errorText(params.error) ? (
+            <div className="mt-6 rounded-[6px] border-2 border-red-300 bg-red-50 p-4 text-sm text-red-800">
+              {errorText(params.error)}
+            </div>
+          ) : null}
+          {!configured ? (
+            <div className="mt-6 rounded-[6px] border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              La cuenta cliente esta lista, pero faltan las variables publicas
+              de Supabase en este entorno.
+            </div>
+          ) : null}
+
+          <form action={requestMagicLinkAction} className="mt-7 space-y-4">
+            <label className="block">
+              <span className="text-sm font-bold text-olffy-ink">Correo</span>
+              <input
+                required
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder="hola@ejemplo.cl"
+                disabled={!configured}
+                className="mt-2 h-12 w-full rounded-[6px] border-2 border-olffy-ink bg-white px-4 disabled:cursor-not-allowed disabled:bg-gray-100"
+              />
+            </label>
+            <button
+              disabled={!configured}
+              className="h-12 w-full rounded-[6px] bg-olffy-ink px-5 font-brand font-black text-white transition hover:bg-olffy-purple disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              Enviarme el enlace
+            </button>
+          </form>
+
+          <p className="mt-6 text-xs leading-5 text-olffy-muted">
+            Si cambiaste de correo o aun no estas inscrita,{" "}
+            <Link href="/contacto" className="font-bold text-olffy-purple">
+              contactanos
+            </Link>
+            .
+          </p>
+        </section>
+      </div>
+    </div>
+  );
+}

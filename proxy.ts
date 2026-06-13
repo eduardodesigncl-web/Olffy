@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyAdminSessionToken } from "lib/admin/session";
+import { updateCustomerSession } from "lib/supabase/proxy";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Solo aplicamos el proxy a las rutas que empiezan con /admin
   if (request.nextUrl.pathname.startsWith("/admin")) {
     // Si ya estamos en la página de login, no hacemos nada para evitar bucles
@@ -18,12 +19,13 @@ export function proxy(request: NextRequest) {
       const loginUrl = new URL("/admin/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
+
+    return NextResponse.next();
   }
 
-  // Para el resto de rutas, permitimos el acceso
-  return NextResponse.next();
+  return updateCustomerSession(request);
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/cuenta/:path*", "/auth/confirm"],
 };

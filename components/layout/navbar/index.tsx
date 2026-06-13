@@ -34,7 +34,7 @@ export function Navbar() {
           <Link aria-label="Buscar" href="/tienda">
             <MagnifyingGlassIcon className="h-6 w-6" />
           </Link>
-          <Link aria-label="Cuenta" href="/contacto">
+          <Link aria-label="Cuenta" href="/cuenta">
             <UserIcon className="h-6 w-6" />
           </Link>
           <Link aria-label="Carrito" href="/carrito">
