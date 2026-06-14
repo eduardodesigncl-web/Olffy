@@ -47,26 +47,35 @@ function getBadge(product: Product, quantityAvailable: number | null) {
 export function toOlffyProduct(product: Product): OlffyProduct {
   const primaryVariant = getPrimaryVariant(product);
   const quantityAvailable = getInventory(product);
-  const price = Number(
-    primaryVariant?.price.amount || product.priceRange.minVariantPrice.amount,
-  );
+  const priceAmount =
+    primaryVariant?.price.amount || product.priceRange.minVariantPrice.amount;
+  const price = Number(priceAmount);
+  const currencyCode =
+    primaryVariant?.price.currencyCode ||
+    product.priceRange.minVariantPrice.currencyCode;
+  const realImage = product.featuredImage?.url || product.images[0]?.url;
 
   return {
     id: product.handle,
     handle: product.handle,
+    source: "shopify",
     name: product.title,
     price: Number.isFinite(price) ? price : 0,
-    currencyCode:
-      primaryVariant?.price.currencyCode ||
-      product.priceRange.minVariantPrice.currencyCode,
+    currencyCode,
     category: getCategory(product),
     tag: getBadge(product, quantityAvailable),
-    image:
-      product.featuredImage?.url || product.images[0]?.url || fallbackImage,
+    image: realImage || fallbackImage,
     description: product.description,
     availableForSale: product.availableForSale && quantityAvailable !== 0,
     quantityAvailable,
     variantId: primaryVariant?.id,
+    structuredData: {
+      description: product.description || undefined,
+      image: realImage,
+      price: Number.isFinite(price) ? price : undefined,
+      currencyCode: currencyCode || undefined,
+      availability: product.availableForSale ? "InStock" : "OutOfStock",
+    },
   };
 }
 

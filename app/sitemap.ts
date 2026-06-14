@@ -7,6 +7,28 @@ type Route = {
   lastModified: string;
 };
 
+const reservedRouteSegments = new Set([
+  "admin",
+  "cuenta",
+  "api",
+  "auth",
+  "login",
+  "search",
+  "producto",
+  "product",
+  "tienda",
+]);
+
+function isReservedRoute(path: string) {
+  const pathWithoutQuery = path.split(/[?#]/)[0] ?? "";
+  const firstSegment = pathWithoutQuery
+    .split("/")
+    .filter(Boolean)[0]
+    ?.toLowerCase();
+
+  return firstSegment ? reservedRouteSegments.has(firstSegment) : false;
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -25,10 +47,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const collectionsPromise = getCollections().then((collections) =>
-    collections.map((collection) => ({
-      url: `${baseUrl}${collection.path}`,
-      lastModified: collection.updatedAt,
-    })),
+    collections
+      .filter((collection) => !isReservedRoute(collection.path))
+      .map((collection) => ({
+        url: `${baseUrl}${collection.path}`,
+        lastModified: collection.updatedAt,
+      })),
   );
 
   // La URL canónica de producto en OLFFY es /producto/[handle]
@@ -41,10 +65,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   const pagesPromise = getPages().then((pages) =>
-    pages.map((page) => ({
-      url: `${baseUrl}/${page.handle}`,
-      lastModified: page.updatedAt,
-    })),
+    pages
+      .filter((page) => !isReservedRoute(page.handle))
+      .map((page) => ({
+        url: `${baseUrl}/${page.handle}`,
+        lastModified: page.updatedAt,
+      })),
   );
 
   let fetchedRoutes: Route[] = [];

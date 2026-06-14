@@ -1,6 +1,7 @@
 export type OlffyProduct = {
   id: string;
   handle: string;
+  source: "shopify" | "demo";
   name: string;
   price: number;
   currencyCode: string;
@@ -11,6 +12,13 @@ export type OlffyProduct = {
   availableForSale: boolean;
   quantityAvailable?: number | null;
   variantId?: string;
+  structuredData?: {
+    description?: string;
+    image?: string;
+    price?: number;
+    currencyCode?: string;
+    availability: "InStock" | "OutOfStock";
+  };
 };
 
 export const navItems = [
@@ -26,6 +34,7 @@ export const products: OlffyProduct[] = [
   {
     id: "agenda-creativa",
     handle: "agenda-creativa",
+    source: "demo",
     name: "Agenda creativa",
     price: 12990,
     currencyCode: "CLP",
@@ -38,6 +47,7 @@ export const products: OlffyProduct[] = [
   {
     id: "planner-semanal",
     handle: "planner-semanal",
+    source: "demo",
     name: "Planner semanal",
     price: 8990,
     currencyCode: "CLP",
@@ -50,6 +60,7 @@ export const products: OlffyProduct[] = [
   {
     id: "set-stickers",
     handle: "set-stickers",
+    source: "demo",
     name: "Set de stickers",
     price: 4990,
     currencyCode: "CLP",
@@ -62,6 +73,7 @@ export const products: OlffyProduct[] = [
   {
     id: "libreta-artista",
     handle: "libreta-artista",
+    source: "demo",
     name: "Libreta artista",
     price: 6990,
     currencyCode: "CLP",
@@ -74,6 +86,7 @@ export const products: OlffyProduct[] = [
   {
     id: "marcapaginas",
     handle: "marcapaginas",
+    source: "demo",
     name: "Marcapaginas ilustrado",
     price: 2990,
     currencyCode: "CLP",
@@ -86,6 +99,7 @@ export const products: OlffyProduct[] = [
   {
     id: "notas-color",
     handle: "notas-color",
+    source: "demo",
     name: "Taquitos de notas",
     price: 3990,
     currencyCode: "CLP",
@@ -98,6 +112,7 @@ export const products: OlffyProduct[] = [
   {
     id: "kit-papeleria",
     handle: "kit-papeleria",
+    source: "demo",
     name: "Kit de papeleria",
     price: 14990,
     currencyCode: "CLP",
@@ -110,6 +125,7 @@ export const products: OlffyProduct[] = [
   {
     id: "empaque-regalo",
     handle: "empaque-regalo",
+    source: "demo",
     name: "Empaque para regalo",
     price: 2490,
     currencyCode: "CLP",
@@ -122,6 +138,7 @@ export const products: OlffyProduct[] = [
   {
     id: "cuaderno-arte",
     handle: "cuaderno-arte",
+    source: "demo",
     name: "Cuaderno de arte",
     price: 9990,
     currencyCode: "CLP",
@@ -134,6 +151,7 @@ export const products: OlffyProduct[] = [
   {
     id: "calendario-pared",
     handle: "calendario-pared",
+    source: "demo",
     name: "Calendario de pared",
     price: 11990,
     currencyCode: "CLP",
@@ -146,6 +164,7 @@ export const products: OlffyProduct[] = [
   {
     id: "tarjetas-felicitacion",
     handle: "tarjetas-felicitacion",
+    source: "demo",
     name: "Tarjetas de felicitacion",
     price: 3500,
     currencyCode: "CLP",
@@ -158,6 +177,7 @@ export const products: OlffyProduct[] = [
   {
     id: "boligrafo-artistico",
     handle: "boligrafo-artistico",
+    source: "demo",
     name: "Boligrafo artistico",
     price: 5990,
     currencyCode: "CLP",

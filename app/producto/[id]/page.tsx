@@ -81,27 +81,37 @@ export default async function ProductPage({
     product.description ||
     `${product.name} — papelería OLFFY con diseño desde Viña del Mar.`;
 
-  const productSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description,
-    image: product.image,
-    url: canonicalUrl,
-    offers: {
-      "@type": "Offer",
-      price: product.price,
-      priceCurrency: product.currencyCode,
-      availability: product.availableForSale
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-      url: canonicalUrl,
-      seller: {
-        "@type": "Organization",
-        name: "OLFFY",
-      },
-    },
-  };
+  const productSchema =
+    product.source === "shopify" && product.structuredData
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          url: canonicalUrl,
+          ...(product.structuredData.description
+            ? { description: product.structuredData.description }
+            : {}),
+          ...(product.structuredData.image
+            ? { image: product.structuredData.image }
+            : {}),
+          ...(typeof product.structuredData.price === "number" &&
+          product.structuredData.currencyCode
+            ? {
+                offers: {
+                  "@type": "Offer",
+                  price: product.structuredData.price,
+                  priceCurrency: product.structuredData.currencyCode,
+                  availability: `https://schema.org/${product.structuredData.availability}`,
+                  url: canonicalUrl,
+                  seller: {
+                    "@type": "Organization",
+                    name: "OLFFY",
+                  },
+                },
+              }
+            : {}),
+        }
+      : null;
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
@@ -130,10 +140,12 @@ export default async function ProductPage({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
-      />
+      {productSchema ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        />
+      ) : null}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
