@@ -7,7 +7,15 @@ import { SiteFooter } from "components/olffy/site-footer";
 const filters = ["Categoria", "Precio", "Ordenar"];
 
 export const metadata = {
-  title: "Tienda",
+  title: "Tienda de papelería ilustrada",
+  description:
+    "Explora toda la papelería OLFFY: agendas, libretas ilustradas, stickers, kits de regalo y accesorios. Diseño chileno hecho con amor desde Viña del Mar.",
+  openGraph: {
+    title: "Tienda OLFFY | Papelería chilena ilustrada",
+    description:
+      "Agendas, libretas, stickers y regalos con diseño desde Viña del Mar.",
+    type: "website",
+  },
 };
 
 export default async function StorePage() {

@@ -12,10 +12,17 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   validateEnvironmentVariables();
 
-  const routesMap = [""].map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: new Date().toISOString(),
-  }));
+  const now = new Date().toISOString();
+
+  // Rutas estáticas públicas — nunca incluir /admin, /cuenta, /api, /auth
+  const staticRoutes: Route[] = [
+    { url: `${baseUrl}/`, lastModified: now },
+    { url: `${baseUrl}/tienda`, lastModified: now },
+    { url: `${baseUrl}/novedades`, lastModified: now },
+    { url: `${baseUrl}/regalos`, lastModified: now },
+    { url: `${baseUrl}/nuestra-historia`, lastModified: now },
+    { url: `${baseUrl}/contacto`, lastModified: now },
+  ];
 
   const collectionsPromise = getCollections().then((collections) =>
     collections.map((collection) => ({
@@ -24,9 +31,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   );
 
+  // La URL canónica de producto en OLFFY es /producto/[handle]
+  // /product/[handle] redirige a /producto/[handle] — no debe estar en sitemap
   const productsPromise = getProducts({}).then((products) =>
     products.map((product) => ({
-      url: `${baseUrl}/product/${product.handle}`,
+      url: `${baseUrl}/producto/${product.handle}`,
       lastModified: product.updatedAt,
     })),
   );
@@ -48,5 +57,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     throw JSON.stringify(error, null, 2);
   }
 
-  return [...routesMap, ...fetchedRoutes];
+  return [...staticRoutes, ...fetchedRoutes];
 }

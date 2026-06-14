@@ -1,5 +1,13 @@
 import { Suspense } from "react";
 import AccountLoading from "./loading";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AccountRootLayout({
   children,

@@ -8,6 +8,8 @@ import {
   getOlffyProducts,
 } from "components/olffy/shopify-products";
 import { SiteFooter } from "components/olffy/site-footer";
+import { baseUrl } from "lib/utils";
+import type { Metadata } from "next";
 
 export async function generateStaticParams() {
   const products = await getOlffyProducts();
@@ -19,12 +21,40 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
-}) {
+}): Promise<Metadata> {
   const { id } = await params;
   const product = await getOlffyProduct(id);
 
+  if (!product) {
+    return { title: "Producto no encontrado" };
+  }
+
+  const canonicalUrl = `${baseUrl}/producto/${product.handle}`;
+  const description =
+    product.description ||
+    `${product.name} — papelería OLFFY con diseño desde Viña del Mar.`;
+
   return {
-    title: product?.name ?? "Producto",
+    title: product.name,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${product.name} | OLFFY`,
+      description,
+      url: canonicalUrl,
+      type: "website",
+      images: product.image
+        ? [{ url: product.image, alt: product.name }]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | OLFFY`,
+      description,
+      images: product.image ? [product.image] : undefined,
+    },
   };
 }
 
@@ -46,8 +76,68 @@ export default async function ProductPage({
     )
     .slice(0, 3);
 
+  const canonicalUrl = `${baseUrl}/producto/${product.handle}`;
+  const description =
+    product.description ||
+    `${product.name} — papelería OLFFY con diseño desde Viña del Mar.`;
+
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description,
+    image: product.image,
+    url: canonicalUrl,
+    offers: {
+      "@type": "Offer",
+      price: product.price,
+      priceCurrency: product.currencyCode,
+      availability: product.availableForSale
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      url: canonicalUrl,
+      seller: {
+        "@type": "Organization",
+        name: "OLFFY",
+      },
+    },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: `${baseUrl}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Tienda",
+        item: `${baseUrl}/tienda`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.name,
+        item: canonicalUrl,
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <section className="px-5 py-12">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="relative aspect-[4/5] overflow-hidden rounded-[8px] border-2 border-olffy-ink bg-olffy-cream">

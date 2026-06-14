@@ -4,8 +4,13 @@ import { defaultSort, sorting } from "lib/constants";
 import { getProducts } from "lib/shopify";
 
 export const metadata = {
-  title: "Search",
-  description: "Search for products in the store.",
+  title: "Buscar productos",
+  description:
+    "Busca entre toda la papelería OLFFY: agendas, libretas, stickers y más.",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default async function SearchPage(props: {
