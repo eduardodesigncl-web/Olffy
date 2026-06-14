@@ -65,7 +65,9 @@ export default async function StorePage() {
             ))}
           </div>
           <div className="mt-14 flex justify-end gap-4 font-brand text-lg font-black">
-            <span className="rounded-[6px] bg-olffy-ink px-3 py-1 text-white">1</span>
+            <span className="rounded-[6px] bg-olffy-ink px-3 py-1 text-white">
+              1
+            </span>
             <span>2</span>
             <span>3</span>
             <span>4</span>

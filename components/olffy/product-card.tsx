@@ -35,7 +35,9 @@ export function ProductCard({ product }: { product: OlffyProduct }) {
             </p>
           ) : null}
         </div>
-        <p className="font-semibold text-olffy-ink">{formatPrice(product.price)}</p>
+        <p className="font-semibold text-olffy-ink">
+          {formatPrice(product.price)}
+        </p>
       </div>
     </Link>
   );

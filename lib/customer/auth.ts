@@ -45,10 +45,27 @@ export async function isEnrolledCustomer(email: string): Promise<boolean> {
   return Boolean(data);
 }
 
-export async function bindCustomerAccount(
+function registrationProfile(user: User) {
+  const metadata = user.user_metadata as Record<string, unknown>;
+
+  return {
+    source:
+      typeof metadata.registration_source === "string"
+        ? metadata.registration_source
+        : null,
+    fullName:
+      typeof metadata.full_name === "string"
+        ? metadata.full_name.trim() || null
+        : null,
+    phone:
+      typeof metadata.phone === "string" ? metadata.phone.trim() || null : null,
+  };
+}
+
+export async function completeVerifiedCustomerAccount(
   user: User,
 ): Promise<CustomerAccount | null> {
-  if (!user.email) {
+  if (!user.email || !user.email_confirmed_at) {
     return null;
   }
 
@@ -63,39 +80,83 @@ export async function bindCustomerAccount(
     throw new Error(`No se pudo vincular la cuenta: ${findError.message}`);
   }
 
-  if (!existing) {
-    return null;
-  }
-
-  if (existing.auth_user_id && existing.auth_user_id !== user.id) {
+  if (existing?.auth_user_id && existing.auth_user_id !== user.id) {
     throw new Error("Esta cuenta de puntos ya esta vinculada a otro acceso.");
   }
 
-  if (existing.auth_user_id === user.id) {
+  if (existing?.auth_user_id === user.id) {
     return existing as CustomerAccount;
   }
 
-  const { data: linked, error: updateError } = await admin
-    .from("loyalty_customers")
-    .update({ auth_user_id: user.id })
-    .eq("id", existing.id)
-    .is("auth_user_id", null)
-    .select(customerFields)
-    .maybeSingle();
+  const profile = registrationProfile(user);
 
-  if (updateError) {
-    throw new Error(`No se pudo vincular la cuenta: ${updateError.message}`);
+  if (existing) {
+    const { data: linked, error: updateError } = await admin
+      .from("loyalty_customers")
+      .update({
+        auth_user_id: user.id,
+        full_name: existing.full_name ?? profile.fullName,
+        phone: existing.phone ?? profile.phone,
+      })
+      .eq("id", existing.id)
+      .is("auth_user_id", null)
+      .select(customerFields)
+      .maybeSingle();
+
+    if (updateError) {
+      throw new Error(`No se pudo vincular la cuenta: ${updateError.message}`);
+    }
+
+    if (linked) {
+      return linked as CustomerAccount;
+    }
+
+    const { data: concurrent, error: concurrentError } = await admin
+      .from("loyalty_customers")
+      .select(customerFields)
+      .eq("id", existing.id)
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (concurrentError) {
+      throw new Error(
+        `No se pudo confirmar la cuenta: ${concurrentError.message}`,
+      );
+    }
+
+    return (concurrent as CustomerAccount | null) ?? null;
   }
 
-  if (linked) {
-    return linked as CustomerAccount;
+  if (profile.source !== "customer_account") {
+    return null;
+  }
+
+  const { data: created, error: createError } = await admin
+    .from("loyalty_customers")
+    .insert({
+      auth_user_id: user.id,
+      email: normalizedEmail(user.email),
+      full_name: profile.fullName,
+      phone: profile.phone,
+      metadata: {
+        registration_source: profile.source,
+      },
+    })
+    .select(customerFields)
+    .single();
+
+  if (!createError) {
+    return created as CustomerAccount;
+  }
+
+  if (createError.code !== "23505") {
+    throw new Error(`No se pudo crear la cuenta: ${createError.message}`);
   }
 
   const { data: concurrent, error: concurrentError } = await admin
     .from("loyalty_customers")
     .select(customerFields)
-    .eq("id", existing.id)
-    .eq("auth_user_id", user.id)
+    .ilike("email", normalizedEmail(user.email))
     .maybeSingle();
 
   if (concurrentError) {
@@ -104,7 +165,11 @@ export async function bindCustomerAccount(
     );
   }
 
-  return (concurrent as CustomerAccount | null) ?? null;
+  if (concurrent?.auth_user_id === user.id) {
+    return concurrent as CustomerAccount;
+  }
+
+  throw new Error("No se pudo vincular la cuenta de fidelizacion.");
 }
 
 export async function getCustomerAccountState(): Promise<CustomerAccountState> {
@@ -121,22 +186,11 @@ export async function getCustomerAccountState(): Promise<CustomerAccountState> {
     return { status: "signed_out" };
   }
 
-  let { data: customer, error } = await supabase
+  const { data: customer, error } = await supabase
     .from("loyalty_customers")
     .select(customerFields)
     .eq("auth_user_id", user.id)
     .maybeSingle();
-
-  if (!customer && !error) {
-    await bindCustomerAccount(user);
-    const result = await supabase
-      .from("loyalty_customers")
-      .select(customerFields)
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-    customer = result.data;
-    error = result.error;
-  }
 
   if (error) {
     throw new Error(`No se pudo cargar la cuenta: ${error.message}`);

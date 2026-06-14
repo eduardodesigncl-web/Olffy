@@ -14,9 +14,6 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
-  // Extraer el ID limpio si estamos editando
-  const cleanId = initialData?.id ? initialData.id.split("/").pop() : "";
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -24,12 +21,17 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
     descriptionHtml: initialData?.descriptionHtml || "",
     status: initialData?.status || "ACTIVE",
     price: initialData?.variants?.edges?.[0]?.node?.price || "",
-    inventoryQuantity: initialData?.variants?.edges?.[0]?.node?.inventoryQuantity || 0,
+    inventoryQuantity:
+      initialData?.variants?.edges?.[0]?.node?.inventoryQuantity || 0,
     tags: initialData?.tags?.join(", ") || "",
     imageUrl: initialData?.images?.edges?.[0]?.node?.url || "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -45,7 +47,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
         title: formData.title,
         descriptionHtml: formData.descriptionHtml,
         status: formData.status,
-        tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: formData.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
       };
 
       // Si es crear, agregamos el precio inicial (como variante por defecto)
@@ -56,15 +61,17 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
             inventoryQuantities: [
               {
                 availableQuantity: Number(formData.inventoryQuantity),
-                // Aquí deberíamos pasar el locationId, pero por simplicidad de la API a veces 
+                // Aquí deberíamos pasar el locationId, pero por simplicidad de la API a veces
                 // es mejor manejar el inventario en una mutación separada o usar el default
-              }
-            ]
-          }
+              },
+            ],
+          },
         ];
       }
 
-      const url = isEdit ? `/api/admin/products/${cleanId}` : "/api/admin/products";
+      const url = isEdit
+        ? `/api/admin/products/${encodeURIComponent(initialData?.id || "")}`
+        : "/api/admin/products";
       const method = isEdit ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -76,7 +83,11 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
       const data = await res.json();
 
       if (!res.ok || data.errors) {
-        setError(data.errors?.[0]?.message || data.error || "Error al guardar el producto");
+        setError(
+          data.errors?.[0]?.message ||
+            data.error ||
+            "Error al guardar el producto",
+        );
       } else {
         router.push("/admin/productos");
         router.refresh();
@@ -89,7 +100,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 divide-y divide-gray-200">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-8 divide-y divide-gray-200"
+    >
       <div className="space-y-6 sm:space-y-5">
         <div>
           <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -102,7 +116,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
 
         <div className="space-y-6 sm:space-y-5">
           <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2"
+            >
               Nombre del producto *
             </label>
             <div className="mt-1 sm:col-span-2 sm:mt-0">
@@ -119,7 +136,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
           </div>
 
           <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
-            <label htmlFor="descriptionHtml" className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            <label
+              htmlFor="descriptionHtml"
+              className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2"
+            >
               Descripción
             </label>
             <div className="mt-1 sm:col-span-2 sm:mt-0">
@@ -135,7 +155,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
           </div>
 
           <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            <label
+              htmlFor="price"
+              className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2"
+            >
               Precio (CLP)
             </label>
             <div className="mt-1 sm:col-span-2 sm:mt-0">
@@ -150,12 +173,19 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
                 disabled={isEdit} // Por simplicidad, en MVP no editamos precio aquí (requiere mutar variante)
                 className="block w-full max-w-lg rounded-md border-gray-300 shadow-sm focus:border-olffy-purple focus:ring-olffy-purple sm:max-w-xs sm:text-sm p-2 border disabled:bg-gray-100"
               />
-              {isEdit && <p className="mt-1 text-xs text-gray-500">Para editar el precio, hazlo desde Shopify Admin.</p>}
+              {isEdit && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Para editar el precio, hazlo desde Shopify Admin.
+                </p>
+              )}
             </div>
           </div>
 
           <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2"
+            >
               Estado
             </label>
             <div className="mt-1 sm:col-span-2 sm:mt-0">
@@ -174,7 +204,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
           </div>
 
           <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
-            <label htmlFor="tags" className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            <label
+              htmlFor="tags"
+              className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2"
+            >
               Etiquetas (separadas por coma)
             </label>
             <div className="mt-1 sm:col-span-2 sm:mt-0">

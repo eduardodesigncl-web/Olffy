@@ -34,14 +34,21 @@ html {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(250, 180, 5, 0.18), transparent 32rem),
+    radial-gradient(
+      circle at top left,
+      rgba(250, 180, 5, 0.18),
+      transparent 32rem
+    ),
     linear-gradient(180deg, #fffdf7 0%, #fff5d9 100%);
   color: #343434;
-  font-family: var(--font-geist-sans), Poppins, ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    var(--font-geist-sans), Poppins, ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-brand {
-  font-family: "Comic Sans MS", "Trebuchet MS", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    "Comic Sans MS", "Trebuchet MS", var(--font-geist-sans), ui-sans-serif,
+    system-ui, sans-serif;
   letter-spacing: 0;
 }
 

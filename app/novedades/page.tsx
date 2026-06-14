@@ -12,7 +12,9 @@ export const metadata = {
 export default async function NewsPage() {
   const products = await getOlffyProducts();
   const newProducts = products.filter((product) => product.tag === "Nuevo");
-  const visibleProducts = newProducts.length ? newProducts : products.slice(0, 6);
+  const visibleProducts = newProducts.length
+    ? newProducts
+    : products.slice(0, 6);
 
   return (
     <>
@@ -34,7 +36,9 @@ export default async function NewsPage() {
               />
             </div>
             <div className="rounded-[8px] border-2 border-olffy-ink bg-white p-8">
-              <h2 className="font-brand text-3xl font-black">Coleccion reciente</h2>
+              <h2 className="font-brand text-3xl font-black">
+                Coleccion reciente
+              </h2>
               <p className="mt-4 leading-7 text-olffy-muted">
                 Una seleccion de planners, notas y detalles para transformar
                 rutinas pequeñas en momentos creativos.

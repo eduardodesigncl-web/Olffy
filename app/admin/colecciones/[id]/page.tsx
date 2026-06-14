@@ -1,5 +1,6 @@
 import { CollectionForm } from "components/admin/collection-form";
 import { getAdminCollection } from "lib/shopify/admin";
+import { normalizeShopifyGid } from "lib/shopify/gid";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
@@ -11,8 +12,9 @@ export default async function EditarColeccionPage({
   await connection();
 
   const { id } = await params;
-  const fullId = `gid://shopify/Collection/${id}`;
-  const collection = await getAdminCollection(fullId);
+  const collection = await getAdminCollection(
+    normalizeShopifyGid("Collection", id),
+  );
 
   if (!collection) {
     notFound();

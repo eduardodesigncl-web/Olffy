@@ -1,5 +1,6 @@
 import { ProductForm } from "components/admin/product-form";
 import { getAdminProduct } from "lib/shopify/admin";
+import { normalizeShopifyGid } from "lib/shopify/gid";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
@@ -10,11 +11,8 @@ export default async function EditarProductoPage({
 }) {
   await connection();
 
-  // Reconstruimos el ID de Shopify (Shopify Admin API requiere GIDs completos)
   const { id } = await params;
-  const fullId = `gid://shopify/Product/${id}`;
-  
-  const product = await getAdminProduct(fullId);
+  const product = await getAdminProduct(normalizeShopifyGid("Product", id));
 
   if (!product) {
     notFound();

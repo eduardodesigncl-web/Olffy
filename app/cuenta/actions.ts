@@ -1,11 +1,10 @@
 "use server";
 
 import { requireCustomerAccount } from "lib/customer/auth";
-import { createLoyaltyCustomer } from "lib/loyalty/service";
 import { requestCustomerReward } from "lib/customer/redemptions";
-import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getSupabaseServer } from "lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 function message(cause: unknown) {
@@ -37,6 +36,74 @@ function requiredString(formData: FormData, key: string) {
   }
 
   return value;
+}
+
+function isExistingAccountError(cause: unknown) {
+  const normalized = cause instanceof Error ? cause.message.toLowerCase() : "";
+
+  return (
+    normalized.includes("already registered") ||
+    normalized.includes("already exists") ||
+    normalized.includes("user already")
+  );
+}
+
+function registrationErrorMessage(cause: unknown) {
+  const normalized = cause instanceof Error ? cause.message.toLowerCase() : "";
+
+  if (normalized.includes("al menos 8 caracteres")) {
+    return "La contraseña debe tener al menos 8 caracteres.";
+  }
+
+  if (normalized.includes("no coinciden")) {
+    return "Las contraseñas no coinciden.";
+  }
+
+  if (isExistingAccountError(cause)) {
+    return "Este correo ya tiene una cuenta. Ingresa o recupera tu contraseña.";
+  }
+
+  if (
+    normalized.includes("rate limit") ||
+    normalized.includes("too many requests")
+  ) {
+    return "Espera unos minutos antes de intentar registrarte nuevamente.";
+  }
+
+  if (normalized.includes("invalid email")) {
+    return "Ingresa un correo electrónico válido.";
+  }
+
+  return "No pudimos completar el registro. Intenta nuevamente.";
+}
+
+async function getSiteOrigin() {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL;
+
+  if (configuredUrl) {
+    const url = configuredUrl.startsWith("http")
+      ? configuredUrl
+      : `https://${configuredUrl}`;
+
+    return new URL(url).origin;
+  }
+
+  const requestHeaders = await headers();
+  const host =
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const protocol =
+    requestHeaders.get("x-forwarded-proto") ??
+    (process.env.NODE_ENV === "production" ? "https" : "http");
+
+  if (!host) {
+    throw new Error("No se pudo determinar la URL del sitio.");
+  }
+
+  return `${protocol}://${host}`;
 }
 
 export async function requestMagicLinkAction(formData: FormData) {
@@ -75,8 +142,6 @@ export async function registerCustomerAction(formData: FormData) {
   const phone = requiredString(formData, "phone");
   const password = requiredString(formData, "password");
   const passwordConfirmation = requiredString(formData, "passwordConfirmation");
-  let createdCustomerId: number | null = null;
-  let createdAuthUserId: string | null = null;
 
   try {
     if (password.length < 8) {
@@ -87,107 +152,32 @@ export async function registerCustomerAction(formData: FormData) {
       throw new Error("Las contraseñas no coinciden.");
     }
 
-    const admin = getSupabaseAdmin();
-    const { data: existingCustomer, error: customerError } = await admin
-      .from("loyalty_customers")
-      .select("id, auth_user_id")
-      .ilike("email", email)
-      .maybeSingle();
-
-    if (customerError) {
-      throw customerError;
-    }
-
-    if (existingCustomer?.auth_user_id) {
-      redirect(
-        `/cuenta/login?mode=login&error=${encodeURIComponent("Este correo ya tiene una cuenta. Ingresa con tu contraseña.")}`,
-      );
-    }
-
-    const { data: usersData, error: usersError } =
-      await admin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      });
-
-    if (usersError) {
-      throw usersError;
-    }
-
-    const existingAuthUser = usersData.users.find(
-      (user) => user.email?.toLowerCase() === email,
-    );
-    const { data: authData, error: authError } = existingAuthUser
-      ? await admin.auth.admin.updateUserById(existingAuthUser.id, {
-          password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: fullName,
-            phone,
-          },
-        })
-      : await admin.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: fullName,
-            phone,
-          },
-        });
-
-    if (authError || !authData.user) {
-      throw authError ?? new Error("No se pudo crear el acceso.");
-    }
-
-    if (!existingAuthUser) {
-      createdAuthUserId = authData.user.id;
-    }
-
-    if (existingCustomer) {
-      const { error: updateError } = await admin
-        .from("loyalty_customers")
-        .update({
-          auth_user_id: authData.user.id,
-          full_name: fullName,
-          phone,
-        })
-        .eq("id", existingCustomer.id)
-        .is("auth_user_id", null);
-
-      if (updateError) {
-        throw updateError;
-      }
-    } else {
-      const customer = await createLoyaltyCustomer({
-        email,
-        fullName,
-        phone,
-        metadata: {
-          registration_source: "customer_account",
-        },
-      });
-      createdCustomerId = customer.id;
-
-      const { error: linkError } = await admin
-        .from("loyalty_customers")
-        .update({ auth_user_id: authData.user.id })
-        .eq("id", customer.id)
-        .is("auth_user_id", null);
-
-      if (linkError) {
-        throw linkError;
-      }
-    }
-
     const supabase = await getSupabaseServer();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const origin = await getSiteOrigin();
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${origin}/auth/confirm?next=/cuenta`,
+        data: {
+          full_name: fullName,
+          phone,
+          registration_source: "customer_account",
+        },
+      },
     });
 
-    if (signInError) {
-      throw signInError;
+    if (error) {
+      throw error;
+    }
+
+    if (data.session) {
+      await supabase.auth.signOut();
+      redirect(
+        `/cuenta/login?mode=register&error=${encodeURIComponent(
+          "El registro requiere verificación por correo. Contacta a OLFFY si el problema continúa.",
+        )}`,
+      );
     }
   } catch (cause) {
     if (
@@ -199,24 +189,15 @@ export async function registerCustomerAction(formData: FormData) {
       throw cause;
     }
 
-    if (createdAuthUserId) {
-      await getSupabaseAdmin().auth.admin.deleteUser(createdAuthUserId);
-    }
-
-    if (createdCustomerId) {
-      await getSupabaseAdmin()
-        .from("loyalty_customers")
-        .delete()
-        .eq("id", createdCustomerId)
-        .is("auth_user_id", null);
-    }
-
+    const mode = isExistingAccountError(cause) ? "login" : "register";
     redirect(
-      `/cuenta/login?mode=register&error=${encodeURIComponent(message(cause))}`,
+      `/cuenta/login?mode=${mode}&error=${encodeURIComponent(
+        registrationErrorMessage(cause),
+      )}`,
     );
   }
 
-  redirect("/cuenta");
+  redirect("/cuenta/login?mode=login&verification=sent");
 }
 
 export async function signOutCustomerAction() {

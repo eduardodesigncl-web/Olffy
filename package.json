@@ -6,7 +6,9 @@
     "start": "next start",
     "prettier": "prettier --write --ignore-unknown .",
     "prettier:check": "prettier --check --ignore-unknown .",
-    "test": "npm run prettier:check"
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && npm run prettier:check",
+    "build:check": "npm run test && npm run build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

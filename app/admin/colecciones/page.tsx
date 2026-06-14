@@ -11,7 +11,9 @@ export default async function AdminCollectionsPage() {
     <div className="space-y-6">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-brand font-black text-olffy-ink">Colecciones</h1>
+          <h1 className="text-3xl font-brand font-black text-olffy-ink">
+            Colecciones
+          </h1>
           <p className="mt-2 text-sm text-gray-700">
             Lista de todas las colecciones (categorías) de tu tienda.
           </p>
@@ -34,24 +36,34 @@ export default async function AdminCollectionsPage() {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                    <th
+                      scope="col"
+                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    >
                       Título
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Handle
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Productos
                     </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <th
+                      scope="col"
+                      className="relative py-3.5 pl-3 pr-4 sm:pr-6"
+                    >
                       <span className="sr-only">Acciones</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {collections.map((collection) => {
-                    const cleanId = collection.id.split("/").pop();
-
                     return (
                       <tr key={collection.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
@@ -65,10 +77,13 @@ export default async function AdminCollectionsPage() {
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           <Link
-                            href={`/admin/colecciones/${cleanId}`}
+                            href={`/admin/colecciones/${encodeURIComponent(collection.id)}`}
                             className="text-olffy-purple hover:text-olffy-ink"
                           >
-                            Editar<span className="sr-only">, {collection.title}</span>
+                            Editar
+                            <span className="sr-only">
+                              , {collection.title}
+                            </span>
                           </Link>
                         </td>
                       </tr>
@@ -76,7 +91,10 @@ export default async function AdminCollectionsPage() {
                   })}
                   {collections.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-sm text-gray-500">
+                      <td
+                        colSpan={4}
+                        className="py-8 text-center text-sm text-gray-500"
+                      >
                         No hay colecciones en la tienda.
                       </td>
                     </tr>

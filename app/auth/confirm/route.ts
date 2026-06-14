@@ -1,5 +1,5 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { bindCustomerAccount } from "lib/customer/auth";
+import { completeVerifiedCustomerAccount } from "lib/customer/auth";
 import { hasSupabasePublicConfig } from "lib/supabase/config";
 import { getSupabaseServer } from "lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -56,7 +56,25 @@ export async function GET(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !(await bindCustomerAccount(user))) {
+  let customer = null;
+
+  try {
+    customer = user ? await completeVerifiedCustomerAccount(user) : null;
+  } catch (cause) {
+    console.error("No se pudo vincular la cuenta de cliente.", cause);
+    await supabase.auth.signOut();
+
+    return NextResponse.redirect(
+      new URL(
+        `/cuenta/login?error=${encodeURIComponent(
+          "No pudimos vincular tu cuenta. Contacta a OLFFY.",
+        )}`,
+        url.origin,
+      ),
+    );
+  }
+
+  if (!user || !customer) {
     await supabase.auth.signOut();
     return NextResponse.redirect(
       new URL("/cuenta/login?error=no-inscrita", url.origin),

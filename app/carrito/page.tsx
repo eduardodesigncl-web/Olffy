@@ -9,10 +9,12 @@ export const metadata = {
 };
 
 export default async function CartPage() {
-  const cartItems = (await getOlffyProducts()).slice(0, 4).map((product, index) => ({
-    product,
-    quantity: index === 1 ? 2 : 1,
-  }));
+  const cartItems = (await getOlffyProducts())
+    .slice(0, 4)
+    .map((product, index) => ({
+      product,
+      quantity: index === 1 ? 2 : 1,
+    }));
   const subtotal = cartItems.reduce(
     (total, item) => total + item.product.price * item.quantity,
     0,

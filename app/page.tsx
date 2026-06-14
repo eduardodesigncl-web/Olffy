@@ -94,7 +94,10 @@ export default async function HomePage() {
             <h2 className="font-brand text-3xl font-black text-olffy-ink">
               Nuevos productos
             </h2>
-            <Link href="/tienda" className="text-sm font-bold text-olffy-purple">
+            <Link
+              href="/tienda"
+              className="text-sm font-bold text-olffy-purple"
+            >
               Ver todo
             </Link>
           </div>
@@ -113,9 +116,9 @@ export default async function HomePage() {
               Conoce OLFFY
             </h2>
             <p className="text-lg leading-8 text-olffy-muted">
-              Somos una marca chilena de papeleria que conecta productos de
-              alta calidad con artistas locales. Nuestra tienda en Viña del Mar
-              es un puente entre la creacion y el publico.
+              Somos una marca chilena de papeleria que conecta productos de alta
+              calidad con artistas locales. Nuestra tienda en Viña del Mar es un
+              puente entre la creacion y el publico.
             </p>
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">

@@ -12,7 +12,9 @@ export default async function AdminProductsPage() {
     <div className="space-y-6">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-brand font-black text-olffy-ink">Productos</h1>
+          <h1 className="text-3xl font-brand font-black text-olffy-ink">
+            Productos
+          </h1>
           <p className="mt-2 text-sm text-gray-700">
             Lista de todos los productos en tu inventario.
           </p>
@@ -35,19 +37,34 @@ export default async function AdminProductsPage() {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                    <th
+                      scope="col"
+                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                    >
                       Producto
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Estado
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Inventario
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
                       Precio
                     </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <th
+                      scope="col"
+                      className="relative py-3.5 pl-3 pr-4 sm:pr-6"
+                    >
                       <span className="sr-only">Acciones</span>
                     </th>
                   </tr>
@@ -55,18 +72,17 @@ export default async function AdminProductsPage() {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {products.map((product) => {
                     // Calculamos el inventario total sumando las cantidades de todas las variantes
-                    const totalInventory = product.variants?.edges?.reduce((acc, edge) => {
-                      return acc + (edge?.node?.inventoryQuantity || 0);
-                    }, 0) || 0;
+                    const totalInventory =
+                      product.variants?.edges?.reduce((acc, edge) => {
+                        return acc + (edge?.node?.inventoryQuantity || 0);
+                      }, 0) || 0;
 
                     // Obtenemos el precio de la primera variante
-                    const price = product.variants?.edges?.[0]?.node?.price || "0.00";
-                    
+                    const price =
+                      product.variants?.edges?.[0]?.node?.price || "0.00";
+
                     // Obtenemos la primera imagen
                     const imageUrl = product.images?.edges?.[0]?.node?.url;
-
-                    // Obtenemos el ID limpio (sin gid://shopify/Product/)
-                    const cleanId = product.id.split("/").pop();
 
                     return (
                       <tr key={product.id}>
@@ -88,7 +104,9 @@ export default async function AdminProductsPage() {
                               )}
                             </div>
                             <div className="ml-4">
-                              <div className="font-medium text-gray-900">{product.title}</div>
+                              <div className="font-medium text-gray-900">
+                                {product.title}
+                              </div>
                               <div className="text-gray-500 text-xs mt-1 truncate max-w-[200px]">
                                 {product.handle}
                               </div>
@@ -96,13 +114,15 @@ export default async function AdminProductsPage() {
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                            product.status === "ACTIVE" 
-                              ? "bg-green-50 text-green-700 ring-green-600/20" 
-                              : product.status === "DRAFT"
-                                ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20"
-                                : "bg-gray-50 text-gray-600 ring-gray-500/10"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                              product.status === "ACTIVE"
+                                ? "bg-green-50 text-green-700 ring-green-600/20"
+                                : product.status === "DRAFT"
+                                  ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20"
+                                  : "bg-gray-50 text-gray-600 ring-gray-500/10"
+                            }`}
+                          >
                             {product.status}
                           </span>
                         </td>
@@ -114,10 +134,11 @@ export default async function AdminProductsPage() {
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           <Link
-                            href={`/admin/productos/${cleanId}`}
+                            href={`/admin/productos/${encodeURIComponent(product.id)}`}
                             className="text-olffy-purple hover:text-olffy-ink"
                           >
-                            Editar<span className="sr-only">, {product.title}</span>
+                            Editar
+                            <span className="sr-only">, {product.title}</span>
                           </Link>
                         </td>
                       </tr>
@@ -125,7 +146,10 @@ export default async function AdminProductsPage() {
                   })}
                   {products.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-sm text-gray-500">
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-sm text-gray-500"
+                      >
                         No hay productos en el inventario.
                       </td>
                     </tr>

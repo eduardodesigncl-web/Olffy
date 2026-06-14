@@ -14,8 +14,6 @@ export function CollectionForm({ initialData, isEdit }: CollectionFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
-  const cleanId = initialData?.id ? initialData.id.split("/").pop() : "";
 
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -36,7 +34,9 @@ export function CollectionForm({ initialData, isEdit }: CollectionFormProps) {
         title: formData.title,
       };
 
-      const url = isEdit ? `/api/admin/collections/${cleanId}` : "/api/admin/collections";
+      const url = isEdit
+        ? `/api/admin/collections/${encodeURIComponent(initialData?.id || "")}`
+        : "/api/admin/collections";
       const method = isEdit ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -48,7 +48,11 @@ export function CollectionForm({ initialData, isEdit }: CollectionFormProps) {
       const data = await res.json();
 
       if (!res.ok || data.errors) {
-        setError(data.errors?.[0]?.message || data.error || "Error al guardar la colección");
+        setError(
+          data.errors?.[0]?.message ||
+            data.error ||
+            "Error al guardar la colección",
+        );
       } else {
         router.push("/admin/colecciones");
         router.refresh();
@@ -61,7 +65,10 @@ export function CollectionForm({ initialData, isEdit }: CollectionFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 divide-y divide-gray-200">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-8 divide-y divide-gray-200"
+    >
       <div className="space-y-6 sm:space-y-5">
         <div>
           <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -74,7 +81,10 @@ export function CollectionForm({ initialData, isEdit }: CollectionFormProps) {
 
         <div className="space-y-6 sm:space-y-5">
           <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2"
+            >
               Título de la colección *
             </label>
             <div className="mt-1 sm:col-span-2 sm:mt-0">

@@ -1,4 +1,4 @@
-import { requireAdminSession } from "lib/admin/auth";
+import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import { searchAdminProductVariants } from "lib/shopify/admin";
 import { connection, NextResponse } from "next/server";
 
@@ -8,9 +8,10 @@ function errorMessage(error: unknown): string {
 
 export async function GET(request: Request) {
   await connection();
+  const unauthorized = await getAdminApiUnauthorizedResponse();
+  if (unauthorized) return unauthorized;
 
   try {
-    await requireAdminSession();
     const query = new URL(request.url).searchParams.get("q") ?? "";
     const variants = await searchAdminProductVariants(query, 30);
 

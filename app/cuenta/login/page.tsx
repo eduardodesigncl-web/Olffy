@@ -31,6 +31,7 @@ export default async function CustomerLoginPage({
     error?: string;
     signedOut?: string;
     mode?: string;
+    verification?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -82,7 +83,7 @@ export default async function CustomerLoginPage({
           </h2>
           <p className="mt-3 text-sm leading-6 text-olffy-muted">
             {isRegister
-              ? "Crea tu cuenta gratis y entra inmediatamente a tu nuevo dashboard."
+              ? "Crea tu cuenta gratis. Te enviaremos un correo para verificarla antes de entrar."
               : "Ingresa con el correo y la contraseña de tu cuenta OLFFY."}
           </p>
 
@@ -114,6 +115,12 @@ export default async function CustomerLoginPage({
           {params.signedOut ? (
             <div className="mt-6 rounded-[6px] border border-olffy-purple/30 bg-olffy-purple/5 p-4 text-sm text-olffy-purple">
               Cerraste tu sesion correctamente.
+            </div>
+          ) : null}
+          {params.verification === "sent" ? (
+            <div className="mt-6 rounded-[6px] border border-olffy-purple/30 bg-olffy-purple/5 p-4 text-sm text-olffy-purple">
+              Revisa tu correo y confirma tu cuenta antes de ingresar. Si ya
+              tenías una cuenta, ingresa o recupera tu contraseña.
             </div>
           ) : null}
           {errorText(params.error) ? (
@@ -214,7 +221,9 @@ export default async function CustomerLoginPage({
               disabled={!configured}
               className="h-12 w-full rounded-[6px] bg-olffy-ink px-5 font-brand font-black text-white transition hover:bg-olffy-purple disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              {isRegister ? "Crear cuenta y continuar" : "Entrar a mi cuenta"}
+              {isRegister
+                ? "Crear cuenta y verificar correo"
+                : "Entrar a mi cuenta"}
               <ArrowRightIcon className="ml-2 inline h-4 w-4" />
             </button>
           </form>

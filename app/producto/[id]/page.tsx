@@ -41,7 +41,8 @@ export default async function ProductPage({
   const products = await getOlffyProducts();
   const related = products
     .filter(
-      (item) => item.category === product.category && item.handle !== product.handle,
+      (item) =>
+        item.category === product.category && item.handle !== product.handle,
     )
     .slice(0, 3);
 

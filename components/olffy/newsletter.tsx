@@ -1,7 +1,9 @@
 export function NewsletterBand() {
   return (
     <section className="bg-olffy-purple px-5 py-20 text-center text-white">
-      <p className="font-brand text-2xl font-black">Unete a la comunidad Olffy</p>
+      <p className="font-brand text-2xl font-black">
+        Unete a la comunidad Olffy
+      </p>
       <p className="mx-auto mt-3 max-w-xl text-sm text-white/80">
         Recibe lanzamientos, descuentos y colaboraciones con artistas chilenos.
       </p>

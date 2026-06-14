@@ -1,5 +1,6 @@
 import { ensureStartsWith } from "lib/utils";
 import { isShopifyError } from "lib/type-guards";
+import { normalizeShopifyGid } from "lib/shopify/gid";
 import { createHash } from "node:crypto";
 import type {
   AdminConnection,
@@ -855,7 +856,7 @@ export async function getAdminProduct(
 ): Promise<AdminProduct | null> {
   const res = await adminFetch<AdminProductOperation>({
     query: getProductQuery,
-    variables: { id },
+    variables: { id: normalizeShopifyGid("Product", id) },
   });
   return res.body.data.product || null;
 }
@@ -871,7 +872,12 @@ export async function createAdminProduct(input: any): Promise<any> {
 export async function updateAdminProduct(input: any): Promise<any> {
   const res = await adminFetch<any>({
     query: productUpdateMutation,
-    variables: { input },
+    variables: {
+      input: {
+        ...input,
+        id: normalizeShopifyGid("Product", input.id),
+      },
+    },
   });
   return res.body.data.productUpdate;
 }
@@ -879,7 +885,9 @@ export async function updateAdminProduct(input: any): Promise<any> {
 export async function deleteAdminProduct(id: string): Promise<any> {
   const res = await adminFetch<any>({
     query: productDeleteMutation,
-    variables: { input: { id } },
+    variables: {
+      input: { id: normalizeShopifyGid("Product", id) },
+    },
   });
   return res.body.data.productDelete;
 }
@@ -897,7 +905,7 @@ export async function getAdminCollection(
 ): Promise<AdminCollection | null> {
   const res = await adminFetch<AdminCollectionOperation>({
     query: getCollectionQuery,
-    variables: { id },
+    variables: { id: normalizeShopifyGid("Collection", id) },
   });
   return res.body.data.collection || null;
 }
@@ -913,7 +921,12 @@ export async function createAdminCollection(input: any): Promise<any> {
 export async function updateAdminCollection(input: any): Promise<any> {
   const res = await adminFetch<any>({
     query: collectionUpdateMutation,
-    variables: { input },
+    variables: {
+      input: {
+        ...input,
+        id: normalizeShopifyGid("Collection", input.id),
+      },
+    },
   });
   return res.body.data.collectionUpdate;
 }
@@ -921,7 +934,9 @@ export async function updateAdminCollection(input: any): Promise<any> {
 export async function deleteAdminCollection(id: string): Promise<any> {
   const res = await adminFetch<any>({
     query: collectionDeleteMutation,
-    variables: { input: { id } },
+    variables: {
+      input: { id: normalizeShopifyGid("Collection", id) },
+    },
   });
   return res.body.data.collectionDelete;
 }

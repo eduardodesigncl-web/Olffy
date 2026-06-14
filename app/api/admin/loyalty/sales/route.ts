@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { requireAdminSession } from "lib/admin/auth";
+import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import {
   calculatePointsForAmount,
   claimPhysicalSalePosAttempt,
@@ -58,8 +58,10 @@ function positiveAmount(value: unknown, label: string): number {
 }
 
 export async function GET() {
+  const unauthorized = await getAdminApiUnauthorizedResponse();
+  if (unauthorized) return unauthorized;
+
   try {
-    await requireAdminSession();
     await checkAdminOrderAccess();
 
     return NextResponse.json({ ordersAccess: true });
@@ -73,12 +75,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const unauthorized = await getAdminApiUnauthorizedResponse();
+  if (unauthorized) return unauthorized;
+
   let attempt:
     | Awaited<ReturnType<typeof claimPhysicalSalePosAttempt>>
     | undefined;
 
   try {
-    await requireAdminSession();
     const body = (await request.json()) as SaleRequest;
     const tuuTransactionId = requiredText(
       body.tuuTransactionId,
