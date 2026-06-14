@@ -1050,24 +1050,3 @@ export async function getRewardRedemption(
 
   return data as RewardRedemption;
 }
-
-export async function updateRedemptionStatus(input: {
-  redemptionId: number;
-  status: "fulfilled";
-  createdBy: string;
-}): Promise<RewardRedemption> {
-  const { data, error } = await getSupabaseAdmin().rpc(
-    "update_reward_redemption_status",
-    {
-      p_redemption_id: input.redemptionId,
-      p_status: input.status,
-      p_created_by: input.createdBy.trim(),
-    },
-  );
-
-  if (error) {
-    throwSupabaseError("No se pudo actualizar el estado del canje", error);
-  }
-
-  return data as RewardRedemption;
-}

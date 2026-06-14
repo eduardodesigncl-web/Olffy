@@ -349,7 +349,8 @@ export default async function LoyaltyCustomerDetailPage({
                   </td>
                   <td className="px-4 py-4 text-gray-500">
                     <p>{transaction.description || transaction.source}</p>
-                    {transaction.transaction_type !== "reversed" ? (
+                    {transaction.transaction_type !== "reversed" &&
+                    transaction.source !== "reward_redemption" ? (
                       <form
                         action={reverseTransactionAction}
                         className="mt-2 flex flex-wrap gap-2"

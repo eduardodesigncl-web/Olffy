@@ -15,6 +15,8 @@ Configura estas variables en Vercel para conectar el inventario:
 - `SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN`: alternativa explicita para token publico.
 - `SHOPIFY_REVALIDATION_SECRET`: opcional para webhooks de revalidacion.
 - `SHOPIFY_ADMIN_API_ACCESS_TOKEN`: token Admin API para el panel personalizado.
+  Debe ser un access token real; un Client Secret con prefijo `shpss_` no sirve
+  como token.
 - `SHOPIFY_ADMIN_API_CLIENT_ID` y `SHOPIFY_ADMIN_API_CLIENT_SECRET`: alternativa
   recomendada para una app propia instalada. El backend obtiene y renueva el
   access token automaticamente.
@@ -22,6 +24,9 @@ Configura estas variables en Vercel para conectar el inventario:
 - `ADMIN_PASSWORD`: contrasena para entrar a `/admin/login`.
 
 No subas un archivo `.env` real al repositorio.
+
+El despliegue y QA de los canjes conectados con Shopify se documentan en
+[docs/deployment-shopify-discounts.md](docs/deployment-shopify-discounts.md).
 
 ## Shopify
 

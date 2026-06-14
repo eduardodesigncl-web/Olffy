@@ -39,6 +39,94 @@ comment on column public.reward_redemptions.shopify_discount_status is
 comment on column public.reward_redemptions.shopify_discount_ends_at is
   'La vigencia se calcula desde la aprobacion. Un descuento vencido y sin usos devuelve puntos cuando se procesa su conciliacion.';
 
+create or replace function public.reverse_loyalty_transaction(
+  p_transaction_id bigint,
+  p_reason text,
+  p_created_by text
+)
+returns bigint
+language plpgsql
+set search_path = ''
+as $$
+declare
+  original_transaction public.loyalty_transactions%rowtype;
+  reversal_id bigint;
+begin
+  if nullif(trim(p_reason), '') is null then
+    raise exception 'A reversal requires a reason';
+  end if;
+
+  if nullif(trim(p_created_by), '') is null then
+    raise exception 'A reversal requires a responsible actor';
+  end if;
+
+  select *
+    into original_transaction
+    from public.loyalty_transactions
+    where id = p_transaction_id
+    for update;
+
+  if not found then
+    raise exception 'Loyalty transaction % does not exist', p_transaction_id;
+  end if;
+
+  if original_transaction.transaction_type = 'reversed' then
+    raise exception 'A reversal transaction cannot be reversed';
+  end if;
+
+  if original_transaction.source = 'reward_redemption' then
+    raise exception 'Reward redemption transactions must use the Shopify-aware cancellation workflow';
+  end if;
+
+  insert into public.loyalty_transactions (
+    customer_id,
+    transaction_type,
+    points,
+    source,
+    external_reference,
+    description,
+    created_by,
+    metadata
+  )
+  values (
+    original_transaction.customer_id,
+    'reversed',
+    -original_transaction.points,
+    'system',
+    'reversal:' || original_transaction.id,
+    trim(p_reason),
+    trim(p_created_by),
+    jsonb_build_object(
+      'original_transaction_id', original_transaction.id,
+      'original_source', original_transaction.source
+    )
+  )
+  returning id into reversal_id;
+
+  insert into public.audit_log (
+    entity_type,
+    entity_id,
+    action,
+    actor,
+    old_data,
+    new_data
+  )
+  values (
+    'loyalty_transaction',
+    original_transaction.id::text,
+    'reversed',
+    trim(p_created_by),
+    to_jsonb(original_transaction),
+    jsonb_build_object(
+      'reversal_transaction_id', reversal_id,
+      'reason', trim(p_reason)
+    )
+  );
+
+  return reversal_id;
+end;
+$$;
+
 create or replace function public.redeem_loyalty_reward(
   p_customer_id bigint,
   p_reward_id bigint,
@@ -705,25 +793,8 @@ returns public.reward_redemptions
 language plpgsql
 set search_path = ''
 as $$
-declare
-  updated_record public.reward_redemptions%rowtype;
 begin
-  if p_status <> 'fulfilled' then
-    raise exception 'Approval must create a Shopify discount first';
-  end if;
-
-  update public.reward_redemptions
-    set status = 'fulfilled',
-        fulfilled_at = now()
-    where id = p_redemption_id
-      and status = 'approved'
-    returning * into updated_record;
-
-  if not found then
-    raise exception 'Reward redemption % is not approved', p_redemption_id;
-  end if;
-
-  return updated_record;
+  raise exception 'Use Shopify usage verification before fulfilling a redemption';
 end;
 $$;
 
@@ -741,6 +812,12 @@ begin
 end;
 $$;
 
+revoke all on function public.reverse_loyalty_transaction(bigint, text, text)
+  from public, anon, authenticated;
+revoke all on function public.update_reward_redemption_status(bigint, text, text)
+  from public, anon, authenticated;
+revoke all on function public.cancel_reward_redemption(bigint, text, text)
+  from public, anon, authenticated;
 revoke all on function public.begin_reward_redemption_approval(bigint, text)
   from public, anon, authenticated;
 revoke all on function public.complete_reward_redemption_approval(
@@ -818,3 +895,9 @@ grant execute on function public.mark_reward_redemption_reconciliation_required(
   text,
   text
 ) to service_role;
+grant execute on function public.reverse_loyalty_transaction(bigint, text, text)
+  to service_role;
+grant execute on function public.update_reward_redemption_status(bigint, text, text)
+  to service_role;
+grant execute on function public.cancel_reward_redemption(bigint, text, text)
+  to service_role;
