@@ -4,15 +4,18 @@ import { requireAdminSession } from "lib/admin/auth";
 import {
   adjustCustomerPoints,
   calculatePointsForAmount,
-  cancelRewardRedemption,
   createLoyaltyCustomer,
   createReward,
   getActiveLoyaltyRule,
   redeemReward,
   registerPhysicalSale,
   reversePointsTransaction,
-  updateRedemptionStatus,
 } from "lib/loyalty/service";
+import {
+  approveRewardRedemption,
+  cancelShopifyRewardRedemption,
+  syncShopifyRewardRedemptionUsage,
+} from "lib/loyalty/redemptions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -131,11 +134,23 @@ export async function updateRedemptionStatusAction(formData: FormData) {
   const customerId = requiredNumber(formData, "customerId");
 
   try {
-    await updateRedemptionStatus({
-      redemptionId: requiredNumber(formData, "redemptionId"),
-      status: requiredString(formData, "status") as "approved" | "fulfilled",
-      createdBy: requiredString(formData, "createdBy"),
-    });
+    const redemptionId = requiredNumber(formData, "redemptionId");
+    const status = requiredString(formData, "status");
+    const createdBy = requiredString(formData, "createdBy");
+
+    if (status === "approved") {
+      await approveRewardRedemption({
+        redemptionId,
+        createdBy,
+      });
+    } else if (status === "fulfilled") {
+      await syncShopifyRewardRedemptionUsage({
+        redemptionId,
+        createdBy,
+      });
+    } else {
+      throw new Error("Estado de canje no soportado");
+    }
   } catch (cause) {
     redirect(
       `/admin/puntos/clientes/${customerId}?error=${encodeURIComponent(errorMessage(cause))}`,
@@ -143,6 +158,8 @@ export async function updateRedemptionStatusAction(formData: FormData) {
   }
 
   revalidatePath(`/admin/puntos/clientes/${customerId}`);
+  revalidatePath("/cuenta");
+  revalidatePath("/cuenta/canjes");
   redirect(`/admin/puntos/clientes/${customerId}?redemptionUpdated=1`);
 }
 
@@ -151,10 +168,11 @@ export async function cancelRedemptionAction(formData: FormData) {
   const customerId = requiredNumber(formData, "customerId");
 
   try {
-    await cancelRewardRedemption({
+    await cancelShopifyRewardRedemption({
       redemptionId: requiredNumber(formData, "redemptionId"),
       reason: requiredString(formData, "reason"),
       createdBy: requiredString(formData, "createdBy"),
+      expired: String(formData.get("expired") ?? "") === "1",
     });
   } catch (cause) {
     redirect(
@@ -164,6 +182,8 @@ export async function cancelRedemptionAction(formData: FormData) {
 
   revalidatePath("/admin/puntos");
   revalidatePath(`/admin/puntos/clientes/${customerId}`);
+  revalidatePath("/cuenta");
+  revalidatePath("/cuenta/canjes");
   redirect(`/admin/puntos/clientes/${customerId}?redemptionCancelled=1`);
 }
 

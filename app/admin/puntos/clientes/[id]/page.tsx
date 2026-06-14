@@ -140,8 +140,8 @@ export default async function LoyaltyCustomerDetailPage({
           <div>
             <h2 className="font-semibold text-gray-900">Crear canje</h2>
             <p className="mt-1 text-xs text-gray-500">
-              Genera un codigo interno. La creacion del descuento en Shopify
-              corresponde a la fase de canjes conectados.
+              Reserva los puntos. El descuento Shopify se crea cuando un
+              administrador aprueba el canje.
             </p>
           </div>
           <select
@@ -177,103 +177,133 @@ export default async function LoyaltyCustomerDetailPage({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-900">Canjes</h2>
         <div className="grid gap-4">
-          {redemptions.map((redemption) => (
-            <div
-              key={redemption.id}
-              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {redemption.rewards?.name || "Recompensa"}
-                  </p>
-                  <p className="mt-1 font-mono text-sm text-olffy-purple">
-                    {redemption.redemption_code}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {numberFormatter.format(redemption.points_spent)} pts ·{" "}
-                    {redemption.expires_at
-                      ? `vence ${dateFormatter.format(new Date(redemption.expires_at))}`
-                      : "sin vencimiento"}
-                  </p>
-                </div>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  {redemption.status}
-                </span>
-              </div>
+          {redemptions.map((redemption) => {
+            const isExpired =
+              redemption.status === "approved" &&
+              Boolean(redemption.shopify_discount_ends_at) &&
+              new Date(redemption.shopify_discount_ends_at!).getTime() <=
+                Date.now();
 
-              {redemption.status === "requested" ||
-              redemption.status === "approved" ? (
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <form
-                    action={updateRedemptionStatusAction}
-                    className="flex flex-wrap gap-2"
-                  >
-                    <input
-                      type="hidden"
-                      name="customerId"
-                      value={customer.id}
-                    />
-                    <input
-                      type="hidden"
-                      name="redemptionId"
-                      value={redemption.id}
-                    />
-                    <input
-                      type="hidden"
-                      name="status"
-                      value={
-                        redemption.status === "requested"
-                          ? "approved"
-                          : "fulfilled"
-                      }
-                    />
-                    <input
-                      required
-                      name="createdBy"
-                      placeholder="Responsable"
-                      className="min-w-40 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    />
-                    <button className="rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold">
-                      {redemption.status === "requested"
-                        ? "Aprobar"
-                        : "Marcar entregado"}
-                    </button>
-                  </form>
-                  <form
-                    action={cancelRedemptionAction}
-                    className="flex flex-wrap gap-2"
-                  >
-                    <input
-                      type="hidden"
-                      name="customerId"
-                      value={customer.id}
-                    />
-                    <input
-                      type="hidden"
-                      name="redemptionId"
-                      value={redemption.id}
-                    />
-                    <input
-                      required
-                      name="reason"
-                      placeholder="Motivo de cancelacion"
-                      className="min-w-40 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    />
-                    <input
-                      required
-                      name="createdBy"
-                      placeholder="Responsable"
-                      className="min-w-32 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                    />
-                    <button className="rounded-md border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">
-                      Cancelar
-                    </button>
-                  </form>
+            return (
+              <div
+                key={redemption.id}
+                className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {redemption.rewards?.name || "Recompensa"}
+                    </p>
+                    {redemption.shopify_discount_code ? (
+                      <p className="mt-1 font-mono text-sm text-olffy-purple">
+                        {redemption.shopify_discount_code}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-xs text-gray-500">
+                      {numberFormatter.format(redemption.points_spent)} pts ·{" "}
+                      {redemption.shopify_discount_ends_at
+                        ? `vence ${dateFormatter.format(new Date(redemption.shopify_discount_ends_at))}`
+                        : "sin vencimiento"}
+                    </p>
+                    {redemption.shopify_discount_last_error ? (
+                      <p className="mt-2 text-xs text-red-700">
+                        Shopify: {redemption.shopify_discount_last_error}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                    {redemption.status}
+                  </span>
                 </div>
-              ) : null}
-            </div>
-          ))}
+
+                {redemption.status === "requested" ||
+                redemption.status === "approved" ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {!isExpired ? (
+                      <form
+                        action={updateRedemptionStatusAction}
+                        className="flex flex-wrap gap-2"
+                      >
+                        <input
+                          type="hidden"
+                          name="customerId"
+                          value={customer.id}
+                        />
+                        <input
+                          type="hidden"
+                          name="redemptionId"
+                          value={redemption.id}
+                        />
+                        <input
+                          type="hidden"
+                          name="status"
+                          value={
+                            redemption.status === "requested"
+                              ? "approved"
+                              : "fulfilled"
+                          }
+                        />
+                        <input
+                          required
+                          name="createdBy"
+                          placeholder="Responsable"
+                          className="min-w-40 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                        <button className="rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold">
+                          {redemption.status === "requested"
+                            ? "Aprobar y crear descuento"
+                            : "Verificar uso en Shopify"}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="text-sm text-gray-600">
+                        El descuento vencio. Procesa el vencimiento para
+                        comprobar uso y devolver puntos cuando corresponda.
+                      </div>
+                    )}
+                    <form
+                      action={cancelRedemptionAction}
+                      className="flex flex-wrap gap-2"
+                    >
+                      <input
+                        type="hidden"
+                        name="customerId"
+                        value={customer.id}
+                      />
+                      <input
+                        type="hidden"
+                        name="redemptionId"
+                        value={redemption.id}
+                      />
+                      <input
+                        required
+                        name="reason"
+                        defaultValue={isExpired ? "Vencimiento sin uso" : ""}
+                        placeholder={
+                          isExpired
+                            ? "Motivo de vencimiento"
+                            : "Motivo de cancelacion"
+                        }
+                        className="min-w-40 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      />
+                      <input
+                        required
+                        name="createdBy"
+                        placeholder="Responsable"
+                        className="min-w-32 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      />
+                      {isExpired ? (
+                        <input type="hidden" name="expired" value="1" />
+                      ) : null}
+                      <button className="rounded-md border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">
+                        {isExpired ? "Procesar vencimiento" : "Cancelar"}
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
           {redemptions.length === 0 ? (
             <p className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500">
               Este cliente aun no tiene canjes.

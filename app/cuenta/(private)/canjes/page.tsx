@@ -20,6 +20,12 @@ const statusData = {
     color: "bg-amber-100 text-amber-800",
     icon: ClockIcon,
   },
+  creating: {
+    label: "Creando descuento",
+    detail: "Shopify esta procesando tu beneficio.",
+    color: "bg-amber-100 text-amber-800",
+    icon: ClockIcon,
+  },
   approved: {
     label: "Aprobado",
     detail: "Tu beneficio esta listo para usar.",
@@ -36,6 +42,30 @@ const statusData = {
     label: "Cancelado",
     detail: "Los puntos fueron devueltos cuando correspondia.",
     color: "bg-red-100 text-red-800",
+    icon: NoSymbolIcon,
+  },
+  cancelling: {
+    label: "Cancelando",
+    detail: "Estamos desactivando el descuento antes de devolver los puntos.",
+    color: "bg-amber-100 text-amber-800",
+    icon: ClockIcon,
+  },
+  expired: {
+    label: "Vencido",
+    detail: "El descuento vencio sin uso y los puntos fueron devueltos.",
+    color: "bg-gray-100 text-gray-700",
+    icon: NoSymbolIcon,
+  },
+  reconciliation_required: {
+    label: "En revision",
+    detail: "El equipo OLFFY esta conciliando este beneficio con Shopify.",
+    color: "bg-amber-100 text-amber-800",
+    icon: ClockIcon,
+  },
+  expired_pending: {
+    label: "Vencido",
+    detail: "El descuento ya no puede usarse y espera conciliacion de puntos.",
+    color: "bg-gray-100 text-gray-700",
     icon: NoSymbolIcon,
   },
 };
@@ -75,11 +105,15 @@ export default async function CustomerRedemptionsPage({
 
       <div className="mt-8 grid gap-5">
         {redemptions.map((redemption) => {
-          const state = statusData[redemption.status];
+          const isPastEnd =
+            redemption.status === "approved" &&
+            Boolean(redemption.shopify_discount_ends_at) &&
+            new Date(redemption.shopify_discount_ends_at!).getTime() <=
+              Date.now();
+          const state =
+            statusData[isPastEnd ? "expired_pending" : redemption.status];
           const Icon = state.icon;
-          const showCode =
-            redemption.status === "approved" ||
-            redemption.status === "fulfilled";
+          const showCode = redemption.status === "approved" && !isPastEnd;
 
           return (
             <article
@@ -112,19 +146,19 @@ export default async function CustomerRedemptionsPage({
                   <p className="mt-4 text-sm text-olffy-muted">
                     {state.detail}
                   </p>
-                  {showCode && redemption.redemption_code ? (
+                  {showCode && redemption.shopify_discount_code ? (
                     <div className="mt-5 rounded-[6px] border-2 border-dashed border-olffy-purple bg-purple-50 p-4">
                       <p className="text-xs font-bold uppercase tracking-widest text-olffy-purple">
                         Codigo de canje
                       </p>
                       <p className="mt-2 font-mono text-xl font-black text-olffy-ink">
-                        {redemption.redemption_code}
+                        {redemption.shopify_discount_code}
                       </p>
-                      {redemption.expires_at ? (
+                      {redemption.shopify_discount_ends_at ? (
                         <p className="mt-2 text-xs text-olffy-muted">
                           Vigente hasta{" "}
                           {dateFormatter.format(
-                            new Date(redemption.expires_at),
+                            new Date(redemption.shopify_discount_ends_at),
                           )}
                         </p>
                       ) : null}

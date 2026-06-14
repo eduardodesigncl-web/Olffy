@@ -51,6 +51,10 @@ export type CustomerRedemption = Pick<
   | "points_spent"
   | "status"
   | "redemption_code"
+  | "shopify_discount_code"
+  | "shopify_discount_status"
+  | "shopify_discount_ends_at"
+  | "shopify_discount_usage_count"
   | "redeemed_at"
   | "expires_at"
   | "fulfilled_at"
@@ -120,7 +124,7 @@ export async function getCustomerRedemptions(
   const { data, error } = await getSupabaseAdmin()
     .from("reward_redemptions")
     .select(
-      "id, customer_id, reward_id, loyalty_transaction_id, points_spent, status, redemption_code, redeemed_at, expires_at, fulfilled_at, cancelled_at, cancellation_reason, created_at, updated_at, rewards(name, discount_amount_clp)",
+      "id, customer_id, reward_id, loyalty_transaction_id, points_spent, status, redemption_code, shopify_discount_code, shopify_discount_status, shopify_discount_ends_at, shopify_discount_usage_count, redeemed_at, expires_at, fulfilled_at, cancelled_at, cancellation_reason, created_at, updated_at, rewards(name, discount_amount_clp)",
     )
     .eq("customer_id", customerId)
     .order("redeemed_at", { ascending: false });
@@ -129,15 +133,21 @@ export async function getCustomerRedemptions(
     fail("No se pudieron cargar los canjes", error);
   }
 
-  return ((data ?? []) as unknown as CustomerRedemption[]).map(
-    (redemption) => ({
+  return ((data ?? []) as unknown as CustomerRedemption[]).map((redemption) => {
+    const isCurrent =
+      redemption.status === "approved" &&
+      Boolean(redemption.shopify_discount_code) &&
+      (!redemption.shopify_discount_ends_at ||
+        new Date(redemption.shopify_discount_ends_at).getTime() > Date.now());
+
+    return {
       ...redemption,
-      redemption_code:
-        redemption.status === "approved" || redemption.status === "fulfilled"
-          ? redemption.redemption_code
-          : null,
-    }),
-  );
+      redemption_code: isCurrent ? redemption.shopify_discount_code : null,
+      shopify_discount_code: isCurrent
+        ? redemption.shopify_discount_code
+        : null,
+    };
+  });
 }
 
 export async function getCustomerRule(): Promise<CustomerRule> {
@@ -169,7 +179,11 @@ export async function getCustomerOverview(customer: CustomerAccount) {
     null;
   const pendingRedemptions = redemptions.filter(
     (redemption) =>
-      redemption.status === "requested" || redemption.status === "approved",
+      redemption.status === "requested" ||
+      redemption.status === "creating" ||
+      redemption.status === "approved" ||
+      redemption.status === "cancelling" ||
+      redemption.status === "reconciliation_required",
   );
 
   return {

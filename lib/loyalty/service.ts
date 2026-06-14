@@ -131,8 +131,24 @@ export type RewardRedemption = {
   reward_id: number;
   loyalty_transaction_id: number | null;
   points_spent: number;
-  status: "requested" | "approved" | "fulfilled" | "cancelled";
+  status:
+    | "requested"
+    | "creating"
+    | "approved"
+    | "cancelling"
+    | "fulfilled"
+    | "cancelled"
+    | "expired"
+    | "reconciliation_required";
   redemption_code: string | null;
+  shopify_discount_node_id: string | null;
+  shopify_discount_code: string | null;
+  shopify_discount_status: string | null;
+  shopify_discount_created_at: string | null;
+  shopify_discount_ends_at: string | null;
+  shopify_discount_deactivated_at: string | null;
+  shopify_discount_usage_count: number;
+  shopify_discount_last_error: string | null;
   metadata: Record<string, unknown>;
   redeemed_at: string;
   expires_at: string | null;
@@ -764,8 +780,6 @@ export async function redeemReward(input: {
 }): Promise<{
   redemptionId: number;
   transactionId: number;
-  redemptionCode: string;
-  expiresAt: string;
 }> {
   const { data, error } = await getSupabaseAdmin().rpc(
     "redeem_loyalty_reward",
@@ -786,9 +800,223 @@ export async function redeemReward(input: {
   return {
     redemptionId: toNumber(result.redemption_id),
     transactionId: toNumber(result.transaction_id),
-    redemptionCode: String(result.redemption_code),
-    expiresAt: String(result.expires_at),
   };
+}
+
+export type RewardApprovalPreparation = {
+  redemptionId: number;
+  rewardName: string;
+  discountAmountClp: number;
+  minimumPurchaseClp: number;
+  validityDays: number;
+  shopifyCustomerId: string | null;
+  shopifyDiscountCode: string;
+};
+
+export async function beginRewardRedemptionApproval(input: {
+  redemptionId: number;
+  createdBy: string;
+}): Promise<RewardApprovalPreparation> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "begin_reward_redemption_approval",
+    {
+      p_redemption_id: input.redemptionId,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo iniciar la aprobación", error);
+  }
+
+  const result = data as Record<string, unknown>;
+
+  return {
+    redemptionId: toNumber(result.redemption_id),
+    rewardName: String(result.reward_name),
+    discountAmountClp: toNumber(result.discount_amount_clp),
+    minimumPurchaseClp: toNumber(result.minimum_purchase_clp),
+    validityDays: toNumber(result.validity_days),
+    shopifyCustomerId: result.shopify_customer_id
+      ? String(result.shopify_customer_id)
+      : null,
+    shopifyDiscountCode: String(result.shopify_discount_code),
+  };
+}
+
+export async function completeRewardRedemptionApproval(input: {
+  redemptionId: number;
+  shopifyDiscountNodeId: string;
+  shopifyDiscountCreatedAt: string;
+  shopifyDiscountEndsAt: string;
+  createdBy: string;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "complete_reward_redemption_approval",
+    {
+      p_redemption_id: input.redemptionId,
+      p_shopify_discount_node_id: input.shopifyDiscountNodeId,
+      p_shopify_discount_created_at: input.shopifyDiscountCreatedAt,
+      p_shopify_discount_ends_at: input.shopifyDiscountEndsAt,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo finalizar la aprobación", error);
+  }
+
+  return data as RewardRedemption;
+}
+
+export async function failRewardRedemptionApproval(input: {
+  redemptionId: number;
+  error: string;
+  requiresReconciliation: boolean;
+  createdBy: string;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "fail_reward_redemption_approval",
+    {
+      p_redemption_id: input.redemptionId,
+      p_error: input.error,
+      p_requires_reconciliation: input.requiresReconciliation,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo registrar el fallo de aprobación", error);
+  }
+
+  return data as RewardRedemption;
+}
+
+export type RewardCancellationPreparation = {
+  requiresShopify: boolean;
+  shopifyDiscountNodeId: string | null;
+  shopifyDiscountCode: string | null;
+  shopifyDiscountEndsAt: string | null;
+};
+
+export async function beginRewardRedemptionCancellation(input: {
+  redemptionId: number;
+  reason: string;
+  createdBy: string;
+}): Promise<RewardCancellationPreparation> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "begin_reward_redemption_cancellation",
+    {
+      p_redemption_id: input.redemptionId,
+      p_reason: input.reason.trim(),
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo iniciar la cancelación", error);
+  }
+
+  const result = data as Record<string, unknown>;
+
+  return {
+    requiresShopify: Boolean(result.requires_shopify),
+    shopifyDiscountNodeId: result.shopify_discount_node_id
+      ? String(result.shopify_discount_node_id)
+      : null,
+    shopifyDiscountCode: result.shopify_discount_code
+      ? String(result.shopify_discount_code)
+      : null,
+    shopifyDiscountEndsAt: result.shopify_discount_ends_at
+      ? String(result.shopify_discount_ends_at)
+      : null,
+  };
+}
+
+export async function completeRewardRedemptionCancellation(input: {
+  redemptionId: number;
+  reason: string;
+  createdBy: string;
+  expired: boolean;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "complete_reward_redemption_cancellation",
+    {
+      p_redemption_id: input.redemptionId,
+      p_reason: input.reason.trim(),
+      p_created_by: input.createdBy.trim(),
+      p_expired: input.expired,
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo finalizar la cancelación", error);
+  }
+
+  return toNumber(data);
+}
+
+export async function failRewardRedemptionCancellation(input: {
+  redemptionId: number;
+  error: string;
+  createdBy: string;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "fail_reward_redemption_cancellation",
+    {
+      p_redemption_id: input.redemptionId,
+      p_error: input.error,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo registrar el fallo de cancelación", error);
+  }
+
+  return data as RewardRedemption;
+}
+
+export async function markRewardRedemptionUsed(input: {
+  redemptionId: number;
+  usageCount: number;
+  createdBy: string;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "mark_reward_redemption_used",
+    {
+      p_redemption_id: input.redemptionId,
+      p_usage_count: input.usageCount,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo registrar el uso del descuento", error);
+  }
+
+  return data as RewardRedemption;
+}
+
+export async function markRewardRedemptionReconciliationRequired(input: {
+  redemptionId: number;
+  error: string;
+  createdBy: string;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "mark_reward_redemption_reconciliation_required",
+    {
+      p_redemption_id: input.redemptionId,
+      p_error: input.error,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo marcar la conciliación pendiente", error);
+  }
+
+  return data as RewardRedemption;
 }
 
 export async function getCustomerRedemptions(
@@ -807,9 +1035,25 @@ export async function getCustomerRedemptions(
   return (data ?? []) as RewardRedemption[];
 }
 
+export async function getRewardRedemption(
+  redemptionId: number,
+): Promise<RewardRedemption> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("reward_redemptions")
+    .select("*")
+    .eq("id", redemptionId)
+    .single();
+
+  if (error) {
+    throwSupabaseError("No se pudo cargar el canje", error);
+  }
+
+  return data as RewardRedemption;
+}
+
 export async function updateRedemptionStatus(input: {
   redemptionId: number;
-  status: "approved" | "fulfilled";
+  status: "fulfilled";
   createdBy: string;
 }): Promise<RewardRedemption> {
   const { data, error } = await getSupabaseAdmin().rpc(
@@ -826,25 +1070,4 @@ export async function updateRedemptionStatus(input: {
   }
 
   return data as RewardRedemption;
-}
-
-export async function cancelRewardRedemption(input: {
-  redemptionId: number;
-  reason: string;
-  createdBy: string;
-}): Promise<number> {
-  const { data, error } = await getSupabaseAdmin().rpc(
-    "cancel_reward_redemption",
-    {
-      p_redemption_id: input.redemptionId,
-      p_reason: input.reason.trim(),
-      p_created_by: input.createdBy.trim(),
-    },
-  );
-
-  if (error) {
-    throwSupabaseError("No se pudo cancelar el canje", error);
-  }
-
-  return toNumber(data);
 }

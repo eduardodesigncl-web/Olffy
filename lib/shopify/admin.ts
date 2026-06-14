@@ -50,6 +50,7 @@ const adminAccessDeniedHelp =
   "El token no tiene permisos Admin API suficientes para ese recurso. " +
   "El token de automatizacion de la app no sirve como Admin API access token. " +
   "Para el POS se requieren read_products, read_inventory, read_orders y write_orders. " +
+  "Para canjes Shopify se requieren read_discounts y write_discounts. " +
   "Usa un Admin API access token generado desde una Custom App instalada en Shopify Admin con esos permisos, " +
   "o implementa OAuth si estas usando una app del Dev Dashboard.";
 

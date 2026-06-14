@@ -28,9 +28,17 @@ export type CustomerPortalRedemption = {
   id: number;
   customer_id: number;
   points_spent: number;
-  status: "requested" | "approved" | "fulfilled" | "cancelled";
+  status:
+    | "requested"
+    | "creating"
+    | "approved"
+    | "cancelling"
+    | "fulfilled"
+    | "cancelled"
+    | "expired"
+    | "reconciliation_required";
   redeemed_at: string;
-  redemption_code: string | null;
+  shopify_discount_code: string | null;
   loyalty_customers:
     | { email: string; full_name: string | null }
     | { email: string; full_name: string | null }[]
@@ -63,7 +71,7 @@ export async function getCustomerPortalDashboard() {
       supabase
         .from("reward_redemptions")
         .select(
-          "id, customer_id, points_spent, status, redeemed_at, redemption_code, loyalty_customers(email, full_name), rewards(name)",
+          "id, customer_id, points_spent, status, redeemed_at, shopify_discount_code, loyalty_customers(email, full_name), rewards(name)",
         )
         .order("redeemed_at", { ascending: false }),
     ],
@@ -115,7 +123,11 @@ export async function getCustomerPortalDashboard() {
     pendingRedemptions: redemptions
       .filter(
         (redemption) =>
-          redemption.status === "requested" || redemption.status === "approved",
+          redemption.status === "requested" ||
+          redemption.status === "creating" ||
+          redemption.status === "approved" ||
+          redemption.status === "cancelling" ||
+          redemption.status === "reconciliation_required",
       )
       .slice(0, 6),
   };
