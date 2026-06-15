@@ -10,19 +10,21 @@ export function getSupabaseAdmin(): SupabaseClient {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!supabaseUrl) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL environment variable is not set");
   }
 
-  if (!serviceRoleKey) {
+  if (!secretKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY environment variable is not set",
+      "SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY environment variable is not set",
     );
   }
 
-  adminClient = createClient(supabaseUrl, serviceRoleKey, {
+  adminClient = createClient(supabaseUrl, secretKey, {
     auth: {
       autoRefreshToken: false,
       detectSessionInUrl: false,

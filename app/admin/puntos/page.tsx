@@ -45,6 +45,7 @@ export default async function AdminPointsPage() {
 
     if (
       message.includes("NEXT_PUBLIC_SUPABASE_URL") ||
+      message.includes("SUPABASE_SECRET_KEY") ||
       message.includes("SUPABASE_SERVICE_ROLE_KEY")
     ) {
       error =

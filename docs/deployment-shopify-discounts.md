@@ -4,23 +4,24 @@ Este runbook cubre el despliegue de los canjes de puntos conectados con
 descuentos reales de Shopify. No reemplaza un respaldo de base de datos ni una
 ventana de despliegue controlada.
 
-## Estado verificado el 14 de junio de 2026
+## Estado verificado el 15 de junio de 2026
 
 - `shopify.app.toml` declara `read_discounts` y `write_discounts`.
 - `shopify app config validate --json` finaliza sin errores.
-- La migracion `20260614123525_connect_reward_redemptions_to_shopify_discounts.sql`
-  aun no esta aplicada en `olffy-production`.
+- La migracion `20260615161412_connect_reward_redemptions_to_shopify_discounts.sql`
+  fue aplicada en `olffy-production`.
 - Produccion tiene 0 canjes y 0 transacciones con origen `reward_redemption`.
 - Las 4 recompensas activas son descuentos con monto y vigencia validos.
 - El entorno local no esta listo para una prueba real: el valor configurado
   como `SHOPIFY_ADMIN_API_ACCESS_TOKEN` comienza con `shpss_` y corresponde a
   un Client Secret, no a un Admin API access token.
 - Vercel tiene dos proyectos conectados al mismo repositorio:
-  - `olffy-iqal`: el despliegue del commit de la Tarea 6 esta `READY`.
+  - `olffy-iqal`: el Preview de `codex/shopify-loyalty-discounts` esta `READY`
+    y conectado a Supabase.
   - `olffy`: el mismo commit falla porque el proyecto exige un Output Directory
     `public` después de ejecutar correctamente `next build`.
-- Vercel CLI no tiene una sesion autenticada ni un proyecto enlazado en este
-  workspace, por lo que las variables remotas deben verificarse en el Dashboard.
+- Las variables de Supabase estan configuradas en el entorno `Preview` de
+  `olffy-iqal`.
 
 ## Variables de entorno
 
@@ -36,7 +37,7 @@ Configurar como secretos de Vercel para `Production`:
     obtiene el token mediante client credentials.
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_KEY` (recomendado) o `SUPABASE_SERVICE_ROLE_KEY` (legacy)
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`: valor largo, aleatorio y distinto por entorno.
 - `NEXT_PUBLIC_SITE_URL`: URL canonica de produccion usada por los callbacks de
