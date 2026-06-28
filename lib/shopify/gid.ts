@@ -1,4 +1,8 @@
-export type ShopifyResourceType = "Collection" | "Customer" | "Product";
+export type ShopifyResourceType =
+  | "Collection"
+  | "Customer"
+  | "Order"
+  | "Product";
 
 function decodeShopifyId(id: string) {
   const trimmed = id.trim();

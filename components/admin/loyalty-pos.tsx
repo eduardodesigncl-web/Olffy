@@ -184,6 +184,7 @@ export function LoyaltyPos({
         shopifyOrderName?: string;
         physicalSaleId?: number;
         alreadyCompleted?: boolean;
+        transactionPipelineWarning?: string;
       };
 
       if (!response.ok) {
@@ -191,7 +192,7 @@ export function LoyaltyPos({
       }
 
       setSuccess(
-        `${data.alreadyCompleted ? "Venta recuperada" : "Venta completada"}: orden ${data.shopifyOrderName || "Shopify"} y registro #${data.physicalSaleId}.`,
+        `${data.alreadyCompleted ? "Venta recuperada" : "Venta completada"}: orden ${data.shopifyOrderName || "Shopify"} y registro #${data.physicalSaleId}.${data.transactionPipelineWarning ? ` Requiere conciliacion: ${data.transactionPipelineWarning}` : ""}`,
       );
       setCart([]);
       setBenefitType("none");

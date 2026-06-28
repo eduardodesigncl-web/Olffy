@@ -11,7 +11,7 @@ export function getAdminPassword(): string | undefined {
 }
 
 function getAdminSessionSecret(): string {
-  const secret = process.env.ADMIN_SESSION_SECRET || getAdminPassword();
+  const secret = process.env.ADMIN_SESSION_SECRET?.trim();
 
   if (!secret) {
     throw new Error("ADMIN_SESSION_SECRET no esta configurado");

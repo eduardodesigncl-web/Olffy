@@ -14,6 +14,7 @@ import {
   createOrFindPaidPhysicalOrder,
   getAdminProductVariantsByIds,
 } from "lib/shopify/admin";
+import { finalizePhysicalOperation } from "lib/transactions/orchestrator";
 import { NextResponse } from "next/server";
 
 type SaleRequest = {
@@ -316,6 +317,52 @@ export async function POST(request: Request) {
         payment_method: "tuu",
       },
     });
+    let transactionPipelineWarning: string | undefined;
+
+    try {
+      const olffyReference = `OLFFY-POS-${createHash("sha256")
+        .update(tuuTransactionId)
+        .digest("hex")
+        .slice(0, 24)}`;
+      await finalizePhysicalOperation({
+        olffyReference,
+        paymentReference: tuuTransactionId,
+        shopifyOrderId: result.shopifyOrderId,
+        shopifyOrderName: result.shopifyOrderName,
+        physicalSaleId: result.physicalSaleId,
+        snapshot: {
+          channel: "physical",
+          saleChannelDetail: "physical_tuu_manual",
+          items: items.map((item) => ({
+            ...item,
+            shopifyVariantId: item.shopifyVariantId!,
+            variantTitle: item.variantTitle ?? "Default Title",
+          })),
+          subtotal,
+          discount,
+          total,
+          currency: "CLP",
+          pointsEarned,
+          customer: customer
+            ? {
+                loyaltyCustomerId: customer.id,
+                shopifyCustomerId: customer.shopify_customer_id ?? undefined,
+                email: customer.email,
+                marketingConsent: customer.metadata.marketing_consent === true,
+              }
+            : undefined,
+        },
+      });
+    } catch (pipelineError) {
+      transactionPipelineWarning =
+        pipelineError instanceof Error
+          ? pipelineError.message
+          : "La venta requiere conciliacion";
+      console.error(
+        "Physical sale completed with transaction pipeline warning:",
+        pipelineError,
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -328,6 +375,7 @@ export async function POST(request: Request) {
       total,
       pointsEarned,
       pointsSpent,
+      transactionPipelineWarning,
     });
   } catch (error) {
     const message = errorMessage(error);

@@ -1,6 +1,8 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { TAGS } from "lib/constants";
+import { getCustomerAccountState } from "lib/customer/auth";
 import {
   addToCart,
   createCart,
@@ -8,6 +10,8 @@ import {
   removeFromCart,
   updateCart,
 } from "lib/shopify";
+import { startOnlinePayment } from "lib/transactions/online";
+import { isTuuOnlineEnabled } from "lib/tuu/config";
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -96,7 +100,37 @@ export async function updateItemQuantity(
 }
 
 export async function redirectToCheckout() {
-  let cart = await getCart();
+  const cart = await getCart();
+
+  if (!cart) {
+    throw new Error("No se pudo cargar el carrito");
+  }
+
+  if (isTuuOnlineEnabled()) {
+    const cookieStore = await cookies();
+    const requestId =
+      cookieStore.get("tuu_payment_request_id")?.value ?? randomUUID();
+    const account = await getCustomerAccountState();
+    const payment = await startOnlinePayment({
+      requestId,
+      customerEmail:
+        account.status === "ready" ? account.customer.email : undefined,
+      items: cart.lines.map((line) => ({
+        variantId: line.merchandise.id,
+        quantity: line.quantity,
+      })),
+    });
+
+    cookieStore.set("tuu_payment_request_id", requestId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
+    });
+    redirect(payment.paymentUrl);
+  }
+
   redirect(cart!.checkoutUrl);
 }
 

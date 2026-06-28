@@ -1,7 +1,9 @@
 import "server-only";
 
 import { redeemReward } from "lib/loyalty/service";
+import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getSupabaseServer } from "lib/supabase/server";
+import { enqueueCustomerMarketingEvent } from "lib/transactions/marketing";
 import type { CustomerAccount } from "./auth";
 
 export async function requestCustomerReward(input: {
@@ -34,7 +36,7 @@ export async function requestCustomerReward(input: {
     throw new Error("No tienes puntos suficientes para esta recompensa.");
   }
 
-  return redeemReward({
+  const result = await redeemReward({
     customerId: input.customer.id,
     rewardId: Number(reward.id),
     createdBy: `customer:${input.userId}`,
@@ -43,4 +45,33 @@ export async function requestCustomerReward(input: {
       customer_request_id: input.requestId,
     },
   });
+  try {
+    const { data: profile } = await getSupabaseAdmin()
+      .from("loyalty_customers")
+      .select("metadata, shopify_customer_id")
+      .eq("id", input.customer.id)
+      .single();
+
+    await enqueueCustomerMarketingEvent({
+      eventType: "Reward Redeemed",
+      entityId: result.redemptionId,
+      loyaltyCustomerId: input.customer.id,
+      email: input.customer.email,
+      shopifyCustomerId: profile?.shopify_customer_id ?? undefined,
+      marketingConsent: profile?.metadata?.marketing_consent === true,
+      relatedLoyaltyTransactionId: result.transactionId,
+      payload: {
+        redemption_id: result.redemptionId,
+        reward_id: input.rewardId,
+        points_balance: input.customer.points_balance,
+      },
+    });
+  } catch (marketingError) {
+    console.error(
+      "El canje se completo, pero no se pudo encolar marketing:",
+      marketingError,
+    );
+  }
+
+  return result;
 }

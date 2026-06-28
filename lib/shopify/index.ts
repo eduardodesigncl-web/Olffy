@@ -54,13 +54,26 @@ import {
   ShopifyUpdateCartOperation,
 } from "./types";
 
+const OLFFY_SHOPIFY_STORE_DOMAIN = "olffy.cl";
+const configuredShopifyStoreDomain =
+  process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN?.trim() ||
+  process.env.SHOPIFY_STORE_DOMAIN?.trim() ||
+  process.env.SHOPIFY_STORE_DOMINIO?.trim();
+const normalizedShopifyStoreDomain = configuredShopifyStoreDomain
+  ?.replace(/^https?:\/\//, "")
+  .replace(/\/$/, "")
+  .toLowerCase();
 const shopifyStoreDomain =
-  process.env.SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMINIO;
+  normalizedShopifyStoreDomain === OLFFY_SHOPIFY_STORE_DOMAIN
+    ? normalizedShopifyStoreDomain
+    : OLFFY_SHOPIFY_STORE_DOMAIN;
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
 const endpoint = domain ? `${domain}${SHOPIFY_GRAPHQL_API_ENDPOINT}` : "";
-const storefrontAccessToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const storefrontAccessToken =
+  process.env.SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim() ||
+  process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim();
 const accessTokenIsPrivate =
   storefrontAccessToken?.startsWith("shpat_") ||
   storefrontAccessToken?.startsWith("shpss_");
@@ -105,7 +118,9 @@ export async function shopifyFetch<T>({
 }): Promise<{ status: number; body: T } | never> {
   try {
     if (!endpoint) {
-      throw new Error("SHOPIFY_STORE_DOMAIN environment variable is not set");
+      throw new Error(
+        "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_s_SHOPIFY_STORE_DOMAIN is also accepted as a fallback.",
+      );
     }
 
     const result = await fetch(endpoint, {

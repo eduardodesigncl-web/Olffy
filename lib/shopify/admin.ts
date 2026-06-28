@@ -12,11 +12,28 @@ import type {
   AdminCollectionOperation,
 } from "./admin-types";
 
-const shopifyStoreDomain =
+const OLFFY_SHOPIFY_STOREFRONT_DOMAIN = "olffy.cl";
+const OLFFY_SHOPIFY_ADMIN_DOMAIN = "f46f6e-a4.myshopify.com";
+const configuredShopifyStoreDomain =
+  process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN?.trim() ||
   process.env.SHOPIFY_STORE_DOMAIN?.trim() ||
   process.env.SHOPIFY_STORE_DOMINIO?.trim();
-const domain = shopifyStoreDomain
-  ? ensureStartsWith(shopifyStoreDomain, "https://")
+const configuredShopifyAdminDomain =
+  process.env.SHOPIFY_ADMIN_STORE_DOMAIN?.trim() ||
+  process.env.SHOPIFY_ADMIN_API_STORE_DOMAIN?.trim() ||
+  process.env.SHOPIFY_ADMIN_SHOP_DOMAIN?.trim() ||
+  configuredShopifyStoreDomain;
+const normalizedShopifyAdminDomain = configuredShopifyAdminDomain
+  ?.replace(/^https?:\/\//, "")
+  .replace(/\/$/, "")
+  .toLowerCase();
+const shopifyAdminDomain =
+  normalizedShopifyAdminDomain &&
+  normalizedShopifyAdminDomain !== OLFFY_SHOPIFY_STOREFRONT_DOMAIN
+    ? normalizedShopifyAdminDomain
+    : OLFFY_SHOPIFY_ADMIN_DOMAIN;
+const domain = shopifyAdminDomain
+  ? ensureStartsWith(shopifyAdminDomain, "https://")
   : "";
 const adminApiVersion =
   process.env.SHOPIFY_ADMIN_API_VERSION?.trim() || "2026-04";
@@ -99,7 +116,7 @@ async function getAdminAccessToken(): Promise<string> {
 
   if (!domain) {
     throw new Error(
-      "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_STORE_DOMINIO is also accepted as a fallback.",
+      "SHOPIFY_ADMIN_STORE_DOMAIN or SHOPIFY_STORE_DOMAIN environment variable is not set. Use the .myshopify.com domain for Admin API.",
     );
   }
 
@@ -151,7 +168,7 @@ export async function adminFetch<T>({
   try {
     if (!endpoint) {
       throw new Error(
-        "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_STORE_DOMINIO is also accepted as a fallback.",
+        "SHOPIFY_ADMIN_STORE_DOMAIN or SHOPIFY_STORE_DOMAIN environment variable is not set. Use the .myshopify.com domain for Admin API.",
       );
     }
 
@@ -475,6 +492,20 @@ const createPhysicalOrderMutation = /* GraphQL */ `
   }
 `;
 
+const updateOlffyOrderMutation = /* GraphQL */ `
+  mutation updateOlffyOrder($input: OrderInput!) {
+    orderUpdate(input: $input) {
+      order {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 export type AdminPosVariant = {
   id: string;
   title: string;
@@ -499,6 +530,9 @@ export type AdminPhysicalOrder = {
 
 export type CreatePhysicalOrderInput = {
   tuuTransactionId: string;
+  olffyReference?: string;
+  channel?: "online" | "physical";
+  saleChannelDetail?: string;
   receiptNumber?: string;
   responsible: string;
   notes?: string;
@@ -516,11 +550,16 @@ export type CreatePhysicalOrderInput = {
     amount: number;
   };
   total: number;
+  metafields?: Array<{
+    namespace: string;
+    key: string;
+    value: string;
+  }>;
 };
 
-function physicalOrderTag(tuuTransactionId: string): string {
+function physicalOrderTag(reference: string): string {
   const digest = createHash("sha256")
-    .update(tuuTransactionId.trim())
+    .update(reference.trim())
     .digest("hex")
     .slice(0, 20);
 
@@ -631,7 +670,13 @@ export async function getAdminProductVariantsByIds(
 export async function createOrFindPaidPhysicalOrder(
   input: CreatePhysicalOrderInput,
 ): Promise<AdminPhysicalOrder> {
-  const tag = physicalOrderTag(input.tuuTransactionId);
+  const olffyReference =
+    input.olffyReference?.trim() || input.tuuTransactionId.trim();
+  const channel = input.channel ?? "physical";
+  const saleChannelDetail =
+    input.saleChannelDetail ??
+    (channel === "online" ? "online_tuu" : "physical_tuu_manual");
+  const tag = physicalOrderTag(olffyReference);
   const existing = await adminFetch<{
     data: {
       orders: {
@@ -683,17 +728,47 @@ export async function createOrFindPaidPhysicalOrder(
         },
       },
     ],
-    tags: [tag, "OLFFY_POS", "TUU"],
-    sourceIdentifier: input.tuuTransactionId.trim(),
-    note: input.notes?.trim() || "Venta fisica OLFFY pagada mediante TUU",
+    tags: [tag, channel === "online" ? "OLFFY_ONLINE" : "OLFFY_POS", "TUU"],
+    sourceIdentifier: olffyReference,
+    note:
+      input.notes?.trim() ||
+      (channel === "online"
+        ? "Venta online OLFFY pagada mediante TUU"
+        : "Venta fisica OLFFY pagada mediante TUU"),
     customAttributes: [
       { key: "Medio de pago", value: "TUU" },
+      { key: "Referencia OLFFY", value: olffyReference },
       { key: "Referencia TUU", value: input.tuuTransactionId.trim() },
+      { key: "Canal OLFFY", value: saleChannelDetail },
       {
         key: "Comprobante TUU",
         value: input.receiptNumber?.trim() || "Sin comprobante",
       },
       { key: "Responsable", value: input.responsible.trim() },
+    ],
+    metafields: [
+      {
+        namespace: "olffy",
+        key: "reference",
+        type: "single_line_text_field",
+        value: olffyReference,
+      },
+      {
+        namespace: "olffy",
+        key: "sale_channel_detail",
+        type: "single_line_text_field",
+        value: saleChannelDetail,
+      },
+      {
+        namespace: "olffy",
+        key: "tuu_transaction_id",
+        type: "single_line_text_field",
+        value: input.tuuTransactionId.trim(),
+      },
+      ...(input.metafields ?? []).map((metafield) => ({
+        ...metafield,
+        type: "single_line_text_field",
+      })),
     ],
   };
 
@@ -768,6 +843,53 @@ export async function createOrFindPaidPhysicalOrder(
     toAdminPhysicalOrder(payload.order, false),
     input.total,
   );
+}
+
+export async function createOrFindPaidOlffyOrder(
+  input: CreatePhysicalOrderInput,
+): Promise<AdminPhysicalOrder> {
+  return createOrFindPaidPhysicalOrder(input);
+}
+
+export async function updateOlffyOrderMetafields(
+  orderId: string,
+  metafields: Array<{ namespace: string; key: string; value: string }>,
+) {
+  const response = await adminFetch<{
+    data: {
+      orderUpdate: {
+        order: { id: string } | null;
+        userErrors: Array<{ field?: string[]; message: string }>;
+      };
+    };
+    variables: { input: Record<string, unknown> };
+  }>({
+    query: updateOlffyOrderMutation,
+    variables: {
+      input: {
+        id: normalizeShopifyGid("Order", orderId),
+        metafields: metafields.map((metafield) => ({
+          ...metafield,
+          type: "single_line_text_field",
+        })),
+      },
+    },
+  });
+  const payload = response.body.data.orderUpdate;
+
+  if (payload.userErrors.length > 0) {
+    throw new Error(
+      `Shopify no pudo actualizar los metafields: ${payload.userErrors
+        .map((error) => error.message)
+        .join("; ")}`,
+    );
+  }
+
+  if (!payload.order) {
+    throw new Error("Shopify no devolvio la orden actualizada");
+  }
+
+  return payload.order;
 }
 
 export async function checkAdminOrderAccess(): Promise<boolean> {

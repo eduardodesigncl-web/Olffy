@@ -28,9 +28,12 @@ export default async function AdminDashboardPage() {
           ? e.error.message
           : "";
 
-    if (message.includes("SHOPIFY_STORE_DOMAIN")) {
+    if (
+      message.includes("SHOPIFY_ADMIN_STORE_DOMAIN") ||
+      message.includes("SHOPIFY_STORE_DOMAIN")
+    ) {
       error =
-        "Error al conectar con Shopify. Falta SHOPIFY_STORE_DOMAIN o SHOPIFY_STORE_DOMINIO.";
+        "Error al conectar con Shopify Admin API. Falta SHOPIFY_ADMIN_STORE_DOMAIN o debe usar el dominio tecnico .myshopify.com.";
     } else if (
       message.includes("SHOPIFY_ADMIN_API_ACCESS_TOKEN") ||
       message.includes("SHOPIFY_ADMIN_API_CLIENT_ID") ||

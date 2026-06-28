@@ -9,11 +9,16 @@ Las paginas de tienda, novedades, regalos, carrito MVP y ficha de producto leen 
 Configura estas variables en Vercel para conectar el inventario:
 
 - `SHOPIFY_STORE_DOMAIN`: dominio `.myshopify.com` de la tienda, por ejemplo `tu-tienda.myshopify.com`.
-- `SHOPIFY_STORE_DOMINIO`: alias aceptado si ya lo configuraste asi en Vercel.
 - `SHOPIFY_STOREFRONT_ACCESS_TOKEN`: token Storefront publico compatible con Next Commerce.
+- `SHOPIFY_s_SHOPIFY_STORE_DOMAIN`: alias aceptado si ya existe asi en Vercel.
+- `SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN`: alias aceptado si ya existe asi en Vercel.
+- `SHOPIFY_STORE_DOMINIO`: alias legacy aceptado para el dominio.
 - `SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN`: usa esta variable si tienes un token privado de Headless.
 - `SHOPIFY_STOREFRONT_PUBLIC_ACCESS_TOKEN`: alternativa explicita para token publico.
 - `SHOPIFY_REVALIDATION_SECRET`: opcional para webhooks de revalidacion.
+- `SHOPIFY_ADMIN_STORE_DOMAIN`: dominio tecnico `.myshopify.com` para Admin API.
+  En produccion OLFFY usa `f46f6e-a4.myshopify.com`; `olffy.cl` queda para
+  Storefront.
 - `SHOPIFY_ADMIN_API_ACCESS_TOKEN`: token Admin API para el panel personalizado.
   Debe ser un access token real; un Client Secret con prefijo `shpss_` no sirve
   como token.
@@ -22,6 +27,13 @@ Configura estas variables en Vercel para conectar el inventario:
   access token automaticamente.
 - `SHOPIFY_ADMIN_API_VERSION`: version Admin API. Por defecto usa `2026-04`.
 - `ADMIN_PASSWORD`: contrasena para entrar a `/admin/login`.
+- `MARKETING_PROVIDER`: usa `klaviyo` para enviar eventos reales o `noop` para
+  solo registrar la cola sin enviar correos.
+- `KLAVIYO_PRIVATE_API_KEY`, `KLAVIYO_LIST_ID`, `KLAVIYO_REVISION`: credenciales
+  del proveedor de email marketing. `KLAVIYO_PRIVATE_API_KEY` nunca debe ser
+  `NEXT_PUBLIC_`.
+- `CRON_SECRET`: secreto que Vercel Cron envia como `Bearer` al procesador de
+  cola `/api/cron/marketing/process-events`.
 
 No subas un archivo `.env` real al repositorio.
 
