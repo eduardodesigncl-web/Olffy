@@ -11,9 +11,19 @@ import type {
   AdminCollectionOperation,
 } from "./admin-types";
 
-const shopifyStoreDomain =
+const OLFFY_SHOPIFY_STORE_DOMAIN = "olffy.cl";
+const configuredShopifyStoreDomain =
+  process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN?.trim() ||
   process.env.SHOPIFY_STORE_DOMAIN?.trim() ||
   process.env.SHOPIFY_STORE_DOMINIO?.trim();
+const normalizedShopifyStoreDomain = configuredShopifyStoreDomain
+  ?.replace(/^https?:\/\//, "")
+  .replace(/\/$/, "")
+  .toLowerCase();
+const shopifyStoreDomain =
+  normalizedShopifyStoreDomain === OLFFY_SHOPIFY_STORE_DOMAIN
+    ? normalizedShopifyStoreDomain
+    : OLFFY_SHOPIFY_STORE_DOMAIN;
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
@@ -97,7 +107,7 @@ async function getAdminAccessToken(): Promise<string> {
 
   if (!domain) {
     throw new Error(
-      "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_STORE_DOMINIO is also accepted as a fallback.",
+      "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_s_SHOPIFY_STORE_DOMAIN and SHOPIFY_STORE_DOMINIO are also accepted as fallbacks.",
     );
   }
 
@@ -149,7 +159,7 @@ export async function adminFetch<T>({
   try {
     if (!endpoint) {
       throw new Error(
-        "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_STORE_DOMINIO is also accepted as a fallback.",
+        "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_s_SHOPIFY_STORE_DOMAIN and SHOPIFY_STORE_DOMINIO are also accepted as fallbacks.",
       );
     }
 

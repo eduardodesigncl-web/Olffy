@@ -5,11 +5,7 @@ import {
 } from "lib/constants";
 import { isShopifyError } from "lib/type-guards";
 import { ensureStartsWith } from "lib/utils";
-import {
-  cacheLife,
-  cacheTag,
-  revalidateTag,
-} from "next/cache";
+import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -58,13 +54,26 @@ import {
   ShopifyUpdateCartOperation,
 } from "./types";
 
+const OLFFY_SHOPIFY_STORE_DOMAIN = "olffy.cl";
+const configuredShopifyStoreDomain =
+  process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN?.trim() ||
+  process.env.SHOPIFY_STORE_DOMAIN?.trim() ||
+  process.env.SHOPIFY_STORE_DOMINIO?.trim();
+const normalizedShopifyStoreDomain = configuredShopifyStoreDomain
+  ?.replace(/^https?:\/\//, "")
+  .replace(/\/$/, "")
+  .toLowerCase();
 const shopifyStoreDomain =
-  process.env.SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMINIO;
+  normalizedShopifyStoreDomain === OLFFY_SHOPIFY_STORE_DOMAIN
+    ? normalizedShopifyStoreDomain
+    : OLFFY_SHOPIFY_STORE_DOMAIN;
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
 const endpoint = domain ? `${domain}${SHOPIFY_GRAPHQL_API_ENDPOINT}` : "";
-const storefrontAccessToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const storefrontAccessToken =
+  process.env.SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim() ||
+  process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim();
 const accessTokenIsPrivate =
   storefrontAccessToken?.startsWith("shpat_") ||
   storefrontAccessToken?.startsWith("shpss_");
@@ -109,7 +118,9 @@ export async function shopifyFetch<T>({
 }): Promise<{ status: number; body: T } | never> {
   try {
     if (!endpoint) {
-      throw new Error("SHOPIFY_STORE_DOMAIN environment variable is not set");
+      throw new Error(
+        "SHOPIFY_STORE_DOMAIN environment variable is not set. SHOPIFY_s_SHOPIFY_STORE_DOMAIN is also accepted as a fallback.",
+      );
     }
 
     const result = await fetch(endpoint, {
@@ -173,7 +184,7 @@ const reshapeCart = (cart: ShopifyCart): Cart => {
 };
 
 const reshapeCollection = (
-  collection: ShopifyCollection
+  collection: ShopifyCollection,
 ): Collection | undefined => {
   if (!collection) {
     return undefined;
@@ -215,7 +226,7 @@ const reshapeImages = (images: Connection<Image>, productTitle: string) => {
 
 const reshapeProduct = (
   product: ShopifyProduct,
-  filterHiddenProducts: boolean = true
+  filterHiddenProducts: boolean = true,
 ) => {
   if (
     !product ||
@@ -258,7 +269,7 @@ export async function createCart(): Promise<Cart> {
 }
 
 export async function addToCart(
-  lines: { merchandiseId: string; quantity: number }[]
+  lines: { merchandiseId: string; quantity: number }[],
 ): Promise<Cart> {
   const cartId = (await cookies()).get("cartId")?.value!;
   const res = await shopifyFetch<ShopifyAddToCartOperation>({
@@ -285,7 +296,7 @@ export async function removeFromCart(lineIds: string[]): Promise<Cart> {
 }
 
 export async function updateCart(
-  lines: { id: string; merchandiseId: string; quantity: number }[]
+  lines: { id: string; merchandiseId: string; quantity: number }[],
 ): Promise<Cart> {
   const cartId = (await cookies()).get("cartId")?.value!;
   const res = await shopifyFetch<ShopifyUpdateCartOperation>({
@@ -325,7 +336,7 @@ export async function getCart(): Promise<Cart | undefined> {
 }
 
 export async function getCollection(
-  handle: string
+  handle: string,
 ): Promise<Collection | undefined> {
   "use cache";
 
@@ -365,7 +376,7 @@ export async function getCollectionProducts({
 
   if (!endpoint) {
     console.log(
-      `Skipping getCollectionProducts for '${collection}' - Shopify not configured`
+      `Skipping getCollectionProducts for '${collection}' - Shopify not configured`,
     );
     return [];
   }
@@ -386,7 +397,7 @@ export async function getCollectionProducts({
     }
 
     return reshapeProducts(
-      removeEdgesAndNodes(res.body.data.collection.products)
+      removeEdgesAndNodes(res.body.data.collection.products),
     );
   } catch (error) {
     console.error(
@@ -439,7 +450,7 @@ export async function getCollections(): Promise<Collection[]> {
       // Filter out the `hidden` collections.
       // Collections that start with `hidden-*` need to be hidden on the search page.
       ...reshapeCollections(shopifyCollections).filter(
-        (collection) => !collection.handle.startsWith("hidden")
+        (collection) => !collection.handle.startsWith("hidden"),
       ),
     ];
 
@@ -484,13 +495,15 @@ export async function getMenu(handle: string): Promise<Menu[]> {
     });
 
     return (
-      res.body?.data?.menu?.items.map((item: { title: string; url: string }) => ({
-        title: item.title,
-        path: item.url
-          .replace(domain, "")
-          .replace("/collections", "/search")
-          .replace("/pages", ""),
-      })) || []
+      res.body?.data?.menu?.items.map(
+        (item: { title: string; url: string }) => ({
+          title: item.title,
+          path: item.url
+            .replace(domain, "")
+            .replace("/collections", "/search")
+            .replace("/pages", ""),
+        }),
+      ) || []
     );
   } catch (error) {
     console.error(
@@ -546,7 +559,7 @@ export async function getProduct(handle: string): Promise<Product | undefined> {
 }
 
 export async function getProductRecommendations(
-  productId: string
+  productId: string,
 ): Promise<Product[]> {
   "use cache";
 
@@ -601,7 +614,9 @@ export async function getProducts({
 
     return reshapeProducts(removeEdgesAndNodes(res.body.data.products));
   } catch (error) {
-    console.error(`Shopify getProducts failed: ${getShopifyErrorSummary(error)}`);
+    console.error(
+      `Shopify getProducts failed: ${getShopifyErrorSummary(error)}`,
+    );
     return [];
   }
 }

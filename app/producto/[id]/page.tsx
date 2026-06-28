@@ -12,7 +12,9 @@ import { SiteFooter } from "components/olffy/site-footer";
 export async function generateStaticParams() {
   const products = await getOlffyProducts();
 
-  return products.map((product) => ({ id: product.id }));
+  return products.length
+    ? products.map((product) => ({ id: product.id }))
+    : [{ id: "__missing-product__" }];
 }
 
 export async function generateMetadata({
@@ -41,7 +43,8 @@ export default async function ProductPage({
   const products = await getOlffyProducts();
   const related = products
     .filter(
-      (item) => item.category === product.category && item.handle !== product.handle,
+      (item) =>
+        item.category === product.category && item.handle !== product.handle,
     )
     .slice(0, 3);
 

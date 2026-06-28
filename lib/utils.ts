@@ -20,17 +20,27 @@ export const ensureStartsWith = (stringToCheck: string, startsWith: string) =>
     : `${startsWith}${stringToCheck}`;
 
 export const validateEnvironmentVariables = () => {
-  const requiredEnvironmentVariables = [
-    "SHOPIFY_STORE_DOMAIN",
-    "SHOPIFY_STOREFRONT_ACCESS_TOKEN",
-  ];
   const missingEnvironmentVariables = [] as string[];
+  const olffyShopifyStoreDomain = "olffy.cl";
+  const shopifyStoreDomain =
+    process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN ||
+    process.env.SHOPIFY_STORE_DOMAIN ||
+    olffyShopifyStoreDomain;
+  const shopifyStorefrontAccessToken =
+    process.env.SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+    process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 
-  requiredEnvironmentVariables.forEach((envVar) => {
-    if (!process.env[envVar]) {
-      missingEnvironmentVariables.push(envVar);
-    }
-  });
+  if (!shopifyStoreDomain) {
+    missingEnvironmentVariables.push(
+      "SHOPIFY_STORE_DOMAIN or SHOPIFY_s_SHOPIFY_STORE_DOMAIN",
+    );
+  }
+
+  if (!shopifyStorefrontAccessToken) {
+    missingEnvironmentVariables.push(
+      "SHOPIFY_STOREFRONT_ACCESS_TOKEN or SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN",
+    );
+  }
 
   if (missingEnvironmentVariables.length) {
     throw new Error(
@@ -40,12 +50,9 @@ export const validateEnvironmentVariables = () => {
     );
   }
 
-  if (
-    process.env.SHOPIFY_STORE_DOMAIN?.includes("[") ||
-    process.env.SHOPIFY_STORE_DOMAIN?.includes("]")
-  ) {
+  if (shopifyStoreDomain?.includes("[") || shopifyStoreDomain?.includes("]")) {
     throw new Error(
-      "Your `SHOPIFY_STORE_DOMAIN` environment variable includes brackets (ie. `[` and / or `]`). Your site will not work with them there. Please remove them.",
+      "Your Shopify store domain environment variable includes brackets (ie. `[` and / or `]`). Your site will not work with them there. Please remove them.",
     );
   }
 };
