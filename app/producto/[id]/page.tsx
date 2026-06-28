@@ -14,7 +14,9 @@ import type { Metadata } from "next";
 export async function generateStaticParams() {
   const products = await getOlffyProducts();
 
-  return products.map((product) => ({ id: product.id }));
+  return products.length
+    ? products.map((product) => ({ id: product.id }))
+    : [{ id: "__missing-product__" }];
 }
 
 export async function generateMetadata({

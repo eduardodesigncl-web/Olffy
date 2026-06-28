@@ -2,6 +2,8 @@ import { getProduct, getProducts } from "lib/shopify";
 import type { Product } from "lib/shopify/types";
 import { OlffyProduct, products as demoProducts } from "./data";
 
+const allowDemoProducts = process.env.NODE_ENV !== "production";
+
 const fallbackImage =
   "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=900&q=80";
 
@@ -92,7 +94,7 @@ export async function getOlffyProducts() {
     console.error("Could not load Shopify products for Olffy MVP", error);
   }
 
-  return demoProducts;
+  return allowDemoProducts ? demoProducts : [];
 }
 
 export async function getOlffyProduct(handle: string) {
@@ -104,5 +106,7 @@ export async function getOlffyProduct(handle: string) {
     console.error(`Could not load Shopify product "${handle}"`, error);
   }
 
-  return demoProducts.find((product) => product.handle === handle);
+  return allowDemoProducts
+    ? demoProducts.find((product) => product.handle === handle)
+    : undefined;
 }
