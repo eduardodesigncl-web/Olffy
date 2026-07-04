@@ -1,20 +1,16 @@
-import { createHash } from "node:crypto";
 import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import {
-  calculatePointsForAmount,
   claimPhysicalSalePosAttempt,
   failPhysicalSalePosAttempt,
-  finalizePhysicalSalePos,
-  getActiveLoyaltyRule,
-  getLoyaltyCustomer,
   type PhysicalSalePosBenefit,
 } from "lib/loyalty/service";
 import {
-  checkAdminOrderAccess,
-  createOrFindPaidPhysicalOrder,
-  getAdminProductVariantsByIds,
-} from "lib/shopify/admin";
-import { finalizePhysicalOperation } from "lib/transactions/orchestrator";
+  finalizePreparedPhysicalSale,
+  physicalSaleErrorMessage,
+  preparePhysicalSale,
+  requiredPhysicalSaleText,
+} from "lib/loyalty/physical-pos";
+import { checkAdminOrderAccess } from "lib/shopify/admin";
 import { NextResponse } from "next/server";
 
 type SaleRequest = {
@@ -32,32 +28,6 @@ type SaleRequest = {
   notes?: string;
 };
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : "No se pudo completar la venta TUU";
-}
-
-function requiredText(value: unknown, label: string): string {
-  const normalized = String(value ?? "").trim();
-
-  if (!normalized) {
-    throw new Error(`Falta ${label}`);
-  }
-
-  return normalized;
-}
-
-function positiveAmount(value: unknown, label: string): number {
-  const amount = Number(value);
-
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error(`${label} debe ser mayor que cero`);
-  }
-
-  return amount;
-}
-
 export async function GET() {
   const unauthorized = await getAdminApiUnauthorizedResponse();
   if (unauthorized) return unauthorized;
@@ -69,7 +39,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error checking Shopify order access:", error);
     return NextResponse.json(
-      { ordersAccess: false, error: errorMessage(error) },
+      { ordersAccess: false, error: physicalSaleErrorMessage(error) },
       { status: 503 },
     );
   }
@@ -85,164 +55,23 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as SaleRequest;
-    const tuuTransactionId = requiredText(
+    const tuuTransactionId = requiredPhysicalSaleText(
       body.tuuTransactionId,
       "la referencia TUU",
     );
-    const responsible = requiredText(body.responsible, "el responsable");
-    const benefitType = body.benefitType ?? "none";
-    const requestedItems = body.items ?? [];
+    const responsible = requiredPhysicalSaleText(
+      body.responsible,
+      "el responsable",
+    );
 
     if (body.paymentConfirmed !== true) {
       throw new Error("Debes confirmar que el pago TUU fue recibido");
     }
 
-    if (
-      !["none", "points", "discount_code", "manual_discount"].includes(
-        benefitType,
-      )
-    ) {
-      throw new Error("El beneficio seleccionado no es valido");
-    }
-
-    if (requestedItems.length === 0) {
-      throw new Error("Agrega al menos un producto al carrito");
-    }
-
-    const quantityByVariant = new Map<string, number>();
-
-    for (const item of requestedItems) {
-      const variantId = requiredText(item.variantId, "la variante Shopify");
-      const quantity = Number(item.quantity);
-
-      if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 100) {
-        throw new Error("Las cantidades deben ser enteros entre 1 y 100");
-      }
-
-      quantityByVariant.set(
-        variantId,
-        (quantityByVariant.get(variantId) ?? 0) + quantity,
-      );
-    }
-
-    const variantIds = [...quantityByVariant.keys()].sort();
-    const variants = await getAdminProductVariantsByIds(variantIds);
-    const variantById = new Map(
-      variants.map((variant) => [variant.id, variant]),
-    );
-
-    if (variants.length !== variantIds.length) {
-      throw new Error(
-        "Uno o mas productos ya no existen en Shopify. Actualiza el carrito.",
-      );
-    }
-
-    const items = variantIds.map((variantId) => {
-      const variant = variantById.get(variantId);
-      const quantity = quantityByVariant.get(variantId) ?? 0;
-
-      if (!variant || variant.product.status !== "ACTIVE") {
-        throw new Error("Uno de los productos ya no esta activo en Shopify");
-      }
-
-      if (variant.inventoryQuantity < quantity) {
-        throw new Error(
-          `Stock insuficiente para ${variant.product.title} - ${variant.title}. Disponible: ${variant.inventoryQuantity}.`,
-        );
-      }
-
-      const unitPrice = Number(variant.price);
-
-      if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-        throw new Error(
-          `Shopify devolvio un precio invalido para ${variant.product.title}`,
-        );
-      }
-
-      return {
-        shopifyProductId: variant.product.id,
-        shopifyVariantId: variant.id,
-        sku: variant.sku ?? undefined,
-        productTitle: variant.product.title,
-        variantTitle: variant.title,
-        quantity,
-        unitPrice,
-      };
-    });
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0,
-    );
-    const customerId = body.customerId ? Number(body.customerId) : undefined;
-    const customer = customerId
-      ? await getLoyaltyCustomer(customerId)
-      : undefined;
-    const rule = await getActiveLoyaltyRule();
-    let discount = 0;
-    let pointsSpent = 0;
-    let discountCode: string | undefined;
-    let manualDiscountReason: string | undefined;
-
-    if (customer && customer.status !== "active") {
-      throw new Error("El cliente de puntos esta bloqueado");
-    }
-
-    if (benefitType === "points") {
-      if (!customer) {
-        throw new Error("Selecciona un cliente para usar puntos");
-      }
-
-      pointsSpent = Math.trunc(
-        positiveAmount(body.pointsToUse, "Los puntos a usar"),
-      );
-
-      if (pointsSpent > customer.points_balance) {
-        throw new Error("El cliente no tiene puntos suficientes");
-      }
-
-      discount = pointsSpent * rule.point_redemption_value_clp;
-    } else if (benefitType === "discount_code") {
-      discountCode = requiredText(body.discountCode, "el codigo de descuento");
-      discount = positiveAmount(body.benefitAmount, "El monto del descuento");
-    } else if (benefitType === "manual_discount") {
-      manualDiscountReason = requiredText(
-        body.manualDiscountReason,
-        "la autorizacion del descuento manual",
-      );
-      discount = positiveAmount(body.benefitAmount, "El monto del descuento");
-    }
-
-    if (discount >= subtotal) {
-      throw new Error(
-        "El beneficio debe dejar un total mayor que cero para cobrar por TUU",
-      );
-    }
-
-    const total = subtotal - discount;
-    const pointsEarned = customer ? calculatePointsForAmount(total, rule) : 0;
-    const fingerprint = createHash("sha256")
-      .update(
-        JSON.stringify({
-          customerId: customer?.id ?? null,
-          items: items.map((item) => ({
-            variantId: item.shopifyVariantId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-          })),
-          benefitType,
-          pointsSpent,
-          discount,
-          discountCode: discountCode ?? null,
-          manualDiscountReason: manualDiscountReason ?? null,
-          subtotal,
-          total,
-        }),
-      )
-      .digest("hex");
-
+    const prepared = await preparePhysicalSale(body);
     attempt = await claimPhysicalSalePosAttempt({
       tuuTransactionId,
-      payloadFingerprint: fingerprint,
+      payloadFingerprint: prepared.fingerprint,
       createdBy: responsible,
     });
 
@@ -253,8 +82,8 @@ export async function POST(request: Request) {
         physicalSaleId: attempt.physicalSaleId,
         shopifyOrderId: attempt.shopifyOrderId,
         shopifyOrderName: attempt.shopifyOrderName,
-        pointsEarned,
-        pointsSpent,
+        pointsEarned: prepared.pointsEarned,
+        pointsSpent: prepared.pointsSpent,
       });
     }
 
@@ -262,107 +91,18 @@ export async function POST(request: Request) {
       throw new Error("No se pudo obtener el control del intento de venta");
     }
 
-    const shopifyOrder = await createOrFindPaidPhysicalOrder({
-      tuuTransactionId,
+    const result = await finalizePreparedPhysicalSale({
+      prepared,
+      attempt: {
+        attemptId: attempt.attemptId,
+        claimToken: attempt.claimToken,
+      },
+      paymentReference: tuuTransactionId,
       receiptNumber: body.receiptNumber,
       responsible,
       notes: body.notes,
-      customer: customer
-        ? {
-            email: customer.email,
-            shopifyCustomerId: customer.shopify_customer_id,
-          }
-        : undefined,
-      items: items.map((item) => ({
-        variantId: item.shopifyVariantId!,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-      discount:
-        discount > 0
-          ? {
-              code:
-                benefitType === "points"
-                  ? `OLFFY-PUNTOS-${pointsSpent}`
-                  : benefitType === "manual_discount"
-                    ? "OLFFY-DESCUENTO-MANUAL"
-                    : discountCode!,
-              amount: discount,
-            }
-          : undefined,
-      total,
+      saleChannelDetail: "physical_tuu_manual",
     });
-
-    const result = await finalizePhysicalSalePos({
-      attemptId: attempt.attemptId,
-      claimToken: attempt.claimToken,
-      customerId: customer?.id,
-      tuuTransactionId,
-      receiptNumber: body.receiptNumber,
-      shopifyOrderId: shopifyOrder.id,
-      shopifyOrderName: shopifyOrder.name,
-      subtotal,
-      discount,
-      total,
-      benefitType,
-      pointsSpent,
-      pointsEarned,
-      discountCode,
-      manualDiscountReason,
-      items,
-      notes: body.notes,
-      createdBy: responsible,
-      metadata: {
-        shopify_order_reused: shopifyOrder.reused,
-        payment_method: "tuu",
-      },
-    });
-    let transactionPipelineWarning: string | undefined;
-
-    try {
-      const olffyReference = `OLFFY-POS-${createHash("sha256")
-        .update(tuuTransactionId)
-        .digest("hex")
-        .slice(0, 24)}`;
-      await finalizePhysicalOperation({
-        olffyReference,
-        paymentReference: tuuTransactionId,
-        shopifyOrderId: result.shopifyOrderId,
-        shopifyOrderName: result.shopifyOrderName,
-        physicalSaleId: result.physicalSaleId,
-        snapshot: {
-          channel: "physical",
-          saleChannelDetail: "physical_tuu_manual",
-          items: items.map((item) => ({
-            ...item,
-            shopifyVariantId: item.shopifyVariantId!,
-            variantTitle: item.variantTitle ?? "Default Title",
-          })),
-          subtotal,
-          discount,
-          total,
-          currency: "CLP",
-          pointsEarned,
-          customer: customer
-            ? {
-                loyaltyCustomerId: customer.id,
-                shopifyCustomerId: customer.shopify_customer_id ?? undefined,
-                email: customer.email,
-                marketingConsent: customer.metadata.marketing_consent === true,
-              }
-            : undefined,
-        },
-      });
-    } catch (pipelineError) {
-      transactionPipelineWarning =
-        pipelineError instanceof Error
-          ? pipelineError.message
-          : "La venta requiere conciliacion";
-      console.error(
-        "Physical sale completed with transaction pipeline warning:",
-        pipelineError,
-      );
-    }
 
     return NextResponse.json({
       success: true,
@@ -370,15 +110,15 @@ export async function POST(request: Request) {
       physicalSaleId: result.physicalSaleId,
       shopifyOrderId: result.shopifyOrderId,
       shopifyOrderName: result.shopifyOrderName,
-      subtotal,
-      discount,
-      total,
-      pointsEarned,
-      pointsSpent,
-      transactionPipelineWarning,
+      subtotal: prepared.subtotal,
+      discount: prepared.discount,
+      total: prepared.total,
+      pointsEarned: prepared.pointsEarned,
+      pointsSpent: prepared.pointsSpent,
+      transactionPipelineWarning: result.transactionPipelineWarning,
     });
   } catch (error) {
-    const message = errorMessage(error);
+    const message = physicalSaleErrorMessage(error);
 
     if (attempt?.claimToken && attempt.status === "pending") {
       await failPhysicalSalePosAttempt({

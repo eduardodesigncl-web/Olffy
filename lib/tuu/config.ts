@@ -45,8 +45,15 @@ export function getTuuRemotePosConfig() {
 
   return {
     apiKey: required("TUU_POS_API_KEY"),
+    deviceUuid: required("TUU_POS_DEVICE_UUID"),
     deviceSerial: required("TUU_POS_DEVICE_SERIAL"),
-    apiUrl: required("TUU_POS_API_URL").replace(/\/$/, ""),
+    apiUrl:
+      process.env.TUU_POS_API_URL?.trim().replace(/\/$/, "") ||
+      "https://integrations.payment.haulmer.com",
+    createPath:
+      process.env.TUU_POS_CREATE_PATH?.trim() || "/RemotePayment/v2/Create",
+    statusPathTemplate: process.env.TUU_POS_STATUS_PATH?.trim() || "",
+    webhookSecret: process.env.TUU_POS_WEBHOOK_SECRET?.trim() || "",
     sourceName: process.env.TUU_POS_SOURCE_NAME?.trim() || "OLFFY Admin",
     sourceVersion: process.env.TUU_POS_SOURCE_VERSION?.trim() || "1.0.0",
   };

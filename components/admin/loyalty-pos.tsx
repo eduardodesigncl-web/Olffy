@@ -48,6 +48,9 @@ export function LoyaltyPos({
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [remotePolling, setRemotePolling] = useState(false);
+  const [remotePaymentReference, setRemotePaymentReference] = useState("");
+  const [remotePaymentStatus, setRemotePaymentStatus] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -152,6 +155,142 @@ export function LoyaltyPos({
     );
   }
 
+  function salePayload() {
+    return {
+      customerId: selectedCustomer?.id ?? null,
+      items: cart.map((item) => ({
+        variantId: item.id,
+        quantity: item.quantity,
+      })),
+      benefitType,
+      pointsToUse: Math.trunc(amount(pointsToUse)),
+      benefitAmount: amount(benefitAmount),
+      discountCode,
+      manualDiscountReason,
+      responsible,
+      notes,
+    };
+  }
+
+  function resetSaleForm() {
+    setCart([]);
+    setBenefitType("none");
+    setPointsToUse("");
+    setBenefitAmount("");
+    setDiscountCode("");
+    setManualDiscountReason("");
+    setTuuTransactionId("");
+    setReceiptNumber("");
+    setNotes("");
+    setPaymentConfirmed(false);
+    setRemotePaymentReference("");
+    setRemotePaymentStatus("");
+  }
+
+  async function pollRemotePayment(reference: string, attemptsLeft = 24) {
+    if (attemptsLeft <= 0) {
+      setRemotePolling(false);
+      setRemotePaymentStatus(
+        "Cobro enviado. Aun no llega confirmacion del webhook.",
+      );
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    try {
+      const response = await fetch(
+        `/api/admin/loyalty/sales/remote-payment?reference=${encodeURIComponent(reference)}`,
+        { cache: "no-store" },
+      );
+      const data = (await response.json()) as {
+        error?: string;
+        status?: string;
+        remotePaymentStatus?: string;
+        shopifyOrderName?: string;
+        physicalSaleId?: number;
+        lastError?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo consultar el cobro TUU");
+      }
+
+      setRemotePaymentStatus(
+        data.remotePaymentStatus === "paid"
+          ? "Pago aprobado, cerrando venta..."
+          : `Estado TUU: ${data.remotePaymentStatus || data.status || "pendiente"}`,
+      );
+
+      if (data.status === "completed") {
+        setSuccess(
+          `Venta completada automaticamente: orden ${data.shopifyOrderName || "Shopify"} y registro #${data.physicalSaleId}.`,
+        );
+        resetSaleForm();
+        setRemotePolling(false);
+        router.refresh();
+        return;
+      }
+
+      if (data.status === "failed") {
+        throw new Error(
+          data.lastError || "El cobro remoto TUU no pudo completarse",
+        );
+      }
+
+      void pollRemotePayment(reference, attemptsLeft - 1);
+    } catch (cause) {
+      setRemotePolling(false);
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "No se pudo consultar el cobro TUU",
+      );
+    }
+  }
+
+  async function sendRemotePayment() {
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+    setRemotePaymentStatus("");
+
+    try {
+      const response = await fetch("/api/admin/loyalty/sales/remote-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(salePayload()),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        paymentReference?: string;
+        total?: number;
+      };
+
+      if (!response.ok || !data.paymentReference) {
+        throw new Error(data.error || "No se pudo enviar el cobro TUU");
+      }
+
+      setRemotePaymentReference(data.paymentReference);
+      setTuuTransactionId(data.paymentReference);
+      setPaymentConfirmed(false);
+      setSuccess(
+        `Cobro enviado al POS por ${currencyFormatter.format(data.total ?? total)}. Esperando confirmacion de TUU.`,
+      );
+      setRemotePaymentStatus("Esperando aprobacion en la maquina TUU...");
+      setRemotePolling(true);
+      void pollRemotePayment(data.paymentReference);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "No se pudo enviar el cobro TUU",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function confirmSale() {
     setSubmitting(true);
     setError("");
@@ -162,21 +301,10 @@ export function LoyaltyPos({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...salePayload(),
           paymentConfirmed,
-          customerId: selectedCustomer?.id ?? null,
-          items: cart.map((item) => ({
-            variantId: item.id,
-            quantity: item.quantity,
-          })),
-          benefitType,
-          pointsToUse: Math.trunc(amount(pointsToUse)),
-          benefitAmount: amount(benefitAmount),
-          discountCode,
-          manualDiscountReason,
           tuuTransactionId,
           receiptNumber,
-          responsible,
-          notes,
         }),
       });
       const data = (await response.json()) as {
@@ -194,16 +322,7 @@ export function LoyaltyPos({
       setSuccess(
         `${data.alreadyCompleted ? "Venta recuperada" : "Venta completada"}: orden ${data.shopifyOrderName || "Shopify"} y registro #${data.physicalSaleId}.${data.transactionPipelineWarning ? ` Requiere conciliacion: ${data.transactionPipelineWarning}` : ""}`,
       );
-      setCart([]);
-      setBenefitType("none");
-      setPointsToUse("");
-      setBenefitAmount("");
-      setDiscountCode("");
-      setManualDiscountReason("");
-      setTuuTransactionId("");
-      setReceiptNumber("");
-      setNotes("");
-      setPaymentConfirmed(false);
+      resetSaleForm();
       router.refresh();
     } catch (cause) {
       setError(
@@ -238,6 +357,15 @@ export function LoyaltyPos({
     !tuuTransactionId.trim() ||
     !responsible.trim() ||
     !paymentConfirmed;
+  const remotePaymentDisabled =
+    submitting ||
+    remotePolling ||
+    cart.length === 0 ||
+    total <= 0 ||
+    pointsInvalid ||
+    discountInvalid ||
+    detailsInvalid ||
+    !responsible.trim();
 
   return (
     <div className="space-y-6">
@@ -604,25 +732,44 @@ export function LoyaltyPos({
                 <span>{numberFormatter.format(pointsEarned)}</span>
               </div>
             </div>
-            <label className="mt-5 flex items-start gap-3 rounded-lg bg-white/10 p-3 text-xs">
+            <button
+              type="button"
+              disabled={remotePaymentDisabled}
+              onClick={() => void sendRemotePayment()}
+              className="mt-5 w-full rounded-lg bg-olffy-orange px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting
+                ? "Enviando cobro..."
+                : remotePolling
+                  ? "Esperando webhook TUU..."
+                  : "Enviar cobro a maquina TUU"}
+            </button>
+            {remotePaymentReference ? (
+              <div className="mt-3 rounded-lg bg-white/10 p-3 text-xs text-gray-200">
+                <p>Referencia: {remotePaymentReference}</p>
+                {remotePaymentStatus ? <p>{remotePaymentStatus}</p> : null}
+              </div>
+            ) : null}
+            <label className="mt-4 flex items-start gap-3 rounded-lg bg-white/10 p-3 text-xs">
               <input
                 type="checkbox"
                 checked={paymentConfirmed}
                 onChange={(event) => setPaymentConfirmed(event.target.checked)}
                 className="mt-0.5"
               />
-              Confirmo que el pago por {currencyFormatter.format(total)} fue
-              recibido en TUU y que la referencia ingresada es correcta.
+              Confirmacion manual de respaldo: el pago por{" "}
+              {currencyFormatter.format(total)} fue recibido en TUU y la
+              referencia ingresada es correcta.
             </label>
             <button
               type="button"
               disabled={submitDisabled}
               onClick={() => void confirmSale()}
-              className="mt-4 w-full rounded-lg bg-olffy-orange px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-4 w-full rounded-lg border border-white/30 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting
                 ? "Confirmando venta..."
-                : "Confirmar pago y crear orden Shopify"}
+                : "Confirmar manualmente y crear orden Shopify"}
             </button>
           </section>
         </div>
