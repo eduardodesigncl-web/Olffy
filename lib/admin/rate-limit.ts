@@ -35,28 +35,35 @@ export async function checkAdminLoginRateLimit(ipHash: string) {
   const since = new Date(Date.now() - windowSeconds * 1000);
 
   if (hasAdminDatabaseConfig()) {
-    const { data, error } = await getSupabaseAdmin()
-      .from("admin_login_attempts")
-      .select("succeeded, attempted_at")
-      .eq("ip_hash", ipHash)
-      .gte("attempted_at", since.toISOString())
-      .order("attempted_at", { ascending: false })
-      .limit(maxAttempts + 10);
+    try {
+      const { data, error } = await getSupabaseAdmin()
+        .from("admin_login_attempts")
+        .select("succeeded, attempted_at")
+        .eq("ip_hash", ipHash)
+        .gte("attempted_at", since.toISOString())
+        .order("attempted_at", { ascending: false })
+        .limit(maxAttempts + 10);
 
-    if (error) {
-      throw new Error(`No se pudo validar el rate limit: ${error.message}`);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const failuresSinceSuccess = [];
+      for (const attempt of data ?? []) {
+        if (attempt.succeeded) break;
+        failuresSinceSuccess.push(attempt);
+      }
+
+      return {
+        allowed: failuresSinceSuccess.length < maxAttempts,
+        retryAfter: windowSeconds,
+      };
+    } catch (error) {
+      console.warn(
+        "No se pudo validar el rate limit admin en Supabase; usando memoria local:",
+        error,
+      );
     }
-
-    const failuresSinceSuccess = [];
-    for (const attempt of data ?? []) {
-      if (attempt.succeeded) break;
-      failuresSinceSuccess.push(attempt);
-    }
-
-    return {
-      allowed: failuresSinceSuccess.length < maxAttempts,
-      retryAfter: windowSeconds,
-    };
   }
 
   const attempts = (memoryAttempts.get(ipHash) ?? []).filter(
