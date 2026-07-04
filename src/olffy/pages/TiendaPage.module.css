@@ -1,0 +1,49 @@
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(36px, 4.5vw, 56px) clamp(14px, 4vw, 48px)
+    clamp(52px, 7vw, 90px);
+}
+
+.header {
+  margin-bottom: clamp(22px, 3vw, 36px);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--olffy-naranjo);
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 4.5vw, 52px);
+  color: var(--olffy-cafe);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--olffy-cafe-68);
+  max-width: 520px;
+}
+
+.count {
+  margin: 0;
+  font-size: 14px;
+  color: var(--olffy-cafe-55);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  align-items: center;
+  margin-bottom: 26px;
+}

@@ -1,8 +1,9 @@
-import { Navbar } from "components/layout/navbar";
 import { GeistSans } from "geist/font/sans";
 import { ReactNode } from "react";
 import { Toaster } from "sonner";
+import "src/styles/olffy-tokens.css";
 import "./globals.css";
+import "src/olffy/styles/global.css";
 import { baseUrl } from "lib/utils";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -53,6 +54,16 @@ export default async function RootLayout({
   return (
     <html lang="es" className={GeistSans.variable}>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -61,7 +72,6 @@ export default async function RootLayout({
         />
       </head>
       <body className="selection:bg-olffy-yellow selection:text-olffy-ink">
-        <Navbar />
         <main>
           {children}
           <Toaster closeButton />

@@ -1,21 +1,15 @@
-import Grid from "components/grid";
-
 export default function Loading() {
   return (
-    <>
-      <div className="mb-4 h-6" />
-      <Grid className="grid-cols-2 lg:grid-cols-3">
-        {Array(12)
-          .fill(0)
-          .map((_, index) => {
-            return (
-              <Grid.Item
-                key={index}
-                className="animate-pulse bg-neutral-100 dark:bg-neutral-800"
-              />
-            );
-          })}
-      </Grid>
-    </>
+    <section className="mx-auto max-w-[1240px] px-4 py-[clamp(36px,4.5vw,56px)] lg:px-12">
+      <div className="mb-8 h-8 w-56 rounded bg-olffy-ink/10" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-[280px] animate-pulse rounded-[14px] bg-olffy-ink/5"
+          />
+        ))}
+      </div>
+    </section>
   );
 }

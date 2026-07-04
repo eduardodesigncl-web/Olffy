@@ -24,35 +24,36 @@ export function AccountShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="px-5 py-8 md:py-12">
-      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[250px_1fr]">
-        <aside className="h-fit rounded-[8px] border-2 border-olffy-ink bg-white p-4 shadow-[5px_5px_0_#fab405]">
-          <div className="border-b border-olffy-ink/15 px-2 pb-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-olffy-purple">
+    <div className="px-6 py-10 md:px-16">
+      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[220px_1fr]">
+        <aside className="h-fit rounded-2xl border border-olffy-ink/10 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,.05)]">
+          <div className="pb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-olffy-ink/35">
               Mi cuenta
             </p>
-            <p className="mt-2 font-brand text-xl font-black text-olffy-ink">
+            <p className="mt-1 font-brand text-[16px] font-bold text-olffy-ink/90">
               {customer.full_name || "Cliente OLFFY"}
             </p>
-            <p className="mt-1 truncate text-xs text-olffy-muted">
+            <p className="mt-1 truncate text-[13px] text-olffy-ink/45">
               {customer.email}
             </p>
           </div>
-          <nav className="mt-4 grid gap-1">
+          <nav className="mt-6 grid gap-1">
             {links.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-3 rounded-[6px] px-3 py-3 text-sm font-bold text-olffy-ink transition hover:bg-olffy-cream"
+                className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-olffy-ink/65 transition hover:bg-olffy-purple/10 hover:text-olffy-purple"
               >
-                <Icon className="h-5 w-5 text-olffy-purple" />
+                <Icon className="h-4 w-4 text-olffy-purple" />
                 {label}
               </Link>
             ))}
           </nav>
-          <form action={signOutCustomerAction} className="mt-3">
-            <button className="flex w-full items-center gap-3 rounded-[6px] px-3 py-3 text-left text-sm font-bold text-olffy-muted hover:bg-gray-100">
-              <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
+          <div className="my-4 h-px bg-olffy-ink/10" />
+          <form action={signOutCustomerAction}>
+            <button className="flex w-full items-center gap-2 rounded-xl px-4 py-2 text-left text-[13px] text-olffy-ink/40 transition hover:bg-gray-100">
+              <ArrowRightStartOnRectangleIcon className="h-4 w-4" />
               Cerrar sesion
             </button>
           </form>

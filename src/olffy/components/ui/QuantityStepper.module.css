@@ -1,0 +1,40 @@
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(42, 28, 16, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  line-height: 1;
+  color: var(--olffy-cafe);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.inc {
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+}
+
+.value {
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 20px;
+  text-align: center;
+}

@@ -41,7 +41,9 @@ const adminApiVersion =
 const endpoint = domain
   ? `${domain}/admin/api/${adminApiVersion}/graphql.json`
   : "";
-const configuredAdminToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim();
+const configuredAdminToken =
+  process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim() ||
+  process.env.SHOPIFY_ADMIN_TOKEN?.trim();
 const adminClientId =
   process.env.SHOPIFY_ADMIN_API_CLIENT_ID?.trim() ||
   process.env.SHOPIFY_API_KEY?.trim();

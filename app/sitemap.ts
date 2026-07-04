@@ -55,11 +55,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
   );
 
-  // La URL canónica de producto en OLFFY es /producto/[handle]
-  // /product/[handle] redirige a /producto/[handle] — no debe estar en sitemap
+  // La URL canónica de producto en OLFFY es /tienda/[handle] (frontend
+  // oficial). /producto/[id] y /product/[handle] redirigen a ella y no
+  // deben estar en el sitemap.
   const productsPromise = getProducts({}).then((products) =>
     products.map((product) => ({
-      url: `${baseUrl}/producto/${product.handle}`,
+      url: `${baseUrl}/tienda/${product.handle}`,
       lastModified: product.updatedAt,
     })),
   );

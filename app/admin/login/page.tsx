@@ -38,22 +38,25 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-10 shadow-xl border border-gray-100">
+    <div className="flex min-h-screen items-center justify-center bg-[#f5f5f5] px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[400px] rounded-2xl border border-olffy-ink/10 bg-white p-10 shadow-[0_4px_24px_rgba(0,0,0,.07)]">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight text-gray-900 font-brand">
-            Olffy Admin
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-olffy-orange">
+            Acceso restringido
+          </p>
+          <h2 className="mt-2 font-brand text-[28px] font-bold text-olffy-ink/90">
+            Admin Panel
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Ingresa tu contraseña para acceder al panel
+          <p className="mt-1 text-[13px] text-olffy-ink/50">
+            Solo personal autorizado de OLFFY.
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4 rounded-md shadow-sm">
+        <form className="mt-6 space-y-5" method="post" onSubmit={handleSubmit}>
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-[12px] text-olffy-ink/55">
+              Contraseña
+            </label>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Contraseña
-              </label>
               <input
                 id="password"
                 name="password"
@@ -62,14 +65,14 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-olffy-purple focus:outline-none focus:ring-olffy-purple sm:text-sm"
+                className="block w-full rounded-xl border border-olffy-ink/15 px-4 py-3 text-sm text-olffy-ink outline-none transition focus:border-olffy-purple"
                 placeholder="Contraseña"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-100">
+            <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-600">
               {error}
             </div>
           )}
@@ -78,12 +81,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md border border-transparent bg-olffy-purple px-4 py-3 text-sm font-medium text-white hover:bg-olffy-ink focus:outline-none focus:ring-2 focus:ring-olffy-purple focus:ring-offset-2 disabled:opacity-50 transition-colors"
+              className="flex w-full justify-center rounded-xl bg-olffy-purple px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "Verificando..." : "Entrar al panel"}
             </button>
           </div>
         </form>
+        <p className="mt-6 text-center text-[11px] text-olffy-ink/35">
+          Acceso privado · OLFFY Admin
+        </p>
       </div>
     </div>
   );

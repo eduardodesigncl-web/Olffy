@@ -1,0 +1,52 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: clamp(28px, 4vw, 40px);
+  flex-wrap: wrap;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--olffy-cafe-08);
+  color: rgba(42, 28, 16, 0.4);
+}
+
+.dotActive {
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+}
+
+.dotDone {
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+}
+
+.label {
+  font-size: 13.5px;
+  font-weight: 400;
+  color: rgba(42, 28, 16, 0.45);
+}
+
+.labelActive {
+  font-weight: 700;
+  color: var(--olffy-cafe);
+}
+
+.arrow {
+  color: var(--olffy-cafe-08);
+  font-size: 13px;
+}

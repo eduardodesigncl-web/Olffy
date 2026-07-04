@@ -30,7 +30,8 @@ export const validateEnvironmentVariables = () => {
     olffyShopifyStoreDomain;
   const shopifyStorefrontAccessToken =
     process.env.SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
-    process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+    process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+    process.env.SHOPIFY_STOREFRONT_TOKEN;
 
   if (!shopifyStoreDomain) {
     missingEnvironmentVariables.push(
@@ -40,7 +41,7 @@ export const validateEnvironmentVariables = () => {
 
   if (!shopifyStorefrontAccessToken) {
     missingEnvironmentVariables.push(
-      "SHOPIFY_STOREFRONT_ACCESS_TOKEN or SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN",
+      "SHOPIFY_STOREFRONT_TOKEN, SHOPIFY_STOREFRONT_ACCESS_TOKEN or SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN",
     );
   }
 

@@ -1,0 +1,95 @@
+/* OLFFY Design Tokens — CSS Custom Properties */
+/* Import in Next.js: import "@/olffy-tokens.css" in app/layout.tsx */
+
+@font-face {
+  font-family: "PiepieW01-Regular";
+  src:
+    url("/fonts/PiepieW01-Regular.woff2") format("woff2"),
+    url("/fonts/PiepieW01-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Text";
+  src:
+    url("/fonts/IvyPresto-Text-Regular.woff2") format("woff2"),
+    url("/fonts/IvyPresto-Text-Regular.woff") format("woff");
+  font-weight: 300 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Text";
+  src:
+    url("/fonts/IvyPresto-Text-Italic.woff2") format("woff2"),
+    url("/fonts/IvyPresto-Text-Italic.woff") format("woff");
+  font-weight: 300 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Poppins loaded via Google Fonts or self-hosted */
+/* <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"> */
+
+:root {
+  /* Brand colors */
+  --olffy-cream: #fff5d9;
+  --olffy-yellow: #fab405;
+  --olffy-orange: #e94300;
+  --olffy-purple: #5957b0;
+
+  /* Text */
+  --olffy-text-main: #343434;
+  --olffy-text-secondary: #6a6a6a;
+
+  /* Fonts */
+  --font-piepie: "PiepieW01-Regular", sans-serif;
+  --font-ivy: "IvyPresto Text", Georgia, serif;
+  --font-poppins: "Poppins", sans-serif;
+
+  /* Spacing scale (optional) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* Utility classes for brand fonts */
+.font-piepie {
+  font-family: var(--font-piepie);
+}
+.font-ivy {
+  font-family: var(--font-ivy);
+}
+.font-poppins {
+  font-family: var(--font-poppins);
+}
+
+/* Smooth scroll globally */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

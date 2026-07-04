@@ -1,5 +1,26 @@
 export default {
   cacheComponents: true,
+  // Rutas legacy de producto y carrito → frontend oficial. Resueltas a nivel
+  // de servidor, sin renderizar nada.
+  async redirects() {
+    return [
+      {
+        source: "/producto/:handle",
+        destination: "/tienda/:handle",
+        permanent: true,
+      },
+      {
+        source: "/product/:handle",
+        destination: "/tienda/:handle",
+        permanent: true,
+      },
+      {
+        source: "/carrito",
+        destination: "/checkout",
+        permanent: false,
+      },
+    ];
+  },
   experimental: {
     inlineCss: true,
   },

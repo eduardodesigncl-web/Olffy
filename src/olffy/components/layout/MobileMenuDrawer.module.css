@@ -1,0 +1,69 @@
+.panel {
+  width: min(290px, 84vw) !important;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  padding: 22px 20px;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--olffy-naranjo);
+  letter-spacing: -0.02em;
+}
+
+.closeBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--olffy-cafe-06);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: var(--olffy-cafe);
+  line-height: 1;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.link {
+  text-align: left;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.link:hover {
+  background: var(--olffy-cafe-06);
+}
+
+.puntosLink {
+  composes: link;
+  background: rgba(250, 180, 5, 0.1);
+  color: #c8901a;
+  margin-top: 8px;
+}

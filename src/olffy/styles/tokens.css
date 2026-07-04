@@ -1,0 +1,42 @@
+/* Design tokens OLFFY — paleta, tipografías, breakpoints, espaciado.
+   Cambia el valor acá y se propaga a toda la app vía var(--olffy-*). */
+
+:root {
+  /* Paleta de marca */
+  --olffy-crema: #fff5d9;
+  --olffy-amarillo: #fab405;
+  --olffy-naranjo: #e94300;
+  --olffy-morado: #5957b0;
+  --olffy-cafe: #2a1c10;
+
+  /* Variantes derivadas usadas en el original (fondos suaves, textos, bordes) */
+  --olffy-crema-suave: #fff1ce;
+  --olffy-amarillo-suave: #ffe9a8;
+  --olffy-naranjo-suave: #fbd4c2;
+  --olffy-morado-suave: #deddf2;
+  --olffy-cafe-45: rgba(42, 28, 16, 0.45);
+  --olffy-cafe-55: rgba(42, 28, 16, 0.55);
+  --olffy-cafe-68: rgba(42, 28, 16, 0.68);
+  --olffy-cafe-08: rgba(42, 28, 16, 0.08);
+  --olffy-cafe-06: rgba(42, 28, 16, 0.06);
+
+  --olffy-blanco: #ffffff;
+
+  /* Tipografías */
+  --font-display: "PiepieW01", "Baloo 2", cursive;
+  --font-serif: "IvyPresto Text", "Playfair Display", serif;
+  --font-body: "Poppins", system-ui, sans-serif;
+
+  /* Radios y sombras reutilizados en cards/botones/drawers */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --shadow-card: 0 4px 14px rgba(42, 28, 16, 0.07);
+  --shadow-drawer: -12px 0 60px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 40px 80px rgba(0, 0, 0, 0.28);
+
+  /* Breakpoints de referencia (usados en JS vía hooks/useBreakpoint, no en media queries directas) */
+  --bp-tablet: 600px;
+  --bp-desktop: 1024px;
+}

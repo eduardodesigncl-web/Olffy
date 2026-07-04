@@ -39,3 +39,10 @@ next-start.*.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# proyectos anidados (copias locales, no forman parte del deploy)
+olffy-commerce/
+panel-olffy/
+
+# supabase CLI
+supabase/.temp/
