@@ -17,9 +17,7 @@ interface NovedadesPageProps {
   onCollectionClick: (path: string) => void;
 }
 
-// Countdown hacia un "próximo lanzamiento" — 7 días desde que se carga
-// la página (constante de módulo, no se recalcula en cada render).
-const LAUNCH_TARGET = Date.now() + 7 * 24 * 60 * 60 * 1000;
+const LAUNCH_COUNTDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Página de Novedades — colecciones destacadas (Shopify), countdown de
 // lanzamiento y grid de productos nuevos, reutilizando ProductGrid/
@@ -61,7 +59,7 @@ export function NovedadesPage({
         <CountdownTimer
           eyebrow="PRÓXIMO LANZAMIENTO"
           title="Nueva colección en camino ✨"
-          targetDate={LAUNCH_TARGET}
+          durationMs={LAUNCH_COUNTDOWN_MS}
         />
       </div>
 
