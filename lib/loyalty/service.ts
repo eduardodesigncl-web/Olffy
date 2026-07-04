@@ -200,6 +200,30 @@ export type PhysicalSaleAttempt = {
   physicalSaleId?: number;
 };
 
+export type RemotePhysicalSaleAttempt = PhysicalSaleAttempt & {
+  tuuTransactionId: string;
+  payloadFingerprint: string;
+  olffyReference?: string;
+  expectedTotal?: number;
+  currency?: "CLP";
+  receivedTotal?: number;
+  remotePaymentStatus?:
+    | "manual"
+    | "created"
+    | "sent"
+    | "paid"
+    | "failed"
+    | "cancelled"
+    | "expired"
+    | "reconciliation_required";
+  providerTransactionId?: string;
+  providerEventId?: string;
+  remotePaymentResponse?: Record<string, unknown>;
+  paymentPayloadSnapshot?: Record<string, unknown>;
+  lastError?: string;
+  createdBy?: string;
+};
+
 export type FinalizePhysicalSalePosInput = {
   attemptId: string;
   claimToken: string;
@@ -253,6 +277,62 @@ function throwSupabaseError(
 function toNumber(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function toRemotePhysicalSaleAttempt(
+  row: Record<string, unknown>,
+): RemotePhysicalSaleAttempt {
+  return {
+    attemptId: String(row.id),
+    claimToken: row.claim_token ? String(row.claim_token) : undefined,
+    status: String(row.status) as PhysicalSaleAttempt["status"],
+    tuuTransactionId: String(row.tuu_transaction_id),
+    payloadFingerprint: String(row.payload_fingerprint),
+    shopifyOrderId: row.shopify_order_id
+      ? String(row.shopify_order_id)
+      : undefined,
+    shopifyOrderName: row.shopify_order_name
+      ? String(row.shopify_order_name)
+      : undefined,
+    physicalSaleId: row.physical_sale_id
+      ? toNumber(row.physical_sale_id)
+      : undefined,
+    olffyReference: row.olffy_reference
+      ? String(row.olffy_reference)
+      : undefined,
+    expectedTotal:
+      row.expected_total === null || row.expected_total === undefined
+        ? undefined
+        : toNumber(row.expected_total),
+    currency: row.currency === "CLP" ? "CLP" : undefined,
+    receivedTotal:
+      row.received_total === null || row.received_total === undefined
+        ? undefined
+        : toNumber(row.received_total),
+    remotePaymentStatus: row.remote_payment_status
+      ? (String(
+          row.remote_payment_status,
+        ) as RemotePhysicalSaleAttempt["remotePaymentStatus"])
+      : undefined,
+    providerTransactionId: row.provider_transaction_id
+      ? String(row.provider_transaction_id)
+      : undefined,
+    providerEventId: row.provider_event_id
+      ? String(row.provider_event_id)
+      : undefined,
+    remotePaymentResponse:
+      row.remote_payment_response &&
+      typeof row.remote_payment_response === "object"
+        ? (row.remote_payment_response as Record<string, unknown>)
+        : undefined,
+    paymentPayloadSnapshot:
+      row.payment_payload_snapshot &&
+      typeof row.payment_payload_snapshot === "object"
+        ? (row.payment_payload_snapshot as Record<string, unknown>)
+        : undefined,
+    lastError: row.last_error ? String(row.last_error) : undefined,
+    createdBy: row.created_by ? String(row.created_by) : undefined,
+  };
 }
 
 export async function getLoyaltyStats(): Promise<LoyaltyStats> {
@@ -497,6 +577,124 @@ export async function failPhysicalSalePosAttempt(input: {
   if (error) {
     console.error("No se pudo marcar el intento TUU como fallido:", error);
   }
+}
+
+export async function saveRemotePhysicalSalePosAttempt(input: {
+  attemptId: string;
+  claimToken: string;
+  olffyReference: string;
+  expectedTotal: number;
+  payloadSnapshot: Record<string, unknown>;
+  remotePaymentStatus: RemotePhysicalSaleAttempt["remotePaymentStatus"];
+  remotePaymentResponse?: Record<string, unknown>;
+  providerTransactionId?: string;
+}): Promise<RemotePhysicalSaleAttempt> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("physical_sale_attempts")
+    .update({
+      olffy_reference: input.olffyReference.trim(),
+      expected_total: input.expectedTotal,
+      currency: "CLP",
+      payment_payload_snapshot: input.payloadSnapshot,
+      remote_payment_status: input.remotePaymentStatus,
+      remote_payment_response: input.remotePaymentResponse ?? {},
+      provider_transaction_id: input.providerTransactionId?.trim() || null,
+    })
+    .eq("id", input.attemptId)
+    .eq("claim_token", input.claimToken)
+    .select("*")
+    .single();
+
+  if (error) {
+    throwSupabaseError(
+      "No se pudo guardar el intento de cobro remoto TUU",
+      error,
+    );
+  }
+
+  return toRemotePhysicalSaleAttempt(data as Record<string, unknown>);
+}
+
+export async function updateRemotePhysicalSalePosAttempt(input: {
+  attemptId: string;
+  remotePaymentStatus: RemotePhysicalSaleAttempt["remotePaymentStatus"];
+  receivedTotal?: number;
+  providerTransactionId?: string;
+  providerEventId?: string;
+  remotePaymentResponse?: Record<string, unknown>;
+  error?: string;
+}): Promise<void> {
+  const changes: Record<string, unknown> = {
+    remote_payment_status: input.remotePaymentStatus,
+  };
+
+  if (input.receivedTotal !== undefined)
+    changes.received_total = input.receivedTotal;
+  if (input.providerTransactionId !== undefined) {
+    changes.provider_transaction_id =
+      input.providerTransactionId.trim() || null;
+  }
+  if (input.providerEventId !== undefined) {
+    changes.provider_event_id = input.providerEventId.trim() || null;
+  }
+  if (input.remotePaymentResponse !== undefined) {
+    changes.remote_payment_response = input.remotePaymentResponse;
+    changes.received_at = new Date().toISOString();
+  }
+  if (input.error !== undefined) {
+    changes.last_error = input.error.trim() || null;
+  }
+  if (
+    [
+      "paid",
+      "failed",
+      "cancelled",
+      "expired",
+      "reconciliation_required",
+    ].includes(input.remotePaymentStatus ?? "")
+  ) {
+    changes.processed_at = new Date().toISOString();
+  }
+
+  const { error } = await getSupabaseAdmin()
+    .from("physical_sale_attempts")
+    .update(changes)
+    .eq("id", input.attemptId);
+
+  if (error) {
+    throwSupabaseError("No se pudo actualizar el cobro remoto TUU", error);
+  }
+}
+
+export async function getRemotePhysicalSalePosAttempt(
+  reference: string,
+): Promise<RemotePhysicalSaleAttempt | null> {
+  const supabase = getSupabaseAdmin();
+  const normalized = reference.trim();
+  const lookups = [
+    { column: "olffy_reference", value: normalized },
+    { column: "tuu_transaction_id", value: normalized },
+    { column: "provider_transaction_id", value: normalized },
+    { column: "provider_event_id", value: normalized },
+  ];
+
+  for (const lookup of lookups) {
+    const { data, error } = await supabase
+      .from("physical_sale_attempts")
+      .select("*")
+      .eq(lookup.column, lookup.value)
+      .maybeSingle();
+
+    if (error) {
+      throwSupabaseError("No se pudo consultar el cobro remoto TUU", error);
+    }
+
+    if (data) {
+      return toRemotePhysicalSaleAttempt(data as Record<string, unknown>);
+    }
+  }
+
+  return null;
 }
 
 export async function finalizePhysicalSalePos(
