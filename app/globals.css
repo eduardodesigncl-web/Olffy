@@ -8,11 +8,59 @@
   --color-olffy-yellow: #fab405;
   --color-olffy-orange: #e94300;
   --color-olffy-purple: #5957b0;
-  --color-olffy-ink: #343434;
-  --color-olffy-muted: #6a6a6a;
+  --color-olffy-ink: #2a1c10;
+  --color-olffy-muted: rgba(42, 28, 16, 0.62);
 }
 
 @layer base {
+  @font-face {
+    font-family: "PiepieW01";
+    src: url("/olffy/fonts/Piepie-W01-Regular.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "PiepieW01-Regular";
+    src: url("/fonts/Piepie-W01-Regular.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "IvyPresto Text";
+    src: url("/olffy/fonts/Ivy-Presto-Text-Thin.otf") format("opentype");
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "IvyPresto Text";
+    src: url("/olffy/fonts/Ivy-Presto-Text-Light.otf") format("opentype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "IvyPresto Text";
+    src: url("/olffy/fonts/Ivy-Presto-Text.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "IvyPresto Text";
+    src: url("/olffy/fonts/Ivy-Presto-Text-Semi-Bold.otf") format("opentype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+
   *,
   ::after,
   ::before,
@@ -26,6 +74,25 @@ html {
   scroll-behavior: smooth;
 }
 
+@keyframes olffy-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes olffy-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
 @supports (font: -apple-system-body) and (-webkit-appearance: none) {
   img[loading="lazy"] {
     clip-path: inset(0.6px);
@@ -33,27 +100,38 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(250, 180, 5, 0.18),
-      transparent 32rem
-    ),
-    linear-gradient(180deg, #fffdf7 0%, #fff5d9 100%);
-  color: #343434;
+  background-color: #fff;
+  color: #2a1c10;
   font-family:
     var(--font-geist-sans), Poppins, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.olffy-admin-route > header {
+  display: none;
 }
 
 .font-brand {
   font-family:
-    "Comic Sans MS", "Trebuchet MS", var(--font-geist-sans), ui-sans-serif,
-    system-ui, sans-serif;
+    "PiepieW01", "Baloo 2", var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif;
   letter-spacing: 0;
 }
 
 .font-editorial {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "IvyPresto Text", Georgia, "Times New Roman", serif;
+}
+
+.olffy-marquee {
+  animation: olffy-marquee 28s linear infinite;
+}
+
+.olffy-bob {
+  animation: olffy-bob 5s ease-in-out infinite;
+}
+
+.olffy-card-shadow {
+  box-shadow: 0 18px 38px rgba(42, 28, 16, 0.1);
 }
 
 a,

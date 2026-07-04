@@ -1,0 +1,45 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 28, 16, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.panel {
+  position: relative;
+  background: var(--olffy-blanco);
+  border-radius: var(--radius-lg);
+  width: min(900px, 100%);
+  max-height: 94vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-modal);
+  z-index: 1;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(42, 28, 16, 0.07);
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--olffy-cafe);
+}

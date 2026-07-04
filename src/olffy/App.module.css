@@ -1,0 +1,38 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--olffy-blanco);
+}
+
+.main {
+  flex: 1;
+}
+
+.placeholder {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(64px, 10vw, 120px) clamp(14px, 4vw, 48px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.placeholderTitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 5vw, 56px);
+  color: var(--olffy-cafe);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.placeholderText {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--olffy-cafe-68);
+  max-width: 480px;
+  margin: 0;
+}

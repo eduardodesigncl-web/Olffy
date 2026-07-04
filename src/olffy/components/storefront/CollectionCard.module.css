@@ -1,0 +1,41 @@
+.card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.imageWrap {
+  width: 100%;
+  height: 200px;
+}
+
+.info {
+  padding: 18px 20px;
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-top: none;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--olffy-cafe);
+  margin-bottom: 4px;
+}
+
+.desc {
+  font-size: 13.5px;
+  color: var(--olffy-cafe-68);
+}

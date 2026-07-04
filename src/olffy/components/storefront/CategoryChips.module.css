@@ -1,0 +1,25 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 7px 15px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: rgba(42, 28, 16, 0.7);
+  font-weight: 400;
+}
+
+.chipActive {
+  background: var(--olffy-cafe);
+  color: var(--olffy-blanco);
+  border-color: var(--olffy-cafe);
+  font-weight: 600;
+}

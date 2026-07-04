@@ -1,0 +1,58 @@
+.card {
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+  text-align: left;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.imageWrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.info {
+  padding: 12px 14px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat {
+  font-size: 11px;
+  color: var(--olffy-morado);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.name {
+  font-size: 14.5px;
+  color: var(--olffy-cafe);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--olffy-cafe);
+  margin-bottom: 4px;
+}
+
+.addBtn {
+  width: 100%;
+}

@@ -54,14 +54,14 @@ export function TransactionList({
 }) {
   if (transactions.length === 0) {
     return (
-      <div className="rounded-[8px] border-2 border-dashed border-olffy-ink/25 bg-white p-8 text-center text-sm text-olffy-muted">
+      <div className="rounded-[18px] border border-dashed border-olffy-ink/25 bg-white p-8 text-center text-sm text-olffy-muted">
         {emptyText}
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[8px] border-2 border-olffy-ink bg-white">
+    <div className="overflow-hidden rounded-[18px] border border-olffy-ink/10 bg-white shadow-[0_8px_24px_rgba(42,28,16,.06)]">
       {transactions.map((transaction) => (
         <article
           key={transaction.id}

@@ -1,0 +1,130 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--olffy-cafe-08);
+}
+
+.inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(14px, 3.5vw, 48px);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  position: relative;
+}
+
+.logoBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--olffy-naranjo);
+  letter-spacing: -0.02em;
+}
+
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: 18px;
+}
+
+.navLink {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--olffy-cafe);
+  padding: 6px 4px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  width: 37px;
+  height: 37px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--olffy-cafe);
+}
+
+.iconBtn:hover {
+  background: var(--olffy-cafe-06);
+}
+
+.cartBtn {
+  position: relative;
+  height: 38px;
+  padding: 0 13px;
+  border: none;
+  background: var(--olffy-cafe);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+
+.cartBadge {
+  background: var(--olffy-naranjo);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.hamburger {
+  width: 37px;
+  height: 37px;
+  border: none;
+  background: var(--olffy-cafe-06);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--olffy-cafe);
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .desktopNav {
+    display: flex;
+  }
+  .hamburger {
+    display: none;
+  }
+}

@@ -1,6 +1,17 @@
-import { TransactionList } from "components/customer/transaction-list";
-import { getCustomerTransactions } from "lib/customer/account";
+import {
+  getCustomerRedemptions,
+  getCustomerRewards,
+  getCustomerTransactions,
+} from "lib/customer/account";
 import { requireCustomerAccount } from "lib/customer/auth";
+import { AccountPageClient } from "src/integration/AccountPageClient";
+import { OlffyShell } from "src/integration/OlffyShell";
+import {
+  toFrontendCustomer,
+  toFrontendRedemptions,
+  toFrontendRewards,
+  toFrontendTransactions,
+} from "src/integration/mappers";
 
 export const metadata = {
   title: "Historial de puntos",
@@ -9,23 +20,26 @@ export const metadata = {
 
 export default async function CustomerHistoryPage() {
   const { customer } = await requireCustomerAccount();
-  const transactions = await getCustomerTransactions(customer.id);
+  const [transactionsRaw, rewardsRaw, redemptionsRaw] = await Promise.all([
+    getCustomerTransactions(customer.id),
+    getCustomerRewards(),
+    getCustomerRedemptions(customer.id),
+  ]);
+  const transactions = toFrontendTransactions(transactionsRaw);
+  const redemptions = toFrontendRedemptions(redemptionsRaw);
 
   return (
-    <div>
-      <p className="text-sm font-bold uppercase tracking-widest text-olffy-purple">
-        Tus puntos
-      </p>
-      <h1 className="mt-2 font-brand text-4xl font-black text-olffy-ink">
-        Historial completo
-      </h1>
-      <p className="mt-3 max-w-2xl leading-7 text-olffy-muted">
-        Aqui aparecen compras, canjes, ajustes, vencimientos y reversas. Los
-        movimientos no se borran, para que siempre puedas entender tu saldo.
-      </p>
-      <div className="mt-8">
-        <TransactionList transactions={transactions} />
-      </div>
-    </div>
+    <OlffyShell>
+      <AccountPageClient
+        screen="history"
+        customer={toFrontendCustomer(customer, {
+          ordersCount: transactions.length,
+          redemptionsCount: redemptions.length,
+        })}
+        transactions={transactions}
+        rewards={toFrontendRewards(rewardsRaw)}
+        redemptions={redemptions}
+      />
+    </OlffyShell>
   );
 }

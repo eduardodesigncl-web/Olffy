@@ -1,0 +1,81 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.promoRow {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.promoInput {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1.5px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--olffy-cafe);
+  outline: none;
+}
+
+.promoInput:focus {
+  border-color: var(--olffy-morado);
+}
+
+.promoApplied {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 16px;
+}
+
+.promoError {
+  font-size: 13px;
+  color: var(--olffy-naranjo);
+  margin-bottom: 16px;
+}
+
+.totals {
+  border-top: 1px solid var(--olffy-cafe-08);
+  padding-top: 16px;
+  margin-bottom: 24px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--olffy-cafe-68);
+  margin-bottom: 8px;
+}
+
+.discountRow {
+  color: #2e7d32;
+}
+
+.grandTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.grandTotalLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+}
+
+.grandTotalValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--olffy-naranjo);
+}
+
+.continueBtn {
+  width: 100%;
+}

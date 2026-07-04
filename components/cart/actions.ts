@@ -16,6 +16,23 @@ import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+async function ensureCartCookie() {
+  const cookieStore = await cookies();
+  const existingCartId = cookieStore.get("cartId")?.value;
+
+  if (existingCartId) return existingCartId;
+
+  const cart = await createCart();
+  cookieStore.set("cartId", cart.id!, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+
+  return cart.id;
+}
+
 export async function addItem(
   prevState: any,
   selectedVariantId: string | undefined,
@@ -25,11 +42,20 @@ export async function addItem(
   }
 
   try {
+    await ensureCartCookie();
     await addToCart([{ merchandiseId: selectedVariantId, quantity: 1 }]);
     updateTag(TAGS.cart);
   } catch (e) {
     return "Error adding item to cart";
   }
+}
+
+export async function addItemFromForm(formData: FormData) {
+  const selectedVariantId = formData.get("variantId");
+
+  if (typeof selectedVariantId !== "string") return;
+
+  await addItem(null, selectedVariantId);
 }
 
 export async function removeItem(prevState: any, merchandiseId: string) {
@@ -53,6 +79,14 @@ export async function removeItem(prevState: any, merchandiseId: string) {
   } catch (e) {
     return "Error removing item from cart";
   }
+}
+
+export async function removeItemFromForm(formData: FormData) {
+  const merchandiseId = formData.get("merchandiseId");
+
+  if (typeof merchandiseId !== "string") return;
+
+  await removeItem(null, merchandiseId);
 }
 
 export async function updateItemQuantity(
@@ -99,7 +133,21 @@ export async function updateItemQuantity(
   }
 }
 
+export async function updateItemQuantityFromForm(formData: FormData) {
+  const merchandiseId = formData.get("merchandiseId");
+  const quantity = Number(formData.get("quantity"));
+
+  if (typeof merchandiseId !== "string" || !Number.isFinite(quantity)) return;
+
+  await updateItemQuantity(null, { merchandiseId, quantity });
+}
+
+// Versión sin argumentos, usable directamente como action de <form>.
 export async function redirectToCheckout() {
+  await redirectToCheckoutWithEmail();
+}
+
+export async function redirectToCheckoutWithEmail(guestEmail?: string) {
   const cart = await getCart();
 
   if (!cart) {
@@ -111,10 +159,13 @@ export async function redirectToCheckout() {
     const requestId =
       cookieStore.get("tuu_payment_request_id")?.value ?? randomUUID();
     const account = await getCustomerAccountState();
+    const normalizedGuestEmail = guestEmail?.trim().toLowerCase();
     const payment = await startOnlinePayment({
       requestId,
       customerEmail:
-        account.status === "ready" ? account.customer.email : undefined,
+        account.status === "ready"
+          ? account.customer.email
+          : normalizedGuestEmail || undefined,
       items: cart.lines.map((line) => ({
         variantId: line.merchandise.id,
         quantity: line.quantity,
@@ -135,6 +186,5 @@ export async function redirectToCheckout() {
 }
 
 export async function createCartAndSetCookie() {
-  let cart = await createCart();
-  (await cookies()).set("cartId", cart.id!);
+  await ensureCartCookie();
 }

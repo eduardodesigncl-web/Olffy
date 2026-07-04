@@ -73,7 +73,8 @@ const domain = shopifyStoreDomain
 const endpoint = domain ? `${domain}${SHOPIFY_GRAPHQL_API_ENDPOINT}` : "";
 const storefrontAccessToken =
   process.env.SHOPIFY_s_SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim() ||
-  process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim();
+  process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim() ||
+  process.env.SHOPIFY_STOREFRONT_TOKEN?.trim();
 const accessTokenIsPrivate =
   storefrontAccessToken?.startsWith("shpat_") ||
   storefrontAccessToken?.startsWith("shpss_");

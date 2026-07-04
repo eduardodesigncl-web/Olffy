@@ -1,0 +1,27 @@
+.form {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1.5px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-sm);
+  background: var(--olffy-blanco);
+  font-size: 13.5px;
+  font-family: var(--font-body);
+  color: var(--olffy-cafe);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--olffy-morado);
+}
+
+.subscribed {
+  font-size: 13.5px;
+  color: var(--olffy-morado);
+  font-weight: 600;
+}

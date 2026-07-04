@@ -1,44 +1,32 @@
-import Grid from "components/grid";
-import ProductGridItems from "components/layout/product-grid-items";
-import { defaultSort, sorting } from "lib/constants";
-import { getProducts } from "lib/shopify";
+import { SiteFooter } from "components/olffy/site-footer";
+import { getOlffyProducts } from "components/olffy/shopify-products";
+import { StoreProductBrowser } from "components/olffy/store-product-browser";
 
 export const metadata = {
   title: "Buscar productos",
-  description:
-    "Busca entre toda la papelería OLFFY: agendas, libretas, stickers y más.",
+  description: "Busca productos OLFFY en la tienda.",
   robots: {
     index: false,
     follow: true,
   },
 };
 
-export default async function SearchPage(props: {
+export default async function SearchPage({
+  searchParams,
+}: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const searchParams = await props.searchParams;
-  const { sort, q: searchValue } = searchParams as { [key: string]: string };
-  const { sortKey, reverse } =
-    sorting.find((item) => item.slug === sort) || defaultSort;
-
-  const products = await getProducts({ sortKey, reverse, query: searchValue });
-  const resultsText = products.length > 1 ? "results" : "result";
+  const params = await searchParams;
+  const query = params?.q;
+  const products = await getOlffyProducts();
 
   return (
     <>
-      {searchValue ? (
-        <p className="mb-4">
-          {products.length === 0
-            ? "There are no products that match "
-            : `Showing ${products.length} ${resultsText} for `}
-          <span className="font-bold">&quot;{searchValue}&quot;</span>
-        </p>
-      ) : null}
-      {products.length > 0 ? (
-        <Grid className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <ProductGridItems products={products} />
-        </Grid>
-      ) : null}
+      <StoreProductBrowser
+        products={products}
+        initialQuery={typeof query === "string" ? query : ""}
+      />
+      <SiteFooter />
     </>
   );
 }
