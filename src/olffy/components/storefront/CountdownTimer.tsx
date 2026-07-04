@@ -4,15 +4,15 @@ import styles from "./CountdownTimer.module.css";
 interface CountdownTimerProps {
   eyebrow: string;
   title: string;
-  targetDate: number;
+  durationMs: number;
 }
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-function getTimeLeft(targetDate: number) {
-  const diff = Math.max(0, targetDate - Date.now());
+function getTimeLeftFromDiff(diffMs: number) {
+  const diff = Math.max(0, diffMs);
   return {
     days: pad(Math.floor(diff / 86400000)),
     hours: pad(Math.floor((diff % 86400000) / 3600000)),
@@ -21,19 +21,25 @@ function getTimeLeft(targetDate: number) {
   };
 }
 
+function getTimeLeft(targetDate: number) {
+  return getTimeLeftFromDiff(targetDate - Date.now());
+}
+
 // Contador regresivo mock hacia una fecha futura — se actualiza cada segundo
 // vía setInterval, igual que countdownTarget/countdownTick del original.
 export function CountdownTimer({
   eyebrow,
   title,
-  targetDate,
+  durationMs,
 }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate));
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeftFromDiff(durationMs));
 
   useEffect(() => {
+    const targetDate = Date.now() + durationMs;
+    setTimeLeft(getTimeLeft(targetDate));
     const timer = setInterval(() => setTimeLeft(getTimeLeft(targetDate)), 1000);
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [durationMs]);
 
   return (
     <div className={styles.wrap}>

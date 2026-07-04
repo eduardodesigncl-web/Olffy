@@ -7,6 +7,8 @@ interface FooterProps {
   onSubscribe?: (email: string) => void;
 }
 
+const COPYRIGHT_YEAR = 2026;
+
 // Footer del storefront: marca, columnas de links, newsletter y bottom bar.
 // Nota: el original esconde el acceso a /admin en un triple-click sobre el
 // texto "Hecho por Mouselabs" de la bottom bar — esa lógica se conecta en la
@@ -102,7 +104,7 @@ export function Footer({ onNavigate, onSubscribe }: FooterProps) {
 
         <div className={styles.bottomBar}>
           <span>
-            © {new Date().getFullYear()} OLFFY. Todos los derechos reservados.
+            © {COPYRIGHT_YEAR} OLFFY. Todos los derechos reservados.
           </span>
           <span className={styles.credit}>Hecho por Mouselabs</span>
         </div>
