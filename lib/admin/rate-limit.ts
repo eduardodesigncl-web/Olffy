@@ -82,14 +82,22 @@ export async function recordAdminLoginAttempt(
   succeeded: boolean,
 ) {
   if (hasAdminDatabaseConfig()) {
-    const { error } = await getSupabaseAdmin()
-      .from("admin_login_attempts")
-      .insert({ ip_hash: ipHash, succeeded });
+    try {
+      const { error } = await getSupabaseAdmin()
+        .from("admin_login_attempts")
+        .insert({ ip_hash: ipHash, succeeded });
 
-    if (error) {
+      if (!error) {
+        return;
+      }
+
       console.error("No se pudo registrar el intento de login admin:", error);
+    } catch (error) {
+      console.error(
+        "No se pudo registrar el intento de login admin; usando memoria local:",
+        error,
+      );
     }
-    return;
   }
 
   if (succeeded) {
