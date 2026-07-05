@@ -16,6 +16,14 @@ export async function POST(request: Request) {
   try {
     const { password } = await request.json();
     const adminPassword = getAdminPassword();
+
+    if (!adminPassword) {
+      return NextResponse.json(
+        { error: "La contraseña de administrador no está configurada." },
+        { status: 500 },
+      );
+    }
+
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
     const ipHash = adminLoginIpHash(ip);
@@ -28,13 +36,6 @@ export async function POST(request: Request) {
           status: 429,
           headers: { "Retry-After": String(rateLimit.retryAfter) },
         },
-      );
-    }
-
-    if (!adminPassword) {
-      return NextResponse.json(
-        { error: "La contraseña de administrador no está configurada." },
-        { status: 500 },
       );
     }
 
@@ -64,8 +65,14 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   } catch (error) {
+    console.error("Error processing admin login:", error);
+    const message =
+      error instanceof Error && error.message.includes("ADMIN_SESSION_SECRET")
+        ? "Falta configurar ADMIN_SESSION_SECRET o ADMIN_PASSWORD en el deploy."
+        : "Error procesando la solicitud.";
+
     return NextResponse.json(
-      { error: "Error procesando la solicitud." },
+      { error: message },
       { status: 500 },
     );
   }
