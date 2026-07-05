@@ -12,16 +12,32 @@ import type {
   AdminCollectionOperation,
 } from "./admin-types";
 
+function env(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+
+  if (!value) {
+    return undefined;
+  }
+
+  const unquoted =
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+      ? value.slice(1, -1).trim()
+      : value;
+
+  return unquoted || undefined;
+}
+
 const OLFFY_SHOPIFY_STOREFRONT_DOMAIN = "olffy.cl";
 const OLFFY_SHOPIFY_ADMIN_DOMAIN = "f46f6e-a4.myshopify.com";
 const configuredShopifyStoreDomain =
-  process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN?.trim() ||
-  process.env.SHOPIFY_STORE_DOMAIN?.trim() ||
-  process.env.SHOPIFY_STORE_DOMINIO?.trim();
+  env("SHOPIFY_s_SHOPIFY_STORE_DOMAIN") ||
+  env("SHOPIFY_STORE_DOMAIN") ||
+  env("SHOPIFY_STORE_DOMINIO");
 const configuredShopifyAdminDomain =
-  process.env.SHOPIFY_ADMIN_STORE_DOMAIN?.trim() ||
-  process.env.SHOPIFY_ADMIN_API_STORE_DOMAIN?.trim() ||
-  process.env.SHOPIFY_ADMIN_SHOP_DOMAIN?.trim() ||
+  env("SHOPIFY_ADMIN_STORE_DOMAIN") ||
+  env("SHOPIFY_ADMIN_API_STORE_DOMAIN") ||
+  env("SHOPIFY_ADMIN_SHOP_DOMAIN") ||
   configuredShopifyStoreDomain;
 const normalizedShopifyAdminDomain = configuredShopifyAdminDomain
   ?.replace(/^https?:\/\//, "")
@@ -35,21 +51,22 @@ const shopifyAdminDomain =
 const domain = shopifyAdminDomain
   ? ensureStartsWith(shopifyAdminDomain, "https://")
   : "";
-const adminApiVersion =
-  process.env.SHOPIFY_ADMIN_API_VERSION?.trim() || "2026-04";
+const adminApiVersion = env("SHOPIFY_ADMIN_API_VERSION") || "2026-04";
 // La Admin API usa un endpoint diferente
 const endpoint = domain
   ? `${domain}/admin/api/${adminApiVersion}/graphql.json`
   : "";
 const configuredAdminToken =
-  process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim() ||
-  process.env.SHOPIFY_ADMIN_TOKEN?.trim();
+  env("SHOPIFY_ADMIN_API_ACCESS_TOKEN") || env("SHOPIFY_ADMIN_TOKEN");
+const configuredAdminTokenSource = env("SHOPIFY_ADMIN_API_ACCESS_TOKEN")
+  ? "SHOPIFY_ADMIN_API_ACCESS_TOKEN"
+  : env("SHOPIFY_ADMIN_TOKEN")
+    ? "SHOPIFY_ADMIN_TOKEN"
+    : undefined;
 const adminClientId =
-  process.env.SHOPIFY_ADMIN_API_CLIENT_ID?.trim() ||
-  process.env.SHOPIFY_API_KEY?.trim();
+  env("SHOPIFY_ADMIN_API_CLIENT_ID") || env("SHOPIFY_API_KEY");
 const adminClientSecret =
-  process.env.SHOPIFY_ADMIN_API_CLIENT_SECRET?.trim() ||
-  process.env.SHOPIFY_API_SECRET?.trim();
+  env("SHOPIFY_ADMIN_API_CLIENT_SECRET") || env("SHOPIFY_API_SECRET");
 
 let cachedAdminToken:
   | {
@@ -194,7 +211,13 @@ export async function adminFetch<T>({
         body?.error ||
         body?.message ||
         result.statusText;
-      throw new Error(`Shopify Admin API ${result.status}: ${message}`);
+      const authHint =
+        result.status === 401
+          ? ` Revisa ${configuredAdminTokenSource ?? "SHOPIFY_ADMIN_API_ACCESS_TOKEN"} para la tienda ${shopifyAdminDomain}. El token debe pertenecer a esa misma tienda y no debe incluir comillas.`
+          : "";
+      throw new Error(
+        `Shopify Admin API ${result.status}: ${message}.${authHint}`,
+      );
     }
 
     if (body.errors) {
