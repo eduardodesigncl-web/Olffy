@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { getSupabaseAdmin } from "lib/supabase/admin";
+import { getAdminSessionSecret } from "./session";
 
 const memoryAttempts = new Map<string, number[]>();
 
@@ -24,10 +25,9 @@ function hasAdminDatabaseConfig() {
 }
 
 export function adminLoginIpHash(ip: string) {
-  const secret = process.env.ADMIN_SESSION_SECRET?.trim();
-  if (!secret) throw new Error("ADMIN_SESSION_SECRET no esta configurado");
-
-  return createHash("sha256").update(`${secret}:${ip}`).digest("hex");
+  return createHash("sha256")
+    .update(`${getAdminSessionSecret()}:${ip}`)
+    .digest("hex");
 }
 
 export async function checkAdminLoginRateLimit(ipHash: string) {

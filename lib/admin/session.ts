@@ -10,14 +10,20 @@ export function getAdminPassword(): string | undefined {
   );
 }
 
-function getAdminSessionSecret(): string {
+export function getAdminSessionSecret(): string {
   const secret = process.env.ADMIN_SESSION_SECRET?.trim();
 
-  if (!secret) {
-    throw new Error("ADMIN_SESSION_SECRET no esta configurado");
+  if (secret) {
+    return secret;
   }
 
-  return secret;
+  const adminPassword = getAdminPassword()?.trim();
+
+  if (adminPassword) {
+    return adminPassword;
+  }
+
+  throw new Error("ADMIN_SESSION_SECRET no esta configurado");
 }
 
 function signExpiration(expiresAt: string): string {
