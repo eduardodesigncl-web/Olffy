@@ -49,10 +49,7 @@ const adminClientId =
   process.env.SHOPIFY_API_KEY?.trim();
 const adminClientSecret =
   process.env.SHOPIFY_ADMIN_API_CLIENT_SECRET?.trim() ||
-  process.env.SHOPIFY_API_SECRET?.trim() ||
-  (configuredAdminToken?.startsWith("shpss_")
-    ? configuredAdminToken
-    : undefined);
+  process.env.SHOPIFY_API_SECRET?.trim();
 
 let cachedAdminToken:
   | {
@@ -93,17 +90,17 @@ function formatGraphQLError(error: any) {
 }
 
 async function getAdminAccessToken(): Promise<string> {
+  if (configuredAdminToken?.startsWith("shpss_")) {
+    throw new Error(
+      "SHOPIFY_ADMIN_API_ACCESS_TOKEN contiene un Client Secret (shpss_), no un Admin API access token. En Vercel configura SHOPIFY_ADMIN_API_ACCESS_TOKEN con el token de Admin API de la app instalada (normalmente empieza con shpat_) o elimina esa variable para usar OAuth con SHOPIFY_ADMIN_API_CLIENT_ID y SHOPIFY_ADMIN_API_CLIENT_SECRET validos.",
+    );
+  }
+
+  if (configuredAdminToken) {
+    return configuredAdminToken;
+  }
+
   if (!adminClientId || !adminClientSecret) {
-    if (configuredAdminToken && !configuredAdminToken.startsWith("shpss_")) {
-      return configuredAdminToken;
-    }
-
-    if (configuredAdminToken?.startsWith("shpss_")) {
-      throw new Error(
-        "SHOPIFY_ADMIN_API_ACCESS_TOKEN contiene un Client Secret (shpss_), no un access token. Configura SHOPIFY_ADMIN_API_CLIENT_ID y SHOPIFY_ADMIN_API_CLIENT_SECRET con credenciales de la misma app instalada.",
-      );
-    }
-
     throw new Error(
       "Falta SHOPIFY_ADMIN_API_ACCESS_TOKEN o el par SHOPIFY_ADMIN_API_CLIENT_ID y SHOPIFY_ADMIN_API_CLIENT_SECRET.",
     );
