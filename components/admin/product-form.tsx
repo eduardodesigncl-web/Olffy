@@ -42,7 +42,6 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
     setError("");
 
     try {
-      // Construir el input para la API de Shopify
       const input: any = {
         title: formData.title,
         descriptionHtml: formData.descriptionHtml,
@@ -52,22 +51,16 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
           .map((t) => t.trim())
           .filter(Boolean),
       };
-
-      // Si es crear, agregamos el precio inicial (como variante por defecto)
-      if (!isEdit && formData.price) {
-        input.variants = [
-          {
-            price: formData.price,
-            inventoryQuantities: [
-              {
-                availableQuantity: Number(formData.inventoryQuantity),
-                // Aquí deberíamos pasar el locationId, pero por simplicidad de la API a veces
-                // es mejor manejar el inventario en una mutación separada o usar el default
-              },
-            ],
-          },
-        ];
-      }
+      const payload = isEdit
+        ? input
+        : {
+            product: input,
+            initialVariant: formData.price
+              ? {
+                  price: formData.price,
+                }
+              : undefined,
+          };
 
       const url = isEdit
         ? `/api/admin/products/${encodeURIComponent(initialData?.id || "")}`
@@ -77,7 +70,7 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();

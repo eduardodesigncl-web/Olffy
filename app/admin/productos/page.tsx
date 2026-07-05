@@ -1,10 +1,12 @@
 import { getAdminProducts } from "lib/shopify/admin";
+import { requireAdminPageSession } from "lib/admin/auth";
 import Link from "next/link";
 import Image from "next/image";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { connection } from "next/server";
 
 export default async function AdminProductsPage() {
+  await requireAdminPageSession();
   await connection();
   const products = await getAdminProducts();
 

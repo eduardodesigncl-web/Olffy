@@ -1,9 +1,11 @@
 import { getAdminCollections } from "lib/shopify/admin";
+import { requireAdminPageSession } from "lib/admin/auth";
 import Link from "next/link";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { connection } from "next/server";
 
 export default async function AdminCollectionsPage() {
+  await requireAdminPageSession();
   await connection();
   const collections = await getAdminCollections();
 

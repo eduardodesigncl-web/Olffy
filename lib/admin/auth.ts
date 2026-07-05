@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { verifyAdminSessionToken } from "./session";
 
 export {
@@ -17,5 +18,11 @@ export async function hasAdminSession(): Promise<boolean> {
 export async function requireAdminSession(): Promise<void> {
   if (!(await hasAdminSession())) {
     throw new Error("Sesion de administracion no valida");
+  }
+}
+
+export async function requireAdminPageSession(): Promise<void> {
+  if (!(await hasAdminSession())) {
+    redirect("/admin/login");
   }
 }

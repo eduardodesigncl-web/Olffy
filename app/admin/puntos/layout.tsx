@@ -1,14 +1,11 @@
-import { hasAdminSession } from "lib/admin/auth";
-import { redirect } from "next/navigation";
+import { requireAdminPageSession } from "lib/admin/auth";
 
 export default async function LoyaltyAdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  if (!(await hasAdminSession())) {
-    redirect("/admin/login");
-  }
+  await requireAdminPageSession();
 
   return children;
 }
