@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { requireAdminSession } from "lib/admin/auth";
+import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import {
   adjustCustomerPoints,
   calculatePointsForAmount,
@@ -102,7 +102,8 @@ async function retryBoletaForId(id: string) {
 
 export async function POST(request: Request) {
   try {
-    await requireAdminSession();
+    const unauthorized = await getAdminApiUnauthorizedResponse();
+    if (unauthorized) return unauthorized;
 
     const body = (await request.json()) as {
       action?: AdminAction;

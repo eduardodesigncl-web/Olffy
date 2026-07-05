@@ -1,4 +1,5 @@
 import { CollectionForm } from "components/admin/collection-form";
+import { requireAdminPageSession } from "lib/admin/auth";
 import { getAdminCollection } from "lib/shopify/admin";
 import { normalizeShopifyGid } from "lib/shopify/gid";
 import { notFound } from "next/navigation";
@@ -9,6 +10,7 @@ export default async function EditarColeccionPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminPageSession();
   await connection();
 
   const { id } = await params;

@@ -339,8 +339,28 @@ const getCollectionsQuery = /* GraphQL */ `
 // --- MUTATIONS ---
 
 const productCreateMutation = /* GraphQL */ `
-  mutation productCreate($input: ProductInput!) {
-    productCreate(input: $input) {
+  mutation productCreate($product: ProductCreateInput!) {
+    productCreate(product: $product) {
+      product {
+        id
+        variants(first: 1) {
+          nodes {
+            id
+            price
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const productUpdateMutation = /* GraphQL */ `
+  mutation productUpdate($product: ProductUpdateInput!) {
+    productUpdate(product: $product) {
       product {
         id
       }
@@ -352,11 +372,18 @@ const productCreateMutation = /* GraphQL */ `
   }
 `;
 
-const productUpdateMutation = /* GraphQL */ `
-  mutation productUpdate($input: ProductInput!) {
-    productUpdate(input: $input) {
+const productVariantsBulkUpdateMutation = /* GraphQL */ `
+  mutation productVariantsBulkUpdate(
+    $productId: ID!
+    $variants: [ProductVariantsBulkInput!]!
+  ) {
+    productVariantsBulkUpdate(productId: $productId, variants: $variants) {
       product {
         id
+      }
+      productVariants {
+        id
+        price
       }
       userErrors {
         field
@@ -986,19 +1013,57 @@ export async function getAdminProduct(
   return res.body.data.product || null;
 }
 
-export async function createAdminProduct(input: any): Promise<any> {
+export async function createAdminProduct(
+  input: any,
+  initialVariant?: { price?: string | number },
+): Promise<any> {
   const res = await adminFetch<any>({
     query: productCreateMutation,
-    variables: { input },
+    variables: { product: input },
   });
-  return res.body.data.productCreate;
+  const productCreate = res.body.data.productCreate;
+  const price = initialVariant?.price;
+  const createdProduct = productCreate.product;
+  const initialVariantId = createdProduct?.variants?.nodes?.[0]?.id;
+
+  if (
+    productCreate.userErrors?.length > 0 ||
+    price === undefined ||
+    price === "" ||
+    !createdProduct?.id ||
+    !initialVariantId
+  ) {
+    return productCreate;
+  }
+
+  const variantUpdate = await adminFetch<any>({
+    query: productVariantsBulkUpdateMutation,
+    variables: {
+      productId: createdProduct.id,
+      variants: [
+        {
+          id: initialVariantId,
+          price,
+        },
+      ],
+    },
+  });
+  const variantPayload = variantUpdate.body.data.productVariantsBulkUpdate;
+
+  return {
+    ...productCreate,
+    userErrors: [
+      ...(productCreate.userErrors ?? []),
+      ...(variantPayload.userErrors ?? []),
+    ],
+  };
 }
 
 export async function updateAdminProduct(input: any): Promise<any> {
   const res = await adminFetch<any>({
     query: productUpdateMutation,
     variables: {
-      input: {
+      product: {
         ...input,
         id: normalizeShopifyGid("Product", input.id),
       },

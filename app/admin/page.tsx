@@ -1,8 +1,10 @@
 import { getAdminProducts, getAdminCollections } from "lib/shopify/admin";
+import { requireAdminPageSession } from "lib/admin/auth";
 import Link from "next/link";
 import { connection } from "next/server";
 
 export default async function AdminDashboardPage() {
+  await requireAdminPageSession();
   await connection();
 
   let productsCount = 0;

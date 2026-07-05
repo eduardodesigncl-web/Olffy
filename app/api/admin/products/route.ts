@@ -24,7 +24,17 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const product = await createAdminProduct(body);
+    const payload =
+      body && typeof body === "object" && "product" in body
+        ? (body as {
+            product: Record<string, unknown>;
+            initialVariant?: { price?: string | number };
+          })
+        : { product: body as Record<string, unknown> };
+    const product = await createAdminProduct(
+      payload.product,
+      payload.initialVariant,
+    );
 
     if (product?.userErrors?.length > 0) {
       return NextResponse.json({ errors: product.userErrors }, { status: 400 });
