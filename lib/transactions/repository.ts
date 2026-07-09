@@ -193,6 +193,7 @@ export async function upsertOrderReference(input: {
         payment_status: "confirmed",
         total: input.snapshot.total,
         currency: input.snapshot.currency,
+        points_earned: input.snapshot.pointsEarned,
         metadata: {
           subtotal: input.snapshot.subtotal,
           discount: input.snapshot.discount,

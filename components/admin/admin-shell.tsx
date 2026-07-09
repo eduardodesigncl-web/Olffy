@@ -22,6 +22,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     { name: "Cuenta cliente", href: "/admin/cuenta" },
     { name: "Puntos", href: "/admin/puntos" },
     { name: "Operaciones", href: "/admin/operaciones" },
+    { name: "Ventas digitales", href: "/admin/ventas-digitales" },
     { name: "Productos", href: "/admin/productos" },
     { name: "Colecciones", href: "/admin/colecciones" },
   ];
