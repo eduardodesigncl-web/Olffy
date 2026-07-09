@@ -1,9 +1,13 @@
-// @ts-nocheck
+import type { AdminIntegrationDiagnostic } from "lib/admin/diagnostics-types";
 import styles from "./AdminOperationalStatus.module.css";
 
-// Estado operativo (mock). Refleja que las integraciones aún no están conectadas;
-// el estado real vendrá de cada servicio en producción.
-export type SystemState = "pendiente" | "mock" | "requiere";
+export type SystemState =
+  | "conectado"
+  | "degradado"
+  | "pendiente"
+  | "mock"
+  | "requiere"
+  | "error";
 
 export const OPERATIONAL_SYSTEMS: {
   name: string;
@@ -17,37 +21,93 @@ export const OPERATIONAL_SYSTEMS: {
 ];
 
 export const STATE_LABEL: Record<SystemState, string> = {
+  conectado: "Conectado",
+  degradado: "Revisar",
   pendiente: "Pendiente",
   mock: "Mock",
   requiere: "Requiere conexión",
+  error: "Error",
 };
 
-// Texto del tooltip visual por estado.
 const STATE_TOOLTIP: Record<SystemState, string> = {
+  conectado: "La API respondió correctamente al último diagnóstico.",
+  degradado:
+    "El servicio responde, pero falta algún permiso o configuración secundaria.",
   pendiente: "Pendiente de conexión real. Actualmente no está integrado.",
   mock: "Funciona solo en modo demo. No envía ni recibe datos reales.",
   requiere:
     "Necesita credenciales o configuración antes de operar en producción.",
+  error: "La conexión falló durante el último diagnóstico.",
 };
 
-// Lista presentacional de estado operativo (filas + tooltips). El shell/popover
-// lo aporta AdminOperationalStatusFloating.
-export function AdminOperationalStatus() {
+export function stateFromDiagnostic(
+  diagnostic: AdminIntegrationDiagnostic,
+): SystemState {
+  if (diagnostic.status === "connected") return "conectado";
+  if (diagnostic.status === "degraded") return "degradado";
+  if (diagnostic.status === "pending") return "pendiente";
+  if (diagnostic.status === "mock") return "mock";
+  if (diagnostic.status === "missing") return "requiere";
+  return "error";
+}
+
+function rowsFromDiagnostics(
+  diagnostics?: AdminIntegrationDiagnostic[] | null,
+) {
+  if (!diagnostics?.length) {
+    return OPERATIONAL_SYSTEMS.map((system) => ({
+      key: system.name,
+      name: system.name,
+      desc: system.desc,
+      state: system.state,
+      label: STATE_LABEL[system.state],
+      tooltip: STATE_TOOLTIP[system.state],
+      latencyMs: undefined,
+    }));
+  }
+
+  return diagnostics.map((diagnostic) => {
+    const state = stateFromDiagnostic(diagnostic);
+
+    return {
+      key: diagnostic.id,
+      name: diagnostic.name,
+      desc: diagnostic.description,
+      state,
+      label: diagnostic.label,
+      tooltip: diagnostic.details || STATE_TOOLTIP[state],
+      latencyMs: diagnostic.latencyMs,
+    };
+  });
+}
+
+export function AdminOperationalStatus({
+  diagnostics,
+}: {
+  diagnostics?: AdminIntegrationDiagnostic[] | null;
+}) {
+  const rows = rowsFromDiagnostics(diagnostics);
+
   return (
     <div className={styles.list}>
-      {OPERATIONAL_SYSTEMS.map((s) => (
-        <div key={s.name} className={styles.item}>
+      {rows.map((s) => (
+        <div key={s.key} className={styles.item}>
           <span className={`${styles.dot} ${styles[s.state]}`} />
           <div className={styles.info}>
             <span className={styles.name}>{s.name}</span>
-            <span className={styles.desc}>{s.desc}</span>
+            <span className={styles.desc}>
+              {s.desc}
+              {typeof s.latencyMs === "number" ? (
+                <span className={styles.latency}> · {s.latencyMs} ms</span>
+              ) : null}
+            </span>
           </div>
           <span className={styles.badgeWrap}>
             <span className={`${styles.badge} ${styles[s.state]}`}>
-              {STATE_LABEL[s.state]}
+              {s.label}
             </span>
             <span className={styles.tooltip} role="tooltip">
-              {STATE_TOOLTIP[s.state]}
+              {s.tooltip}
             </span>
           </span>
         </div>

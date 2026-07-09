@@ -179,6 +179,22 @@
   flex-shrink: 0;
 }
 
+.conectado {
+  background: #e4f5ed;
+  color: #267d55;
+}
+.conectado .badgeDot {
+  background: #2f9d6a;
+}
+
+.degradado {
+  background: var(--olffy-amarillo-suave);
+  color: #c8901a;
+}
+.degradado .badgeDot {
+  background: #c8901a;
+}
+
 .pendiente {
   background: var(--olffy-amarillo-suave);
   color: #c8901a;
@@ -201,4 +217,12 @@
 }
 .requiere .badgeDot {
   background: var(--olffy-naranjo);
+}
+
+.errorBadge {
+  background: #ffe4de;
+  color: #b83a27;
+}
+.errorBadge .badgeDot {
+  background: #d94b35;
 }
