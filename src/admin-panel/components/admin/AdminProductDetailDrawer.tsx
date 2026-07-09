@@ -72,6 +72,9 @@ export function AdminProductDetailDrawer({
                 className={styles.mediaImg}
                 src={meta.image}
                 alt={product.nombre}
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <span className={styles.mediaInitial} aria-hidden="true">

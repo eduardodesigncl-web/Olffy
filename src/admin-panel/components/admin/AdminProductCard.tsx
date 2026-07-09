@@ -63,7 +63,14 @@ export function AdminProductCard({
         style={image ? undefined : { background: bg || "var(--olffy-crema)" }}
       >
         {image ? (
-          <img className={styles.mediaImg} src={image} alt={product.nombre} />
+          <img
+            className={styles.mediaImg}
+            src={image}
+            alt={product.nombre}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
         ) : (
           <span className={styles.mediaInitial} aria-hidden="true">
             {product.nombre.charAt(0).toUpperCase()}
