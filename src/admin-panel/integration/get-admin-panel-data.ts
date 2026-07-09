@@ -4,7 +4,6 @@ import { getFrontendAdminData } from "src/integration/admin-data";
 import { listOrderReferences } from "lib/transactions/repository";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { listRewards } from "lib/loyalty/service";
-import { getAdminCollections } from "lib/shopify/admin";
 import type { AdminPanelData } from "./types";
 
 const productBackgrounds = [
@@ -110,23 +109,18 @@ async function getShopifyAdminUrl() {
 }
 
 export async function getAdminPanelData(): Promise<AdminPanelData> {
-  const [frontend, orderRefs, rewards, pointMovements, shopifyCollections] =
-    await Promise.all([
-      getFrontendAdminData(),
-      listOrderReferences(50).catch((error) => {
-        console.error("No se pudieron cargar ventas digitales:", error);
-        return [];
-      }),
-      listRewards(false).catch((error) => {
-        console.error("No se pudieron cargar recompensas:", error);
-        return [];
-      }),
-      getRecentPointMovements(),
-      getAdminCollections().catch((error) => {
-        console.error("No se pudieron cargar colecciones Shopify:", error);
-        return [];
-      }),
-    ]);
+  const [frontend, orderRefs, rewards, pointMovements] = await Promise.all([
+    getFrontendAdminData(),
+    listOrderReferences(50).catch((error) => {
+      console.error("No se pudieron cargar ventas digitales:", error);
+      return [];
+    }),
+    listRewards(false).catch((error) => {
+      console.error("No se pudieron cargar recompensas:", error);
+      return [];
+    }),
+    getRecentPointMovements(),
+  ]);
 
   const customers = frontend.customers.map((customer, index) => ({
     idx: Number(customer.id) || index + 1,
@@ -179,7 +173,7 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
     precio: product.price,
   }));
 
-  const collections = shopifyCollections.map((collection) => ({
+  const collections = frontend.collections.map((collection) => ({
     nombre: collection.title,
     handle: collection.handle,
     productos: collection.productsCount.count,

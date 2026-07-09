@@ -12,6 +12,31 @@ import type { Product } from "../contracts/product.types";
 
 type AdminPhysicalSale = Awaited<ReturnType<typeof listPhysicalSales>>[number];
 
+const DEFAULT_DATA_TIMEOUT_MS = 7000;
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  label: string,
+  timeoutMs = DEFAULT_DATA_TIMEOUT_MS,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`${label} excedió ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
+
 function money(value: string | number | null | undefined) {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) ? amount : 0;
@@ -159,12 +184,12 @@ export async function getFrontendAdminData() {
     adminProductsResult,
     collectionsResult,
   ] = await Promise.allSettled([
-    getCustomerPortalDashboard(),
-    getLoyaltyStats(),
-    listPhysicalSales(50),
-    getRedemptions(),
-    getAdminProducts(),
-    getAdminCollections(),
+    withTimeout(getCustomerPortalDashboard(), "Dashboard de clientes"),
+    withTimeout(getLoyaltyStats(), "Estadísticas de puntos"),
+    withTimeout(listPhysicalSales(50), "Ventas físicas"),
+    withTimeout(getRedemptions(), "Canjes"),
+    withTimeout(getAdminProducts(), "Productos Shopify", 9000),
+    withTimeout(getAdminCollections(), "Colecciones Shopify", 5000),
   ]);
 
   const adminProducts =
@@ -237,6 +262,7 @@ export async function getFrontendAdminData() {
         ? dashboard.value.recentCustomers.map(toCustomer)
         : [],
     products: adminProducts.map(toProduct),
+    collections,
     physicalSales: mappedSales,
     redemptions: redemptions.status === "fulfilled" ? redemptions.value : [],
     totalRedeemed: loyaltyStats.lifetimePointsRedeemed,
