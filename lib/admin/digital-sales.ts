@@ -602,10 +602,12 @@ const recentPaidOrdersQuery = /* GraphQL */ `
         }
         customer {
           id
-          email
           firstName
           lastName
-          acceptsMarketing
+          defaultEmailAddress {
+            emailAddress
+            marketingState
+          }
         }
         lineItems(first: 1) {
           nodes {
@@ -630,10 +632,12 @@ type RecentPaidOrderNode = {
   totalDiscountsSet?: { shopMoney: { amount: string } } | null;
   customer?: {
     id: string | null;
-    email: string | null;
     firstName: string | null;
     lastName: string | null;
-    acceptsMarketing: boolean | null;
+    defaultEmailAddress?: {
+      emailAddress: string | null;
+      marketingState: string | null;
+    } | null;
   } | null;
   lineItems?: { nodes: Array<{ id: string }> } | null;
 };
@@ -660,10 +664,11 @@ function normalizeGraphqlOrder(node: RecentPaidOrderNode): ShopifyPaidOrder {
     customer: node.customer
       ? {
           id: node.customer.id,
-          email: toEmail(node.customer.email),
+          email: toEmail(node.customer.defaultEmailAddress?.emailAddress),
           firstName: node.customer.firstName,
           lastName: node.customer.lastName,
-          acceptsMarketing: node.customer.acceptsMarketing,
+          acceptsMarketing:
+            node.customer.defaultEmailAddress?.marketingState === "SUBSCRIBED",
         }
       : undefined,
     lineItemsCount: node.lineItems?.nodes.length,
@@ -675,7 +680,7 @@ export async function syncRecentShopifyPaidOrders(input?: {
   sinceHours?: number;
 }) {
   const limit = Math.min(Math.max(input?.limit ?? 25, 1), 50);
-  const sinceHours = Math.min(Math.max(input?.sinceHours ?? 48, 1), 168);
+  const sinceHours = Math.min(Math.max(input?.sinceHours ?? 48, 1), 720);
   const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
