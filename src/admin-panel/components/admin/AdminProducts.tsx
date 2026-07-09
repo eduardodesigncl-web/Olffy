@@ -87,7 +87,14 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
       new Map(
         PRODUCTS.map((p) => [
           p.id,
-          { cat: p.cat, bg: p.bg, desc: p.desc, specs: p.specs },
+          {
+            cat: p.cat,
+            bg: p.bg,
+            image: p.image,
+            images: p.images,
+            desc: p.desc,
+            specs: p.specs,
+          },
         ]),
       ),
     [],
@@ -374,6 +381,7 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
                 key={p.id}
                 product={p}
                 bg={meta?.bg}
+                image={meta?.image}
                 cat={meta?.cat}
                 selected={p.id === detailId}
                 featured={featuredIds.has(p.id)}

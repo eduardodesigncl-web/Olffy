@@ -34,6 +34,8 @@ export interface Product {
   n: number; // precio numérico en CLP
   tag: ProductTag;
   bg: string; // color de fondo del placeholder de imagen
+  image?: string;
+  images?: string[];
   colors: ProductColor[];
   specs: ProductSpec[];
   bundle: ProductBundle | null;

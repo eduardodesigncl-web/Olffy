@@ -158,6 +158,8 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
         { l: "STOCK", v: `${stock} unidades` },
       ],
       bundle: null,
+      image: product.image || product.images?.[0] || undefined,
+      images: product.images ?? [],
       desc:
         product.description?.replace(/<[^>]*>/g, "") ||
         "Producto sincronizado desde Shopify.",
