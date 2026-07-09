@@ -427,6 +427,28 @@ async function processNormalizedShopifyPaidOrder(input: {
 }) {
   if (!isPaid(input.order)) return { ignored: true, reason: "not_paid" };
 
+  const { data: existingOrderRef, error: existingOrderRefError } =
+    await getSupabaseAdmin()
+      .from("olffy_order_refs")
+      .select("id, channel")
+      .eq("shopify_order_id", input.order.id)
+      .maybeSingle();
+
+  if (existingOrderRefError) {
+    fail(
+      "No se pudo consultar la operacion Shopify existente",
+      existingOrderRefError,
+    );
+  }
+
+  if (existingOrderRef && existingOrderRef.channel !== "online") {
+    return {
+      ignored: true,
+      reason: "existing_non_online_order_ref",
+      orderRefId: existingOrderRef.id,
+    };
+  }
+
   const loyaltyCustomer = await findLoyaltyCustomer(input.order);
   let pointsEarned = 0;
   let pointsPreparationError: string | null = null;
@@ -600,15 +622,6 @@ const recentPaidOrdersQuery = /* GraphQL */ `
             amount
           }
         }
-        customer {
-          id
-          firstName
-          lastName
-          defaultEmailAddress {
-            emailAddress
-            marketingState
-          }
-        }
         lineItems(first: 1) {
           nodes {
             id
@@ -630,15 +643,6 @@ type RecentPaidOrderNode = {
   totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
   subtotalPriceSet?: { shopMoney: { amount: string } } | null;
   totalDiscountsSet?: { shopMoney: { amount: string } } | null;
-  customer?: {
-    id: string | null;
-    firstName: string | null;
-    lastName: string | null;
-    defaultEmailAddress?: {
-      emailAddress: string | null;
-      marketingState: string | null;
-    } | null;
-  } | null;
   lineItems?: { nodes: Array<{ id: string }> } | null;
 };
 
@@ -661,16 +665,6 @@ function normalizeGraphqlOrder(node: RecentPaidOrderNode): ShopifyPaidOrder {
     subtotal: toInt(node.subtotalPriceSet?.shopMoney.amount),
     discount: toInt(node.totalDiscountsSet?.shopMoney.amount),
     currency: "CLP",
-    customer: node.customer
-      ? {
-          id: node.customer.id,
-          email: toEmail(node.customer.defaultEmailAddress?.emailAddress),
-          firstName: node.customer.firstName,
-          lastName: node.customer.lastName,
-          acceptsMarketing:
-            node.customer.defaultEmailAddress?.marketingState === "SUBSCRIBED",
-        }
-      : undefined,
     lineItemsCount: node.lineItems?.nodes.length,
   };
 }
