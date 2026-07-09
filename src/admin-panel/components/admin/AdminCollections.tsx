@@ -11,14 +11,15 @@ import { AdminCollectionEditDrawer } from "./AdminCollectionEditDrawer";
 import { AdminPreviewModal, previewStyles } from "./AdminPreviewModal";
 import { AdminShopifyRedirectModal } from "./AdminShopifyRedirectModal";
 import { ADMIN_DATA } from "../../data/adminData.mock";
-import { PRODUCTS } from "../../data/products.mock";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
 import styles from "./AdminCollections.module.css";
 
-// Sección Colecciones del panel admin.
-// AdminProducts/AdminCollections mock. En producción debe leer y sincronizar el
-// catálogo desde Shopify con permisos internos. Aquí toda edición/acción opera
-// solo sobre estado local (no modifica ADMIN_DATA).
+type ShopifyCollectionProduct = {
+  id: string;
+  title: string;
+  handle: string;
+  status: string;
+};
 
 // Crear colección redirige a Shopify Admin para mantener Shopify como fuente
 // comercial. Cuando se conozca el store handle, reemplazar por la URL directa.
@@ -29,7 +30,7 @@ export function AdminCollections() {
   const collectionRows = useMemo<AdminCollectionRowData[]>(
     () =>
       ADMIN_DATA.colecciones.map((c, idx) => ({
-        id: idx,
+        id: c.id ?? `mock-${idx}`,
         nombre: c.nombre,
         handle: c.handle,
         productos: c.productos,
@@ -37,13 +38,18 @@ export function AdminCollections() {
       })),
     [],
   );
-  const previewProducts = useMemo(() => PRODUCTS.slice(0, 3), []);
   const [collections, setCollections] =
     useState<AdminCollectionRowData[]>(collectionRows);
   const [searchTerm, setSearchTerm] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminCollectionRowData | null>(null);
   const [preview, setPreview] = useState<AdminCollectionRowData | null>(null);
+  const [previewProducts, setPreviewProducts] = useState<
+    ShopifyCollectionProduct[]
+  >([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [shopifyOpen, setShopifyOpen] = useState(false);
 
   const metrics: AdminMetricCardData[] = useMemo(
@@ -76,25 +82,111 @@ export function AdminCollections() {
     );
   }, [collections, searchTerm]);
 
-  // Guardado mock local: no toca ADMIN_DATA real.
-  const handleSave = (updated: AdminCollectionRowData) => {
-    setCollections((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c)),
-    );
-    setEditing(null);
-    setNotice("Colección actualizada en modo demo.");
+  const handleSave = async (updated: AdminCollectionRowData) => {
+    if (updated.id.startsWith("mock-")) {
+      setError("Esta colección no tiene ID de Shopify para guardar cambios.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/collections/${encodeURIComponent(updated.id)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: updated.nombre,
+            handle: updated.handle,
+          }),
+        },
+      );
+      const payload = await response.json();
+
+      if (!response.ok || payload.errors) {
+        throw new Error(
+          payload.errors?.[0]?.message ||
+            payload.error ||
+            "No se pudo actualizar la colección en Shopify.",
+        );
+      }
+
+      const saved = payload.collection;
+      setCollections((prev) =>
+        prev.map((collection) =>
+          collection.id === updated.id
+            ? {
+                ...collection,
+                nombre: saved?.title ?? updated.nombre,
+                handle: saved?.handle ?? updated.handle,
+                productos:
+                  saved?.productsCount?.count ?? collection.productos ?? 0,
+              }
+            : collection,
+        ),
+      );
+      setEditing(null);
+      setNotice("Colección actualizada en Shopify.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo actualizar la colección en Shopify.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleToggle = (collection: AdminCollectionRowData) => {
-    const nextEstado = collection.estado.toLowerCase().includes("activ")
-      ? "Pausada"
-      : "Activa";
-    setCollections((prev) =>
-      prev.map((c) =>
-        c.id === collection.id ? { ...c, estado: nextEstado } : c,
-      ),
+  const collectionAdminUrl = (collection?: AdminCollectionRowData | null) => {
+    if (!collection || collection.id.startsWith("mock-")) {
+      return shopifyCollectionsUrl;
+    }
+    const numericId = collection.id.split("/").pop();
+    return numericId
+      ? `${shopifyCollectionsUrl}/${numericId}`
+      : shopifyCollectionsUrl;
+  };
+
+  const handleOpenShopify = (collection?: AdminCollectionRowData) => {
+    window.open(
+      collectionAdminUrl(collection),
+      "_blank",
+      "noopener,noreferrer",
     );
-    setNotice("Estado de colección actualizado en modo demo.");
+    setNotice("Abriendo Shopify Admin en una nueva pestaña.");
+  };
+
+  const handleViewProducts = async (collection: AdminCollectionRowData) => {
+    setPreview(collection);
+    setPreviewProducts([]);
+    setPreviewLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/collections/${encodeURIComponent(collection.id)}`,
+      );
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error || "No se pudieron cargar productos desde Shopify.",
+        );
+      }
+
+      setPreviewProducts(payload.collection?.products?.nodes ?? []);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron cargar productos desde Shopify.",
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   return (
@@ -163,6 +255,20 @@ export function AdminCollections() {
         </div>
       )}
 
+      {error && !editing && (
+        <div className={`${styles.notice} ${styles.errorNotice}`}>
+          <span className={styles.noticeText}>{error}</span>
+          <button
+            type="button"
+            className={styles.noticeClose}
+            onClick={() => setError(null)}
+            aria-label="Cerrar error"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className={styles.searchRow}>
         <AdminSearchInput
           value={searchTerm}
@@ -180,15 +286,20 @@ export function AdminCollections() {
         <AdminCollectionTable
           collections={filtered}
           onEdit={setEditing}
-          onView={setPreview}
-          onToggleStatus={handleToggle}
+          onView={handleViewProducts}
+          onOpenShopify={handleOpenShopify}
         />
       )}
 
       <AdminCollectionEditDrawer
         collection={editing}
-        onClose={() => setEditing(null)}
+        onClose={() => {
+          setEditing(null);
+          setError(null);
+        }}
         onSave={handleSave}
+        saving={saving}
+        error={error}
       />
 
       <AdminPreviewModal
@@ -221,15 +332,30 @@ export function AdminCollections() {
               </div>
             </div>
             <ul className={previewStyles.list}>
-              {previewProducts.map((p) => (
-                <li key={p.id} className={previewStyles.listItem}>
-                  <span className={previewStyles.listName}>{p.name}</span>
-                  <span className={previewStyles.listPrice}>{p.price}</span>
+              {previewLoading && (
+                <li className={previewStyles.listItem}>
+                  <span className={previewStyles.listName}>Cargando...</span>
+                  <span className={previewStyles.listPrice}>Shopify</span>
                 </li>
-              ))}
+              )}
+              {!previewLoading && previewProducts.length === 0 && (
+                <li className={previewStyles.listItem}>
+                  <span className={previewStyles.listName}>
+                    Sin productos visibles
+                  </span>
+                  <span className={previewStyles.listPrice}>Shopify</span>
+                </li>
+              )}
+              {!previewLoading &&
+                previewProducts.map((p) => (
+                  <li key={p.id} className={previewStyles.listItem}>
+                    <span className={previewStyles.listName}>{p.title}</span>
+                    <span className={previewStyles.listPrice}>{p.status}</span>
+                  </li>
+                ))}
             </ul>
             <p className={previewStyles.note}>
-              Vista demo. En producción se cargará desde Shopify.
+              Productos cargados desde Shopify Admin.
             </p>
           </>
         )}
@@ -239,7 +365,7 @@ export function AdminCollections() {
         isOpen={shopifyOpen}
         onClose={() => setShopifyOpen(false)}
         title="Crear colección desde Shopify"
-        description="Las colecciones se administran desde Shopify para mantener productos, navegación y vitrinas sincronizadas con la tienda. Desde OLFFY Admin podrás revisarlas y editarlas en modo demo, pero la publicación oficial ocurre en Shopify."
+        description="Las colecciones se crean desde Shopify para mantener productos, navegación y vitrinas sincronizadas con la tienda. En OLFFY Admin puedes revisar sus productos y editar nombre o handle cuando Shopify lo permita."
         primaryLabel="Continuar a Shopify"
         shopifyUrl={shopifyCollectionsUrl}
         onContinue={() =>

@@ -3,7 +3,7 @@ import { AdminCatalogStatusBadge } from "./AdminCatalogStatusBadge";
 import styles from "./AdminCollectionTable.module.css";
 
 export interface AdminCollectionRowData {
-  id: number;
+  id: string;
   nombre: string;
   handle: string;
   productos: number;
@@ -14,7 +14,7 @@ interface AdminCollectionTableProps {
   collections: AdminCollectionRowData[];
   onEdit: (collection: AdminCollectionRowData) => void;
   onView: (collection: AdminCollectionRowData) => void;
-  onToggleStatus: (collection: AdminCollectionRowData) => void;
+  onOpenShopify: (collection: AdminCollectionRowData) => void;
 }
 
 // Tabla de colecciones del admin. Las acciones operan sobre el estado local de
@@ -23,7 +23,7 @@ export function AdminCollectionTable({
   collections,
   onEdit,
   onView,
-  onToggleStatus,
+  onOpenShopify,
 }: AdminCollectionTableProps) {
   return (
     <div className={styles.scroll}>
@@ -39,7 +39,6 @@ export function AdminCollectionTable({
         </thead>
         <tbody>
           {collections.map((c) => {
-            const isActive = c.estado.toLowerCase().includes("activ");
             return (
               <tr key={c.id} className={styles.row}>
                 <td className={`${styles.td} ${styles.name}`}>{c.nombre}</td>
@@ -69,9 +68,9 @@ export function AdminCollectionTable({
                     <button
                       type="button"
                       className={styles.actionBtn}
-                      onClick={() => onToggleStatus(c)}
+                      onClick={() => onOpenShopify(c)}
                     >
-                      {isActive ? "Pausar" : "Publicar"}
+                      Abrir Shopify
                     </button>
                   </div>
                 </td>
