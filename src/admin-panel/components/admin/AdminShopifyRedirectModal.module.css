@@ -1,0 +1,72 @@
+/* Panel del modal admin: ancho controlado y centrado (no se estira). */
+.modalPanel {
+  --modal-panel-width: min(520px, 100%);
+}
+
+.wrap {
+  padding: 28px;
+}
+
+.iconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--olffy-cafe);
+}
+
+.description {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--olffy-cafe-68);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primary {
+  border: none;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.primary:hover {
+  background: #4a4893;
+}
+
+.secondary {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe-68);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.secondary:hover {
+  border-color: var(--olffy-cafe-55);
+}

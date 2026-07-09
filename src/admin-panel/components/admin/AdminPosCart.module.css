@@ -1,0 +1,166 @@
+.panel {
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--olffy-cafe);
+}
+
+.stepBadge {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--olffy-cafe-06);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--olffy-cafe);
+}
+
+.unit {
+  font-size: 12px;
+  color: var(--olffy-cafe-55);
+  margin-top: 1px;
+}
+
+.qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--olffy-crema);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.qtyBtn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.qtyBtn:hover {
+  color: var(--olffy-morado);
+}
+
+.qtyValue {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--olffy-cafe);
+}
+
+.subtotal {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13.5px;
+  color: var(--olffy-cafe);
+  min-width: 70px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.removeBtn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--olffy-cafe-55);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  color: var(--olffy-naranjo);
+  background: var(--olffy-cafe-06);
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--olffy-cafe-08);
+}
+
+.totalLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+}
+
+.totalValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--olffy-naranjo);
+}
+
+.empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--olffy-cafe-55);
+  border: 1px dashed var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+}

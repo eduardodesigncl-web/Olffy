@@ -1,0 +1,204 @@
+.card {
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--olffy-cafe);
+}
+
+.description {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--olffy-cafe-55);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--olffy-cafe-08);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Primitivos de formulario (reutilizados por las cards de ajustes) ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--olffy-cafe-68);
+}
+
+.input,
+.select {
+  padding: 10px 12px;
+  border: 1.5px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--olffy-cafe);
+  outline: none;
+  background: var(--olffy-blanco);
+}
+
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235957b0' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--olffy-morado);
+}
+
+.error {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--olffy-naranjo);
+}
+
+/* ── Fila de botones reutilizable ── */
+.buttonRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Botones ── */
+.saveBtn {
+  border: none;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 18px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #4a4893;
+}
+
+.secondaryBtn {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-morado);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.secondaryBtn:hover {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado-suave);
+}
+
+/* Botón pequeño (acciones dentro de filas: integraciones, etc.). */
+.smallBtn {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-morado);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 13px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.smallBtn:hover {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado-suave);
+}
+
+/* ── Badges de estado ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.badgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.pendiente {
+  background: var(--olffy-amarillo-suave);
+  color: #c8901a;
+}
+.pendiente .badgeDot {
+  background: #c8901a;
+}
+
+.mock {
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+}
+.mock .badgeDot {
+  background: var(--olffy-morado);
+}
+
+.requiere {
+  background: var(--olffy-naranjo-suave);
+  color: var(--olffy-naranjo);
+}
+.requiere .badgeDot {
+  background: var(--olffy-naranjo);
+}

@@ -71,10 +71,7 @@ export async function POST(request: Request) {
         ? "Falta configurar ADMIN_SESSION_SECRET o ADMIN_PASSWORD en el deploy."
         : "Error procesando la solicitud.";
 
-    return NextResponse.json(
-      { error: message },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

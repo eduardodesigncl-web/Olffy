@@ -1,0 +1,129 @@
+/* Panel del modal admin: ancho controlado y centrado (no se estira). */
+.modalPanel {
+  --modal-panel-width: min(520px, 100%);
+}
+
+.wrap {
+  padding: 28px;
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--olffy-morado);
+  margin-bottom: 6px;
+}
+
+.title {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--olffy-cafe);
+}
+
+.body {
+  margin-bottom: 20px;
+}
+
+.footer {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Estilos utilitarios de contenido reutilizados por los previews */
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--olffy-cafe-06);
+  font-size: 13.5px;
+}
+
+.rowLabel {
+  color: var(--olffy-cafe-55);
+}
+
+.rowValue {
+  color: var(--olffy-cafe);
+  font-weight: 600;
+  text-align: right;
+}
+
+.note {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--olffy-cafe-55);
+}
+
+.list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--olffy-crema);
+  font-size: 13px;
+}
+
+.listName {
+  color: var(--olffy-cafe);
+  font-weight: 600;
+}
+
+.listPrice {
+  color: var(--olffy-morado);
+  font-weight: 700;
+}
+
+.primary {
+  border: none;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.primary:hover {
+  background: #4a4893;
+}
+
+.secondary {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe-68);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.secondary:hover {
+  border-color: var(--olffy-cafe-55);
+}

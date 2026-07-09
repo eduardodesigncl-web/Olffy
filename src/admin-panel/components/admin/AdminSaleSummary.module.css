@@ -1,0 +1,139 @@
+.panel {
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--olffy-cafe);
+}
+
+.stepBadge {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.label {
+  color: var(--olffy-cafe-55);
+}
+
+.value {
+  color: var(--olffy-cafe);
+  font-weight: 600;
+  text-align: right;
+}
+
+.points {
+  background: var(--olffy-amarillo-suave);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.pointsTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.pointsLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8a6410;
+}
+
+.pointsValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: #c8901a;
+}
+
+.pointsNote {
+  font-size: 11.5px;
+  color: #8a6410;
+  margin-top: 3px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--olffy-cafe-08);
+}
+
+.totalLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--olffy-cafe);
+}
+
+.totalValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--olffy-naranjo);
+}
+
+.registerBtn {
+  width: 100%;
+  border: none;
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 3px 0 #b23300;
+}
+
+.registerBtn:hover:not(:disabled) {
+  background: #d63e00;
+}
+
+.registerBtn:disabled {
+  background: var(--olffy-cafe-08);
+  color: var(--olffy-cafe-55);
+  box-shadow: none;
+  cursor: not-allowed;
+}

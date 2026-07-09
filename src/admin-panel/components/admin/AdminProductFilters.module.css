@@ -1,0 +1,55 @@
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe-68);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--olffy-morado);
+  color: var(--olffy-morado);
+}
+
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--olffy-cafe-06);
+  color: var(--olffy-cafe-55);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.active,
+.active:hover {
+  background: var(--olffy-morado);
+  border-color: var(--olffy-morado);
+  color: var(--olffy-blanco);
+}
+
+.active .count {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--olffy-blanco);
+}

@@ -1,0 +1,116 @@
+@import "./tokens.css";
+
+/* Reset básico */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(42, 28, 16, 0.38);
+}
+
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+::selection {
+  background: var(--olffy-amarillo);
+  color: var(--olffy-cafe);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(42, 28, 16, 0.18);
+  border-radius: 3px;
+}
+
+/* Animaciones compartidas (tomadas del original: marquee, bob, fadein) */
+@keyframes olffy-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes olffy-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes olffy-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes olffy-spin {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.olffy-marquee {
+  animation: olffy-marquee 28s linear infinite;
+}
+
+.olffy-bob {
+  animation: olffy-bob 3s ease-in-out infinite;
+}
+
+.olffy-fadein {
+  animation: olffy-fadein 0.4s ease both;
+}

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { AdminChromeGuard } from "components/admin/admin-chrome-guard";
-import { AdminShell } from "components/admin/admin-shell";
 import AdminLoading from "./loading";
 import type { Metadata } from "next";
 
@@ -19,7 +18,7 @@ export default function AdminLayout({
   return (
     <Suspense fallback={<AdminLoading />}>
       <AdminChromeGuard />
-      <AdminShell>{children}</AdminShell>
+      {children}
     </Suspense>
   );
 }

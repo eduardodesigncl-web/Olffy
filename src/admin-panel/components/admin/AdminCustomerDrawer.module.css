@@ -1,0 +1,4 @@
+/* Sidebar de cliente más ancho para la vista completa de gestión de puntos. */
+.panel {
+  width: min(720px, 100vw);
+}

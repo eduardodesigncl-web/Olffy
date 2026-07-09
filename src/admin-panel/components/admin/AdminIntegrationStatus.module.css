@@ -1,0 +1,65 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Auto layout: nombre+descripción | badge | acciones. */
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--olffy-cafe-06);
+  border-radius: var(--radius-md);
+  background: var(--olffy-crema);
+}
+
+.info {
+  min-width: 0;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--olffy-cafe);
+}
+
+.desc {
+  font-size: 12px;
+  color: var(--olffy-cafe-55);
+  margin-top: 3px;
+  line-height: 1.45;
+}
+
+.badgeCol {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* En mobile, una sola columna y acciones a ancho completo. */
+@media (max-width: 640px) {
+  .item {
+    grid-template-columns: 1fr;
+  }
+
+  .badgeCol {
+    justify-content: flex-start;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions > * {
+    flex: 1;
+    text-align: center;
+  }
+}

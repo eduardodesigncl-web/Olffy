@@ -1,0 +1,41 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.activo {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.activo .dot {
+  background: #2e7d32;
+}
+
+.inactivo {
+  background: rgba(233, 67, 0, 0.1);
+  color: var(--olffy-naranjo);
+}
+.inactivo .dot {
+  background: var(--olffy-naranjo);
+}
+
+.neutro {
+  background: var(--olffy-cafe-06);
+  color: var(--olffy-cafe-68);
+}
+.neutro .dot {
+  background: var(--olffy-cafe-55);
+}
