@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/marketing/process-events",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/shopify/sync-paid-orders",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
