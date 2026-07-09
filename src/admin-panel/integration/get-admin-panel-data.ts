@@ -36,6 +36,30 @@ function sourceLabel(source: string | null | undefined) {
   return "Admin";
 }
 
+function paymentMethodLabel(provider: string | null | undefined) {
+  switch (provider) {
+    case "mercado_pago":
+      return "Mercado Pago";
+    case "checkout_flow":
+      return "Checkout Flow";
+    case "shopify_payments":
+      return "Shopify Payments";
+    case "tuu":
+      return "TUU";
+    case "unknown":
+    case "":
+    case null:
+    case undefined:
+      return "No informado";
+    default:
+      return provider
+        .split(/[_\s-]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+  }
+}
+
 function movementType(type: string | null | undefined) {
   switch (type) {
     case "earned":
@@ -214,22 +238,29 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
       const raw = order as typeof order & {
         customer_email?: string | null;
         payment_provider?: string | null;
+        points_earned?: number | null;
+        metadata?: { customer_name?: string | null } | null;
       };
+      const customerName =
+        typeof raw.metadata?.customer_name === "string" &&
+        raw.metadata.customer_name.trim()
+          ? raw.metadata.customer_name.trim()
+          : null;
       return {
         id: index + 1,
         folio: order.shopify_order_name || order.olffy_reference,
-        cliente: raw.customer_email || "Cliente invitado",
+        cliente: customerName || raw.customer_email || "Cliente invitado",
         email: raw.customer_email || "invitado@olffy.cl",
         fecha: dateLabel(order.created_at),
         total: clp(Number(order.total ?? 0)),
         totalN: Number(order.total ?? 0),
-        metodoPago: raw.payment_provider?.toUpperCase?.() || "TUU",
+        metodoPago: paymentMethodLabel(raw.payment_provider),
         estadoPago:
           order.payment_status === "confirmed"
             ? ("Pagado" as const)
             : ("Pendiente" as const),
         canal: "Web / Shopify",
-        puntos: 0,
+        puntos: Number(raw.points_earned ?? 0),
         supabaseSync: order.loyalty_status === "processed",
         productos: [],
       };
