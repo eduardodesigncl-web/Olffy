@@ -435,6 +435,14 @@ const getCollectionQuery = /* GraphQL */ `
       productsCount {
         count
       }
+      products(first: 12) {
+        nodes {
+          id
+          title
+          handle
+          status
+        }
+      }
     }
   }
 `;
@@ -976,6 +984,11 @@ const collectionUpdateMutation = /* GraphQL */ `
     collectionUpdate(input: $input) {
       collection {
         id
+        title
+        handle
+        productsCount {
+          count
+        }
       }
       userErrors {
         field

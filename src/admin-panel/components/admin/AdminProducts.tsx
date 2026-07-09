@@ -59,6 +59,7 @@ function slugify(name: string): string {
 }
 
 const LOW_STOCK = 5;
+const GALLERY_BATCH_SIZE = 16;
 
 interface AdminProductsProps {
   navContext?: AdminNavContext | null;
@@ -125,6 +126,7 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
   // Producto abierto en el drawer de detalle (null = cerrado).
   const [detailId, setDetailId] = useState<number | null>(null);
   const [view, setView] = useState<ProductView>("galeria");
+  const [visibleCount, setVisibleCount] = useState(GALLERY_BATCH_SIZE);
 
   // El toast desaparece solo tras 7s (se reinicia si llega otro). El botón
   // cerrar del aviso permite ocultarlo manualmente antes.
@@ -141,6 +143,10 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     if (navContext.productFilter) setActiveFilter(navContext.productFilter);
     if (navContext.productId) setDetailId(navContext.productId);
   }, [navContext]);
+
+  useEffect(() => {
+    setVisibleCount(GALLERY_BATCH_SIZE);
+  }, [searchTerm, activeFilter, view]);
 
   const cards: ProductFilterCardDef[] = useMemo(
     () => [
@@ -211,6 +217,8 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
   }, [products, searchTerm, activeFilter, featuredIds]);
 
   const detailProduct = products.find((p) => p.id === detailId) ?? null;
+  const visibleProducts =
+    view === "galeria" ? filtered.slice(0, visibleCount) : filtered;
 
   const syncStateOf = (id: number): SyncState =>
     syncingId === id ? "syncing" : syncedIds.has(id) ? "synced" : "none";
@@ -373,24 +381,39 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
           onSelect={(p) => setDetailId(p.id)}
         />
       ) : (
-        <div className={styles.grid}>
-          {filtered.map((p) => {
-            const meta = productMeta.get(p.id);
-            return (
-              <AdminProductCard
-                key={p.id}
-                product={p}
-                bg={meta?.bg}
-                image={meta?.image}
-                cat={meta?.cat}
-                selected={p.id === detailId}
-                featured={featuredIds.has(p.id)}
-                syncState={syncStateOf(p.id)}
-                onSelect={() => setDetailId(p.id)}
-              />
-            );
-          })}
-        </div>
+        <>
+          <div className={styles.grid}>
+            {visibleProducts.map((p) => {
+              const meta = productMeta.get(p.id);
+              return (
+                <AdminProductCard
+                  key={p.id}
+                  product={p}
+                  bg={meta?.bg}
+                  image={meta?.image}
+                  cat={meta?.cat}
+                  selected={p.id === detailId}
+                  featured={featuredIds.has(p.id)}
+                  syncState={syncStateOf(p.id)}
+                  onSelect={() => setDetailId(p.id)}
+                />
+              );
+            })}
+          </div>
+          {visibleCount < filtered.length && (
+            <div className={styles.loadMoreRow}>
+              <button
+                type="button"
+                className={styles.loadMoreBtn}
+                onClick={() =>
+                  setVisibleCount((count) => count + GALLERY_BATCH_SIZE)
+                }
+              >
+                Cargar más productos ({filtered.length - visibleCount})
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <AdminProductDetailDrawer

@@ -7,15 +7,19 @@ import styles from "./AdminCollectionEditDrawer.module.css";
 interface AdminCollectionEditDrawerProps {
   collection: AdminCollectionRowData | null;
   onClose: () => void;
-  onSave: (updated: AdminCollectionRowData) => void;
+  onSave: (updated: AdminCollectionRowData) => void | Promise<void>;
+  saving?: boolean;
+  error?: string | null;
 }
 
-// Edición mock local de una colección. En producción se sincroniza con Shopify;
-// aquí el guardado solo actualiza el estado local de AdminCollections.
+// Edición conectada a Shopify Admin; el contenedor decide cómo persistir y
+// reporta estado de guardado/error al drawer.
 export function AdminCollectionEditDrawer({
   collection,
   onClose,
   onSave,
+  saving = false,
+  error = null,
 }: AdminCollectionEditDrawerProps) {
   return (
     <Drawer isOpen={collection !== null} onClose={onClose} side="right">
@@ -25,6 +29,8 @@ export function AdminCollectionEditDrawer({
           collection={collection}
           onClose={onClose}
           onSave={onSave}
+          saving={saving}
+          error={error}
         />
       )}
     </Drawer>
@@ -35,25 +41,26 @@ function EditForm({
   collection,
   onClose,
   onSave,
+  saving,
+  error,
 }: {
   collection: AdminCollectionRowData;
   onClose: () => void;
-  onSave: (updated: AdminCollectionRowData) => void;
+  onSave: (updated: AdminCollectionRowData) => void | Promise<void>;
+  saving: boolean;
+  error: string | null;
 }) {
   const [nombre, setNombre] = useState(collection.nombre);
   const [handle, setHandle] = useState(collection.handle);
-  const [productos, setProductos] = useState(String(collection.productos));
-  const [estado, setEstado] = useState(collection.estado);
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const productosNum = Math.max(0, Number(productos) || 0);
     onSave({
       ...collection,
       nombre: nombre.trim(),
       handle: handle.trim(),
-      productos: productosNum,
-      estado,
+      productos: collection.productos,
+      estado: collection.estado,
     });
   };
 
@@ -99,31 +106,11 @@ function EditForm({
             required
           />
         </label>
-        <div className={styles.row}>
-          <label className={styles.field}>
-            <span className={styles.label}>Productos</span>
-            <input
-              className={styles.input}
-              type="number"
-              min="0"
-              value={productos}
-              onChange={(e) => setProductos(e.target.value)}
-              required
-            />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.label}>Estado</span>
-            <select
-              className={styles.select}
-              value={estado}
-              onChange={(e) => setEstado(e.target.value)}
-            >
-              <option value="Activa">Activa</option>
-              <option value="Pausada">Pausada</option>
-              <option value="Borrador">Borrador</option>
-            </select>
-          </label>
-        </div>
+        <p className={styles.note}>
+          Productos asignados: {collection.productos}. La publicación y
+          asignación de productos se administra desde Shopify.
+        </p>
+        {error && <p className={styles.error}>{error}</p>}
       </form>
 
       <div className={styles.footer}>
@@ -131,10 +118,16 @@ function EditForm({
           type="submit"
           form="collection-edit-form"
           className={styles.saveBtn}
+          disabled={saving}
         >
-          Guardar cambios
+          {saving ? "Guardando..." : "Guardar en Shopify"}
         </button>
-        <button type="button" className={styles.cancelBtn} onClick={onClose}>
+        <button
+          type="button"
+          className={styles.cancelBtn}
+          onClick={onClose}
+          disabled={saving}
+        >
           Cancelar
         </button>
       </div>

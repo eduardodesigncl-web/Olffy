@@ -71,6 +71,16 @@
   margin-bottom: 16px;
 }
 
+.errorNotice {
+  background: rgba(233, 67, 0, 0.08);
+  border-color: rgba(233, 67, 0, 0.22);
+}
+
+.errorNotice .noticeText,
+.errorNotice .noticeClose {
+  color: var(--olffy-naranjo);
+}
+
 .noticeIcon {
   color: #c8901a;
   flex-shrink: 0;

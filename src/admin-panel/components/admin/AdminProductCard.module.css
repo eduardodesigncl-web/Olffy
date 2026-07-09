@@ -3,7 +3,7 @@
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  height: 300px;
+  height: 320px;
   text-align: left;
   padding: 0;
   border: 1.5px solid var(--olffy-cafe-08);
@@ -32,8 +32,8 @@
 /* ── Imagen protagonista (~70% de la card) ── */
 .media {
   position: relative;
-  flex: 0 0 208px;
-  height: 208px;
+  flex: 0 0 198px;
+  height: 198px;
   min-height: 0;
   display: grid;
   place-items: center;
@@ -132,7 +132,7 @@
 .info {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 11px 13px 13px;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -142,7 +142,7 @@
 }
 
 .name {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--olffy-cafe);
   line-height: 1.25;
@@ -153,7 +153,8 @@
 }
 
 .sub {
-  font-size: 11.5px;
+  font-size: 12px;
+  line-height: 1.35;
   color: var(--olffy-cafe-55);
   white-space: nowrap;
   overflow: hidden;
@@ -165,7 +166,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .precio {
@@ -176,7 +177,7 @@
 }
 
 .stock {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--olffy-cafe-55);
   white-space: nowrap;
 }
@@ -188,11 +189,11 @@
 
 @media (max-width: 520px) {
   .card {
-    height: 286px;
+    height: 304px;
   }
 
   .media {
-    flex-basis: 196px;
-    height: 196px;
+    flex-basis: 188px;
+    height: 188px;
   }
 }

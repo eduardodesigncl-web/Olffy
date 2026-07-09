@@ -54,6 +54,14 @@ export type AdminCollection = {
   productsCount: {
     count: number;
   };
+  products?: {
+    nodes: Array<{
+      id: string;
+      title: string;
+      handle: string;
+      status: "ACTIVE" | "ARCHIVED" | "DRAFT";
+    }>;
+  };
 };
 
 export type AdminProductsOperation = {

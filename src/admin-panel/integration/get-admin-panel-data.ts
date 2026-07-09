@@ -174,6 +174,7 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
   }));
 
   const collections = frontend.collections.map((collection) => ({
+    id: collection.id,
     nombre: collection.title,
     handle: collection.handle,
     productos: collection.productsCount.count,

@@ -1,15 +1,19 @@
 .layout {
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
   display: flex;
   /* Off-white cálido: mantiene el look OLFFY pero menos saturado que crema. */
   background: #fffaf0;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
   min-width: 0;
+  height: 100dvh;
   overflow-y: auto;
-  max-height: 100vh;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
 }
 
 .inner {
@@ -26,6 +30,8 @@
     flex-direction: column;
   }
   .content {
+    height: auto;
     max-height: none;
+    overflow-y: visible;
   }
 }

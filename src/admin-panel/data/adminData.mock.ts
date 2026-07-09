@@ -37,6 +37,7 @@ export interface AdminProductoRow {
 }
 
 export interface AdminColeccionRow {
+  id?: string;
   nombre: string;
   handle: string;
   productos: number;
