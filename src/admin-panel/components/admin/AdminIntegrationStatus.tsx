@@ -1,17 +1,27 @@
-// @ts-nocheck
+import type { AdminIntegrationDiagnostic } from "lib/admin/diagnostics-types";
 import { AdminSettingsSection, sectionStyles } from "./AdminSettingsSection";
+import { useAdminDiagnostics } from "./useAdminDiagnostics";
 import styles from "./AdminIntegrationStatus.module.css";
 
 interface AdminIntegrationStatusProps {
   onNotice: (message: string) => void;
 }
 
-type IntegrationStatus = "pendiente" | "mock" | "requiere";
+type IntegrationStatus =
+  | "conectado"
+  | "degradado"
+  | "pendiente"
+  | "mock"
+  | "requiere"
+  | "error";
 
 const STATUS_META: Record<IntegrationStatus, { label: string; cls: string }> = {
-  pendiente: { label: "Pendiente", cls: sectionStyles.pendiente },
-  mock: { label: "Mock", cls: sectionStyles.mock },
-  requiere: { label: "Requiere conexión", cls: sectionStyles.requiere },
+  conectado: { label: "Conectado", cls: sectionStyles.conectado! },
+  degradado: { label: "Revisar", cls: sectionStyles.degradado! },
+  pendiente: { label: "Pendiente", cls: sectionStyles.pendiente! },
+  mock: { label: "Mock", cls: sectionStyles.mock! },
+  requiere: { label: "Requiere conexión", cls: sectionStyles.requiere! },
+  error: { label: "Error", cls: sectionStyles.errorBadge! },
 };
 
 const INTEGRATIONS: {
@@ -42,17 +52,70 @@ const INTEGRATIONS: {
   },
 ];
 
-// Estado de integraciones (mock). Los botones no conectan nada real.
+function statusFromDiagnostic(
+  diagnostic: AdminIntegrationDiagnostic,
+): IntegrationStatus {
+  if (diagnostic.status === "connected") return "conectado";
+  if (diagnostic.status === "degraded") return "degradado";
+  if (diagnostic.status === "pending") return "pendiente";
+  if (diagnostic.status === "mock") return "mock";
+  if (diagnostic.status === "missing") return "requiere";
+  return "error";
+}
+
+function formatDiagnosticDesc(diagnostic: AdminIntegrationDiagnostic) {
+  return `${diagnostic.details} · ${diagnostic.latencyMs} ms`;
+}
+
 export function AdminIntegrationStatus({
   onNotice,
 }: AdminIntegrationStatusProps) {
+  const { diagnostics, loading, error, refresh } = useAdminDiagnostics(true);
+  const diagnosticRows =
+    diagnostics?.map((diagnostic) => ({
+      name: diagnostic.name === "Email" ? "Email marketing" : diagnostic.name,
+      status: statusFromDiagnostic(diagnostic),
+      desc: formatDiagnosticDesc(diagnostic),
+      diagnostic,
+    })) ?? [];
+  const rows = diagnostics
+    ? [
+        ...diagnosticRows,
+        {
+          name: "Google Analytics / SEO",
+          status: "pendiente" as const,
+          desc: "Métricas de tráfico y posicionamiento pendientes de configurar.",
+          diagnostic: null,
+        },
+      ]
+    : INTEGRATIONS.map((integration) => ({
+        ...integration,
+        diagnostic: null,
+      }));
+
   return (
     <AdminSettingsSection
       title="Integraciones"
-      description="Servicios externos que se conectarán en producción."
+      description={
+        error
+          ? error
+          : loading
+            ? "Ejecutando diagnóstico real de servicios externos."
+            : "Estado real de las APIs y servicios externos del sistema."
+      }
+      headerAction={
+        <button
+          type="button"
+          className={sectionStyles.smallBtn}
+          onClick={() => void refresh()}
+          disabled={loading}
+        >
+          {loading ? "Probando..." : "Actualizar"}
+        </button>
+      }
     >
       <div className={styles.list}>
-        {INTEGRATIONS.map((it) => {
+        {rows.map((it) => {
           const meta = STATUS_META[it.status];
           return (
             <div key={it.name} className={styles.item}>
@@ -70,20 +133,22 @@ export function AdminIntegrationStatus({
                 <button
                   type="button"
                   className={sectionStyles.smallBtn}
-                  onClick={() =>
-                    onNotice(
-                      "Prueba simulada. La integración real se configurará en producción.",
-                    )
-                  }
+                  onClick={() => {
+                    if (it.diagnostic) {
+                      onNotice(`${it.name}: ${it.diagnostic.details}`);
+                    } else {
+                      onNotice(`${it.name}: ${it.desc}`);
+                    }
+                  }}
                 >
-                  Probar conexión
+                  Ver diagnóstico
                 </button>
                 <button
                   type="button"
                   className={sectionStyles.smallBtn}
                   onClick={() =>
                     onNotice(
-                      "Configuración disponible cuando se conecten credenciales reales.",
+                      "Revisa las variables de entorno en Vercel o en .env.local para esta integración.",
                     )
                   }
                 >

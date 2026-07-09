@@ -41,6 +41,10 @@
   color: var(--olffy-cafe-55);
 }
 
+.latency {
+  color: var(--olffy-cafe-42);
+}
+
 /* ── Badge + tooltip visual ── */
 .badgeWrap {
   position: relative;
@@ -101,6 +105,22 @@
 }
 
 /* Estados. */
+.conectado.dot {
+  background: #2f9d6a;
+}
+.conectado.badge {
+  background: #e4f5ed;
+  color: #267d55;
+}
+
+.degradado.dot {
+  background: var(--olffy-amarillo);
+}
+.degradado.badge {
+  background: var(--olffy-amarillo-suave);
+  color: #c8901a;
+}
+
 .pendiente.dot {
   background: var(--olffy-amarillo);
 }
@@ -123,4 +143,12 @@
 .requiere.badge {
   background: var(--olffy-naranjo-suave);
   color: var(--olffy-naranjo);
+}
+
+.error.dot {
+  background: #d94b35;
+}
+.error.badge {
+  background: #ffe4de;
+  color: #b83a27;
 }
