@@ -32,6 +32,8 @@ export type AdminPanelData = {
       variantId?: string;
       status?: string;
       stock?: number;
+      image?: string;
+      images?: string[];
     }
   >;
   digitalSales: DigitalSale[];
