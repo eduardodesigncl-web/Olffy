@@ -1,0 +1,123 @@
+.header {
+  margin-bottom: clamp(18px, 3vw, 26px);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--olffy-morado);
+  margin-bottom: 4px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(24px, 3.5vw, 32px);
+  color: var(--olffy-cafe);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--olffy-cafe-68);
+  max-width: 560px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: clamp(18px, 3vw, 24px);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.successWrap {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 14px;
+}
+
+/* Toast fijo superior derecho — no empuja el contenido. */
+.notice {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  box-shadow: 0 12px 30px rgba(42, 28, 16, 0.18);
+  max-width: 460px;
+  animation: noticeIn 0.2s ease both;
+}
+
+@keyframes noticeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.noticeIcon {
+  color: var(--olffy-morado);
+  flex-shrink: 0;
+}
+
+.noticeText {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--olffy-cafe);
+}
+
+.noticeClose {
+  border: none;
+  background: transparent;
+  color: var(--olffy-cafe-55);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .notice {
+    top: 16px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}

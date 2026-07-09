@@ -1,0 +1,6 @@
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: clamp(18px, 3vw, 26px);
+}

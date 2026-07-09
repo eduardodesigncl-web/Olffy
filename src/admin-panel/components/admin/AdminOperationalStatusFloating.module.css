@@ -1,0 +1,113 @@
+/* Herramienta flotante: acceso global en la esquina superior derecha. */
+.floating {
+  position: fixed;
+  right: 24px;
+  top: 24px;
+  /* Sobre el contenido normal, pero por debajo de overlays/drawers/modales
+     (Drawer y Modal usan z-index 500), para no tapar su botón de cerrar. */
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* ── Botón flotante ── */
+.button {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--olffy-blanco);
+  border: 2px solid var(--olffy-morado);
+  color: var(--olffy-morado);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 22px rgba(42, 28, 16, 0.18);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(42, 28, 16, 0.24);
+}
+
+/* Color por prioridad de estado. */
+.requiere {
+  border-color: var(--olffy-naranjo);
+  color: var(--olffy-naranjo);
+}
+
+.pendiente {
+  border-color: var(--olffy-amarillo);
+  color: #c8901a;
+}
+
+.mock {
+  border-color: var(--olffy-morado);
+  color: var(--olffy-morado);
+}
+
+/* ── Popover ── */
+.popover {
+  width: min(340px, calc(100vw - 32px));
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(42, 28, 16, 0.2);
+  padding: 16px 18px 18px;
+  animation: popIn 0.16s ease both;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.popTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--olffy-cafe);
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--olffy-cafe-06);
+  border-radius: 999px;
+  color: var(--olffy-cafe);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.closeBtn:hover {
+  background: var(--olffy-cafe-08);
+}
+
+@media (max-width: 560px) {
+  .floating {
+    right: 14px;
+    top: 14px;
+  }
+}

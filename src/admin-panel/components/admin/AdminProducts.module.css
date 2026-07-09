@@ -1,0 +1,172 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(18px, 3vw, 26px);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--olffy-morado);
+  margin-bottom: 4px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(24px, 3.5vw, 32px);
+  color: var(--olffy-cafe);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--olffy-cafe-68);
+  max-width: 480px;
+}
+
+.topBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.topBtn:hover {
+  background: #4a4893;
+}
+
+/* Toast fijo superior derecho — no empuja el contenido. */
+.notice {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  box-shadow: 0 12px 30px rgba(42, 28, 16, 0.18);
+  max-width: 460px;
+  animation: noticeIn 0.2s ease both;
+}
+
+@keyframes noticeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 560px) {
+  .notice {
+    top: 16px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}
+
+.noticeIcon {
+  color: #c8901a;
+  flex-shrink: 0;
+}
+
+.noticeText {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8a6410;
+}
+
+.noticeClose {
+  border: none;
+  background: transparent;
+  color: #c8901a;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.searchRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Control segmentado Galería | Lista. */
+.viewToggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  gap: 3px;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-pill);
+  background: var(--olffy-blanco);
+}
+
+.viewBtn {
+  border: none;
+  background: transparent;
+  color: var(--olffy-cafe-68);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 15px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.viewBtn:hover {
+  color: var(--olffy-morado);
+}
+
+.viewActive,
+.viewActive:hover {
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+}
+
+/* Catálogo a ancho completo: la selección abre el detalle en un drawer. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 520px) {
+  .searchRow {
+    flex-wrap: wrap;
+  }
+}

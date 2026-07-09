@@ -1,0 +1,9 @@
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--olffy-blanco);
+  line-height: 1.4;
+}

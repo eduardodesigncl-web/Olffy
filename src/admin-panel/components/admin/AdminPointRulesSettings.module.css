@@ -1,0 +1,74 @@
+.headerAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "?" con tooltip visual. */
+.helpWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.helpMark {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: help;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 240px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--olffy-cafe);
+  color: var(--olffy-blanco);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(42, 28, 16, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(3px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  pointer-events: none;
+}
+
+.helpWrap:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.preview {
+  background: var(--olffy-amarillo-suave);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.previewRule {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a6410;
+}
+
+.previewExample {
+  font-size: 12.5px;
+  color: #8a6410;
+  margin-top: 3px;
+}

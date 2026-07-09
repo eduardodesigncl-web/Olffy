@@ -1,0 +1,101 @@
+/* Desktop: menú vertical compacto tipo panel de configuración. */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+}
+
+.item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.item:hover {
+  background: var(--olffy-morado-suave);
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+}
+
+.hint {
+  font-size: 11.5px;
+  color: var(--olffy-cafe-55);
+}
+
+/* Estado activo: fondo morado suave + indicador lateral sutil. */
+.active,
+.active:hover {
+  background: var(--olffy-morado-suave);
+}
+
+.active::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--olffy-morado);
+}
+
+.active .label {
+  color: var(--olffy-morado);
+  font-weight: 700;
+}
+
+/* Mobile: tabs horizontales compactas con scroll. */
+@media (max-width: 860px) {
+  .menu {
+    flex-direction: row;
+    gap: 6px;
+    padding: 6px;
+    border-radius: var(--radius-pill);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .item {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+  }
+
+  .hint {
+    display: none;
+  }
+
+  .active::before {
+    display: none;
+  }
+
+  .active,
+  .active:hover {
+    background: var(--olffy-morado);
+  }
+
+  .active .label {
+    color: var(--olffy-blanco);
+  }
+}

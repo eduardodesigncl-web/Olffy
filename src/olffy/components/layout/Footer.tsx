@@ -103,9 +103,7 @@ export function Footer({ onNavigate, onSubscribe }: FooterProps) {
         </div>
 
         <div className={styles.bottomBar}>
-          <span>
-            © {COPYRIGHT_YEAR} OLFFY. Todos los derechos reservados.
-          </span>
+          <span>© {COPYRIGHT_YEAR} OLFFY. Todos los derechos reservados.</span>
           <span className={styles.credit}>Hecho por Mouselabs</span>
         </div>
       </div>

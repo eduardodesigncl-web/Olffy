@@ -1,0 +1,51 @@
+.panel {
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--olffy-cafe);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px 20px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.num {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.text {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--olffy-cafe);
+  padding-top: 3px;
+}

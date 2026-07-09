@@ -32,7 +32,9 @@ export function CountdownTimer({
   title,
   durationMs,
 }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(() => getTimeLeftFromDiff(durationMs));
+  const [timeLeft, setTimeLeft] = useState(() =>
+    getTimeLeftFromDiff(durationMs),
+  );
 
   useEffect(() => {
     const targetDate = Date.now() + durationMs;

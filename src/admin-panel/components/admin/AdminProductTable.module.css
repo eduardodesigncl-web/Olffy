@@ -1,0 +1,156 @@
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  background: var(--olffy-blanco);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--olffy-morado);
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(89, 87, 176, 0.18);
+  background: var(--olffy-morado-suave);
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid var(--olffy-cafe-06);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row:hover {
+  background: #fafafa;
+}
+
+.td {
+  padding: 13px 16px;
+  font-size: 13.5px;
+  color: var(--olffy-cafe);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.handle {
+  color: var(--olffy-cafe-55);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+}
+
+.precio {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--olffy-cafe);
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-morado);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.actionBtn:hover:not(:disabled) {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado-suave);
+}
+
+.actionBtn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Indicador sutil de sincronización: puntito con tooltip visual propio. */
+.syncWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
+}
+
+.syncDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--olffy-cafe);
+  color: var(--olffy-blanco);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  z-index: 20;
+  box-shadow: 0 6px 16px rgba(42, 28, 16, 0.22);
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--olffy-cafe);
+}
+
+.syncWrap:hover .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.notSynced {
+  background: var(--olffy-cafe-08);
+}
+
+.syncing {
+  background: var(--olffy-amarillo);
+}
+
+.synced {
+  background: #2e7d32;
+}

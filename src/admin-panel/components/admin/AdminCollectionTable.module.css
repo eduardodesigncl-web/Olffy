@@ -1,0 +1,84 @@
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  background: var(--olffy-blanco);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--olffy-morado);
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(89, 87, 176, 0.18);
+  background: var(--olffy-morado-suave);
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid var(--olffy-cafe-06);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row:hover {
+  background: #fafafa;
+}
+
+.td {
+  padding: 13px 16px;
+  font-size: 13.5px;
+  color: var(--olffy-cafe);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.handle {
+  color: var(--olffy-cafe-55);
+  font-size: 12.5px;
+}
+
+.count {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--olffy-morado);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.actionBtn {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-morado);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.actionBtn:hover {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado-suave);
+}

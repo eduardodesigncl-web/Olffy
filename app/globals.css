@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../src/admin-panel/styles/tokens.css";
 
 @plugin "@tailwindcss/container-queries";
 @plugin "@tailwindcss/typography";

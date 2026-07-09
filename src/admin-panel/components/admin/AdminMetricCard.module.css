@@ -1,0 +1,124 @@
+/* Card de métrica estándar del admin: sistema visual único (mismo alto, padding,
+   tipografía y jerarquía) en Dashboard, Clientes, Puntos, Recompensas, Productos,
+   Colecciones y Ventas físicas. El ancho lo define la grilla de cada sección. */
+.card {
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  border-left: 3px solid var(--olffy-morado);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* label + value arriba; la línea auxiliar sigue al value y el espacio
+     sobrante queda abajo, para que el value quede alineado entre todas. */
+  justify-content: flex-start;
+}
+
+/* Variante accionable: mismo look, con cursor e hover sutil. */
+.clickable {
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.clickable:hover {
+  border-color: var(--olffy-morado-suave);
+  box-shadow: 0 4px 12px rgba(42, 28, 16, 0.07);
+  transform: translateY(-1px);
+}
+
+.label {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--olffy-cafe-55);
+  margin: 0 0 8px;
+  line-height: 1.25;
+}
+
+.value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  /* Tamaño fijo (no depende del ancho de la grilla) para que el mismo número
+     se vea igual dentro de una misma variante de tamaño. */
+  line-height: 1.1;
+  color: var(--olffy-cafe);
+  word-break: break-word;
+}
+
+/* Línea auxiliar unificada: misma tipografía, color y line-height venga de
+   `secondary` (ej. "18 ventas hoy") o de `footnote` (ej. "registrados"). */
+.helper {
+  font-weight: 600;
+  color: var(--olffy-cafe-55);
+  line-height: 1.4;
+  margin-top: 5px;
+}
+
+/* ── Variante Dashboard (compacta, tamaño actual) ── */
+.sizeDashboard {
+  min-height: 104px;
+  padding: 14px 16px;
+}
+.sizeDashboard .label {
+  font-size: 10.5px;
+}
+.sizeDashboard .value {
+  font-size: 22px;
+}
+.sizeDashboard .helper {
+  font-size: 11.5px;
+}
+
+/* ── Variante default (resto del admin, ~+4px, más legible) ── */
+.sizeDefault {
+  min-height: 96px;
+  padding: 13px 18px;
+}
+.sizeDefault .label {
+  font-size: 12.5px;
+  /* Altura reservada para 2 líneas de título: así el value arranca al mismo
+     nivel tenga el título 1 o 2 líneas, y los valores de la fila se alinean. */
+  min-height: 2.5em;
+  margin-bottom: 6px;
+}
+.sizeDefault .value {
+  font-size: 26px;
+}
+.sizeDefault .helper {
+  font-size: 13.5px;
+}
+
+/* ── Acentos por color de marca ── */
+.morado {
+  border-left-color: var(--olffy-morado);
+}
+.morado .value {
+  color: var(--olffy-morado);
+}
+
+.naranjo {
+  border-left-color: var(--olffy-naranjo);
+}
+.naranjo .value {
+  color: var(--olffy-naranjo);
+}
+
+.amarillo {
+  border-left-color: var(--olffy-amarillo);
+}
+.amarillo .value {
+  color: #c8901a;
+}
+
+.verde {
+  border-left-color: #2e7d32;
+}
+.verde .value {
+  color: #2e7d32;
+}
