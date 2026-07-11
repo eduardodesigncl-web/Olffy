@@ -141,6 +141,45 @@ export async function enqueueCustomerMarketingEvent(input: {
   }
 }
 
+// Correos de fidelización (transaccionales del programa: invitación a
+// reclamar puntos, activación, recordatorios de vencimiento). A diferencia de
+// los eventos de marketing, no dependen del consentimiento comercial: son
+// avisos operativos del beneficio del propio cliente. El envío real ocurre
+// cuando exista proveedor (hoy noop) y es idempotente por evento.
+export async function enqueueLoyaltyEmailEvent(input: {
+  eventType: string;
+  entityId: string | number;
+  email: string;
+  loyaltyCustomerId?: number | null;
+  payload: Record<string, unknown>;
+}) {
+  const email = input.email.trim().toLowerCase();
+
+  if (!email) return;
+
+  const provider =
+    process.env.MARKETING_PROVIDER?.trim().toLowerCase() || "noop";
+  const { error } = await getSupabaseAdmin()
+    .from("marketing_event_outbox")
+    .upsert(
+      {
+        event_type: input.eventType,
+        idempotency_key: `loyalty:${input.eventType}:${input.entityId}`,
+        loyalty_customer_id: input.loyaltyCustomerId ?? null,
+        email,
+        payload_minimal: input.payload,
+        provider,
+      },
+      { onConflict: "idempotency_key", ignoreDuplicates: true },
+    );
+
+  if (error) {
+    throw new Error(
+      `No se pudo encolar el correo de fidelización: ${error.message}`,
+    );
+  }
+}
+
 export async function processMarketingOutbox(limit = 25) {
   const supabase = getSupabaseAdmin();
   const provider = await getMarketingProvider();

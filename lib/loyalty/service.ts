@@ -235,6 +235,8 @@ export type FinalizePhysicalSalePosInput = {
   subtotal: number;
   discount: number;
   total: number;
+  /** Monto elegible pagado (carrito mixto). Si se omite, toda la venta es elegible. */
+  eligibleTotal?: number;
   benefitType: PhysicalSalePosBenefit;
   pointsSpent: number;
   pointsEarned: number;
@@ -705,38 +707,57 @@ export async function finalizePhysicalSalePos(
   shopifyOrderName?: string;
   alreadyCompleted: boolean;
 }> {
-  const { data, error } = await getSupabaseAdmin().rpc(
+  const baseParams = {
+    p_attempt_id: input.attemptId,
+    p_claim_token: input.claimToken,
+    p_customer_id: input.customerId ?? null,
+    p_tuu_transaction_id: input.tuuTransactionId.trim(),
+    p_receipt_number: input.receiptNumber?.trim() || null,
+    p_shopify_order_id: input.shopifyOrderId.trim(),
+    p_shopify_order_name: input.shopifyOrderName?.trim() || null,
+    p_subtotal: input.subtotal,
+    p_discount: input.discount,
+    p_total: input.total,
+    p_benefit_type: input.benefitType,
+    p_points_spent: input.pointsSpent,
+    p_points_earned: input.pointsEarned,
+    p_discount_code: input.discountCode?.trim() || null,
+    p_manual_discount_reason: input.manualDiscountReason?.trim() || null,
+    p_items: input.items.map((item) => ({
+      shopify_product_id: item.shopifyProductId,
+      shopify_variant_id: item.shopifyVariantId ?? null,
+      sku: item.sku ?? null,
+      product_title: item.productTitle,
+      variant_title: item.variantTitle ?? null,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+    })),
+    p_notes: input.notes?.trim() || null,
+    p_created_by: input.createdBy.trim(),
+    p_metadata: input.metadata ?? {},
+  };
+
+  let { data, error } = await getSupabaseAdmin().rpc(
     "finalize_physical_sale_pos",
     {
-      p_attempt_id: input.attemptId,
-      p_claim_token: input.claimToken,
-      p_customer_id: input.customerId ?? null,
-      p_tuu_transaction_id: input.tuuTransactionId.trim(),
-      p_receipt_number: input.receiptNumber?.trim() || null,
-      p_shopify_order_id: input.shopifyOrderId.trim(),
-      p_shopify_order_name: input.shopifyOrderName?.trim() || null,
-      p_subtotal: input.subtotal,
-      p_discount: input.discount,
-      p_total: input.total,
-      p_benefit_type: input.benefitType,
-      p_points_spent: input.pointsSpent,
-      p_points_earned: input.pointsEarned,
-      p_discount_code: input.discountCode?.trim() || null,
-      p_manual_discount_reason: input.manualDiscountReason?.trim() || null,
-      p_items: input.items.map((item) => ({
-        shopify_product_id: item.shopifyProductId,
-        shopify_variant_id: item.shopifyVariantId ?? null,
-        sku: item.sku ?? null,
-        product_title: item.productTitle,
-        variant_title: item.variantTitle ?? null,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-      })),
-      p_notes: input.notes?.trim() || null,
-      p_created_by: input.createdBy.trim(),
-      p_metadata: input.metadata ?? {},
+      ...baseParams,
+      p_eligible_total: input.eligibleTotal ?? input.total,
     },
   );
+
+  // Compatibilidad pre-migración 20260711 (p_eligible_total aún no existe):
+  // solo es seguro reintentar con la firma antigua cuando toda la venta es
+  // elegible; con carrito mixto la validación de puntos exige la migración.
+  if (
+    error &&
+    /p_eligible_total|schema cache|does not exist/i.test(error.message) &&
+    (input.eligibleTotal === undefined || input.eligibleTotal === input.total)
+  ) {
+    ({ data, error } = await getSupabaseAdmin().rpc(
+      "finalize_physical_sale_pos",
+      baseParams,
+    ));
+  }
 
   if (error) {
     throwSupabaseError("No se pudo completar la venta fisica TUU", error);

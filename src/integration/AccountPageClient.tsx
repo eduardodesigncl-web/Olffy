@@ -27,12 +27,15 @@ export function AccountPageClient({
   transactions,
   rewards,
   redemptions,
+  expiringNotice,
 }: {
   screen: Screen;
   customer: Customer;
   transactions: PointsTransaction[];
   rewards: Reward[];
   redemptions: Redemption[];
+  /** Aviso de puntos próximos a vencer (lotes de 6 meses). */
+  expiringNotice?: { points: number; dateLabel: string | null } | null;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -53,6 +56,19 @@ export function AccountPageClient({
         }
       />
       <div className="flex-1 px-6 md:px-10 py-8">
+        {screen === "dashboard" && expiringNotice ? (
+          <div
+            className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            role="status"
+          >
+            Tienes {expiringNotice.points.toLocaleString("es-CL")} puntos que
+            vencen pronto
+            {expiringNotice.dateLabel
+              ? ` (el ${expiringNotice.dateLabel})`
+              : ""}
+            . Úsalos en tu próxima compra antes de esa fecha.
+          </div>
+        ) : null}
         {screen === "dashboard" && (
           <AccountDashboard
             customer={customer}

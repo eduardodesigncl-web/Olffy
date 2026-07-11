@@ -7,6 +7,12 @@ import {
   getActiveLoyaltyRule,
   type LoyaltyCustomer,
 } from "lib/loyalty/service";
+import {
+  getExcludedProductIds,
+  isExcludedFromLoyalty,
+  proportionalEligibleAmount,
+} from "lib/loyalty/eligibility";
+import { createGuestPendingClaim } from "lib/loyalty/guest-claims";
 import { adminFetch } from "lib/shopify/admin";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { enqueueOrderMarketingEvents } from "lib/transactions/marketing";
@@ -55,6 +61,12 @@ type ShopifyPaidOrder = {
     acceptsMarketing?: boolean | null;
   };
   lineItemsCount?: number;
+  /** Líneas para carrito mixto: monto bruto por producto y tags si vienen. */
+  lineItems?: Array<{
+    productId: string | null;
+    amount: number;
+    tags?: string[];
+  }>;
 };
 
 function fail(context: string, error: { message: string }): never {
@@ -77,7 +89,10 @@ function toEmail(value: unknown): string | null {
   return email && email.includes("@") ? email : null;
 }
 
-function gid(resource: "Order" | "Customer", value: unknown): string | null {
+function gid(
+  resource: "Order" | "Customer" | "Product",
+  value: unknown,
+): string | null {
   const text = toText(value);
   if (!text) return null;
   if (text.startsWith("gid://shopify/")) return text;
@@ -259,6 +274,63 @@ function normalizeWebhookOrder(
     lineItemsCount: Array.isArray(payload.line_items)
       ? payload.line_items.length
       : undefined,
+    lineItems: Array.isArray(payload.line_items)
+      ? payload.line_items.map((raw) => {
+          const item = (raw ?? {}) as Record<string, unknown>;
+          const quantity = Math.max(toInt(item.quantity), 1);
+          return {
+            productId: gid("Product", item.product_id),
+            amount: toInt(item.price) * quantity,
+          };
+        })
+      : undefined,
+  };
+}
+
+// Carrito mixto (propuesta v2): base de puntos = monto elegible pagado
+// (después de descuentos, sin envío y sin productos "Sin puntos"). Los
+// descuentos se atribuyen proporcionalmente entre líneas.
+async function computeEligiblePaidBase(order: ShopifyPaidOrder): Promise<{
+  eligibleTotal: number;
+  excludedAmount: number;
+}> {
+  const paidBase = order.subtotal > 0 ? order.subtotal : order.total;
+  const lineItems = order.lineItems ?? [];
+
+  if (lineItems.length === 0) {
+    return { eligibleTotal: paidBase, excludedAmount: 0 };
+  }
+
+  const withoutTags = lineItems.filter(
+    (item) => item.productId && item.tags === undefined,
+  );
+  const excludedIds =
+    withoutTags.length > 0
+      ? await getExcludedProductIds(
+          withoutTags.map((item) => item.productId as string),
+        )
+      : new Set<string>();
+
+  const totalLineAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const eligibleLineAmount = lineItems.reduce((sum, item) => {
+    const excluded =
+      item.tags !== undefined
+        ? isExcludedFromLoyalty(item.tags)
+        : item.productId
+          ? excludedIds.has(item.productId)
+          : false;
+    return excluded ? sum : sum + item.amount;
+  }, 0);
+
+  const eligibleTotal = proportionalEligibleAmount({
+    paidBase,
+    eligibleLineAmount,
+    totalLineAmount,
+  });
+
+  return {
+    eligibleTotal,
+    excludedAmount: Math.max(paidBase - eligibleTotal, 0),
   };
 }
 
@@ -340,6 +412,7 @@ async function upsertDigitalOrderReference(input: {
   order: ShopifyPaidOrder;
   loyaltyCustomer: LoyaltyCustomer | null;
   pointsEarned: number;
+  eligibility?: { eligibleTotal: number; excludedAmount: number } | null;
   source: "webhook" | "cron";
   webhookId?: string;
 }) {
@@ -399,6 +472,8 @@ async function upsertDigitalOrderReference(input: {
           idempotency_key: idempotencyKey,
           subtotal: input.order.subtotal,
           discount: input.order.discount,
+          eligible_total: input.eligibility?.eligibleTotal ?? null,
+          excluded_amount: input.eligibility?.excludedAmount ?? null,
           payment_method_label: paymentLabel,
           payment_gateway_names: input.order.paymentGatewayNames,
           customer_name: customerName || null,
@@ -450,13 +525,31 @@ async function processNormalizedShopifyPaidOrder(input: {
   }
 
   const loyaltyCustomer = await findLoyaltyCustomer(input.order);
+  const guestEmail = !loyaltyCustomer
+    ? toEmail(firstPresent(input.order.customer?.email, input.order.email))
+    : null;
   let pointsEarned = 0;
+  let guestClaimPoints = 0;
+  let eligibility: { eligibleTotal: number; excludedAmount: number } | null =
+    null;
   let pointsPreparationError: string | null = null;
 
-  if (loyaltyCustomer?.status === "active") {
+  if (loyaltyCustomer?.status === "active" || guestEmail) {
     try {
       const rule = await getActiveLoyaltyRule();
-      pointsEarned = calculatePointsForAmount(input.order.total, rule);
+      eligibility = await computeEligiblePaidBase(input.order);
+      const eligiblePoints = calculatePointsForAmount(
+        eligibility.eligibleTotal,
+        rule,
+      );
+
+      if (loyaltyCustomer?.status === "active") {
+        pointsEarned = eligiblePoints;
+      } else {
+        // Compra invitada: los puntos quedan como reclamación pendiente
+        // (15 días) ligada a order_id + correo; no se acreditan todavía.
+        guestClaimPoints = eligiblePoints;
+      }
     } catch (cause) {
       pointsPreparationError =
         cause instanceof Error ? cause.message : "Error calculando puntos";
@@ -467,7 +560,26 @@ async function processNormalizedShopifyPaidOrder(input: {
     ...input,
     loyaltyCustomer,
     pointsEarned,
+    eligibility,
   });
+
+  if (guestEmail && guestClaimPoints > 0 && !pointsPreparationError) {
+    try {
+      await createGuestPendingClaim({
+        shopifyOrderId: input.order.id,
+        orderRefId: orderRef.id,
+        email: guestEmail,
+        points: guestClaimPoints,
+        eligibleTotal: eligibility?.eligibleTotal ?? null,
+        purchasedAt:
+          input.order.processedAt ??
+          input.order.createdAt ??
+          new Date().toISOString(),
+      });
+    } catch (cause) {
+      console.error("No se pudo crear la reclamación de invitado:", cause);
+    }
+  }
 
   if (pointsPreparationError) {
     await updateOrderReference(orderRef.id, {
@@ -622,9 +734,19 @@ const recentPaidOrdersQuery = /* GraphQL */ `
             amount
           }
         }
-        lineItems(first: 1) {
+        lineItems(first: 50) {
           nodes {
             id
+            quantity
+            originalTotalSet {
+              shopMoney {
+                amount
+              }
+            }
+            product {
+              id
+              tags
+            }
           }
         }
       }
@@ -643,7 +765,16 @@ type RecentPaidOrderNode = {
   totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
   subtotalPriceSet?: { shopMoney: { amount: string } } | null;
   totalDiscountsSet?: { shopMoney: { amount: string } } | null;
-  lineItems?: { nodes: Array<{ id: string }> } | null;
+  lineItems?: {
+    nodes: Array<{
+      id: string;
+      quantity?: number | null;
+      originalTotalSet?: {
+        shopMoney?: { amount?: string | null } | null;
+      } | null;
+      product?: { id?: string | null; tags?: string[] | null } | null;
+    }>;
+  } | null;
 };
 
 function normalizeGraphqlOrder(node: RecentPaidOrderNode): ShopifyPaidOrder {
@@ -666,6 +797,11 @@ function normalizeGraphqlOrder(node: RecentPaidOrderNode): ShopifyPaidOrder {
     discount: toInt(node.totalDiscountsSet?.shopMoney.amount),
     currency: "CLP",
     lineItemsCount: node.lineItems?.nodes.length,
+    lineItems: node.lineItems?.nodes.map((line) => ({
+      productId: line.product?.id ?? null,
+      amount: toInt(line.originalTotalSet?.shopMoney?.amount),
+      tags: line.product?.tags ?? [],
+    })),
   };
 }
 

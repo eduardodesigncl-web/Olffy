@@ -25,16 +25,6 @@ export function AdminSettings() {
     return () => window.clearTimeout(t);
   }, [notice]);
 
-  // ── Información de tienda (estado local mock) ──
-  const [nombre, setNombre] = useState("OLFFY");
-  const [ciudad, setCiudad] = useState("Viña del Mar");
-  const [retiro, setRetiro] = useState("si");
-  const [envios, setEnvios] = useState("si");
-  const [email, setEmail] = useState("contacto@olffy.cl");
-
-  const handleSaveStore = () =>
-    setNotice("Ajustes de tienda guardados en modo demo.");
-
   return (
     <div>
       <div className={styles.header}>
@@ -58,74 +48,21 @@ export function AdminSettings() {
           {activeSettingsTab === "tienda" && (
             <AdminSettingsSection
               title="Información de tienda"
-              description="Datos generales visibles en la operación."
-              footer={
-                <div className={sectionStyles.buttonRow}>
-                  <button
-                    type="button"
-                    className={sectionStyles.saveBtn}
-                    onClick={handleSaveStore}
-                  >
-                    Guardar cambios
-                  </button>
-                </div>
-              }
+              description="Dónde se administra cada dato operativo de OLFFY."
             >
-              <div className={sectionStyles.fieldRow}>
-                <label className={sectionStyles.field}>
-                  <span className={sectionStyles.label}>Nombre de tienda</span>
-                  <input
-                    className={sectionStyles.input}
-                    type="text"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                  />
-                </label>
-                <label className={sectionStyles.field}>
-                  <span className={sectionStyles.label}>Ciudad</span>
-                  <input
-                    className={sectionStyles.input}
-                    type="text"
-                    value={ciudad}
-                    onChange={(e) => setCiudad(e.target.value)}
-                  />
-                </label>
+              <div className={styles.infoBlock}>
+                <p>
+                  <strong>Nombre, contacto y políticas de envío/retiro</strong>:
+                  se configuran en Shopify (Configuración → Información de la
+                  tienda) y en las variables del proyecto (SITE_NAME,
+                  COMPANY_NAME) en Vercel.
+                </p>
+                <p>
+                  <strong>Catálogo, precios y stock</strong>: Shopify es la
+                  fuente oficial. <strong>Puntos y fidelización</strong>: se
+                  administran en la pestaña Puntos de estos Ajustes.
+                </p>
               </div>
-              <div className={sectionStyles.fieldRow}>
-                <label className={sectionStyles.field}>
-                  <span className={sectionStyles.label}>Retiro en tienda</span>
-                  <select
-                    className={sectionStyles.select}
-                    value={retiro}
-                    onChange={(e) => setRetiro(e.target.value)}
-                  >
-                    <option value="si">Activado</option>
-                    <option value="no">Desactivado</option>
-                  </select>
-                </label>
-                <label className={sectionStyles.field}>
-                  <span className={sectionStyles.label}>
-                    Envíos a todo Chile
-                  </span>
-                  <select
-                    className={sectionStyles.select}
-                    value={envios}
-                    onChange={(e) => setEnvios(e.target.value)}
-                  >
-                    <option value="si">Activado</option>
-                    <option value="no">Desactivado</option>
-                  </select>
-                </label>
-              </div>
-              <label className={sectionStyles.field}>
-                <span className={sectionStyles.label}>Email de contacto</span>
-                <input
-                  className={sectionStyles.input}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </label>
             </AdminSettingsSection>
           )}
 

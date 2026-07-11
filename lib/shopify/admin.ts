@@ -458,6 +458,7 @@ const searchProductVariantsQuery = /* GraphQL */ `
         id
         title
         status
+        tags
         variants(first: $variantsFirst) {
           nodes {
             id
@@ -476,6 +477,7 @@ type AdminPosProductSearchNode = {
   id: string;
   title: string;
   status: "ACTIVE" | "ARCHIVED" | "DRAFT";
+  tags: string[];
   variants: {
     nodes: Array<{
       id: string;
@@ -500,6 +502,7 @@ const getProductVariantsByIdsQuery = /* GraphQL */ `
           id
           title
           status
+          tags
         }
       }
     }
@@ -573,6 +576,7 @@ export type AdminPosVariant = {
     id: string;
     title: string;
     status: "ACTIVE" | "ARCHIVED" | "DRAFT";
+    tags: string[];
   };
 };
 
@@ -698,6 +702,7 @@ export async function searchAdminProductVariants(
           id: product.id,
           title: product.title,
           status: product.status,
+          tags: product.tags ?? [],
         },
       })),
     )

@@ -6,7 +6,7 @@ export { requestMagicLink, logoutCustomer } from "./supabase-auth-actions";
 export { adminLogin, adminLogout } from "./admin-auth-actions";
 export {
   adjustCustomerPoints,
-  registerTuuSale,
+  createRedemption,
   approveRedemption,
   rejectRedemption,
   retryBoleta,

@@ -5,7 +5,7 @@ export type AdminTab =
   | "dashboard"
   | "clientes"
   | "ventas"
-  | "ventas-digitales"
+  | "pos"
   | "puntos"
   | "recompensas"
   | "productos"
@@ -20,9 +20,9 @@ interface AdminSidebarProps {
 
 const NAV: { id: AdminTab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
+  { id: "ventas", label: "Ventas" },
+  { id: "pos", label: "Tienda POS" },
   { id: "clientes", label: "Clientes" },
-  { id: "ventas", label: "Ventas físicas" },
-  { id: "ventas-digitales", label: "Ventas digitales" },
   { id: "puntos", label: "Puntos" },
   { id: "recompensas", label: "Recompensas" },
   { id: "productos", label: "Productos" },
@@ -63,16 +63,16 @@ function AdminIcon({ tab }: { tab: AdminTab }) {
     case "ventas":
       return (
         <svg {...c}>
+          <rect x="2" y="4" width="20" height="14" rx="2" />
+          <path d="M2 9h20M6 14h6" />
+        </svg>
+      );
+    case "pos":
+      return (
+        <svg {...c}>
           <path d="M4 9.5V20h16V9.5" />
           <path d="M3 9.5 4.5 4h15L21 9.5a2.5 2.5 0 0 1-4.5 1.5 2.5 2.5 0 0 1-4.5 0 2.5 2.5 0 0 1-4.5 0A2.5 2.5 0 0 1 3 9.5z" />
           <path d="M10 20v-5h4v5" />
-        </svg>
-      );
-    case "ventas-digitales":
-      return (
-        <svg {...c}>
-          <rect x="2" y="4" width="20" height="14" rx="2" />
-          <path d="M2 9h20M6 14h6" />
         </svg>
       );
     case "puntos":

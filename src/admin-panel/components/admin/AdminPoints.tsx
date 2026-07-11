@@ -4,16 +4,15 @@ import {
   AdminPointsMovements,
   type PointMovement,
 } from "./AdminPointsMovements";
-import { AdminPointsAdjustmentMock } from "./AdminPointsAdjustmentMock";
+import { AdminPointsAdjustment } from "./AdminPointsAdjustment";
 import { AdminPointsRules } from "./AdminPointsRules";
 import type { AdminMetricCardData } from "./AdminMetricCard";
 import { ADMIN_DATA } from "../../data/adminData.mock";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
 import styles from "./AdminPoints.module.css";
 
-// Sección Puntos del panel admin.
-// AdminPoints MOCK: en producción debe operar con transacciones auditables en
-// Supabase y permisos internos. Nada aquí modifica datos (solo UI/estado local).
+// Sección Puntos del panel admin: métricas, movimientos reales del ledger,
+// ajustes manuales auditables y reglas vigentes.
 
 // Orquesta la vista de Puntos: header + métricas + (movimientos | ajuste) + reglas.
 export function AdminPoints() {
@@ -54,7 +53,7 @@ export function AdminPoints() {
       tone: "naranjo",
     },
   ];
-  const clientes = ADMIN_DATA.clientes.map((c) => c.nombre);
+  const clientes = ADMIN_DATA.clientes;
 
   return (
     <div>
@@ -71,7 +70,7 @@ export function AdminPoints() {
 
       <div className={styles.columns}>
         <AdminPointsMovements movements={movements} />
-        <AdminPointsAdjustmentMock clientes={clientes} />
+        <AdminPointsAdjustment clientes={clientes} />
       </div>
 
       <AdminPointsRules />

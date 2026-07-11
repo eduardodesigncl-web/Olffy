@@ -182,3 +182,16 @@
   background: var(--olffy-naranjo-suave);
   color: var(--olffy-naranjo);
 }
+
+.unavailable {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--olffy-cafe-55);
+}
+
+.sourceNote {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--olffy-cafe-55);
+}

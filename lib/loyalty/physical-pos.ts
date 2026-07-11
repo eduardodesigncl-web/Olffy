@@ -11,6 +11,7 @@ import {
   type PhysicalSalePosBenefit,
   finalizePhysicalSalePos,
 } from "lib/loyalty/service";
+import { isExcludedFromLoyalty } from "lib/loyalty/eligibility";
 import {
   createOrFindPaidPhysicalOrder,
   getAdminProductVariantsByIds,
@@ -29,15 +30,19 @@ export type PhysicalSalePosRequest = {
 
 export type PreparedPhysicalSale = {
   customer?: LoyaltyCustomer;
-  items: PhysicalSaleItemInput[];
+  items: Array<PhysicalSaleItemInput & { excludedFromLoyalty?: boolean }>;
   benefitType: PhysicalSalePosBenefit;
   pointsSpent: number;
   pointsEarned: number;
   discountCode?: string;
   manualDiscountReason?: string;
   subtotal: number;
+  /** Subtotal de productos que participan en OLFFY Puntos (carrito mixto). */
+  eligibleSubtotal: number;
   discount: number;
   total: number;
+  /** Monto elegible efectivamente pagado: base de acumulación de puntos. */
+  eligibleTotal: number;
   fingerprint: string;
 };
 
@@ -147,10 +152,18 @@ export async function preparePhysicalSale(
       variantTitle: variant.title,
       quantity,
       unitPrice,
+      excludedFromLoyalty: isExcludedFromLoyalty(variant.product.tags),
     };
   });
   const subtotal = items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
+    0,
+  );
+  // Carrito mixto (propuesta v2): solo el subtotal elegible genera puntos y
+  // soporta beneficios de puntos; los productos "Sin puntos" quedan fuera.
+  const eligibleSubtotal = items.reduce(
+    (sum, item) =>
+      item.excludedFromLoyalty ? sum : sum + item.quantity * item.unitPrice,
     0,
   );
   const customerId = input.customerId ? Number(input.customerId) : undefined;
@@ -181,6 +194,12 @@ export async function preparePhysicalSale(
     }
 
     discount = pointsSpent * rule.point_redemption_value_clp;
+
+    if (discount >= eligibleSubtotal) {
+      throw new Error(
+        "El descuento por puntos solo puede aplicarse sobre productos que participan en OLFFY Puntos",
+      );
+    }
   } else if (benefitType === "discount_code") {
     discountCode = requiredPhysicalSaleText(
       input.discountCode,
@@ -202,7 +221,16 @@ export async function preparePhysicalSale(
   }
 
   const total = subtotal - discount;
-  const pointsEarned = customer ? calculatePointsForAmount(total, rule) : 0;
+  // Base de acumulación: monto elegible pagado. El descuento se atribuye al
+  // subtotal elegible (los beneficios de puntos solo aplican ahí y es la
+  // lectura conservadora para códigos/descuentos manuales).
+  const eligibleTotal = Math.max(
+    Math.min(eligibleSubtotal - discount, total),
+    0,
+  );
+  const pointsEarned = customer
+    ? calculatePointsForAmount(eligibleTotal, rule)
+    : 0;
   const fingerprint = createHash("sha256")
     .update(
       JSON.stringify({
@@ -218,6 +246,7 @@ export async function preparePhysicalSale(
         discountCode: discountCode ?? null,
         manualDiscountReason: manualDiscountReason ?? null,
         subtotal,
+        eligibleSubtotal,
         total,
       }),
     )
@@ -232,8 +261,10 @@ export async function preparePhysicalSale(
     discountCode,
     manualDiscountReason,
     subtotal,
+    eligibleSubtotal,
     discount,
     total,
+    eligibleTotal,
     fingerprint,
   };
 }
@@ -312,6 +343,7 @@ export async function finalizePreparedPhysicalSale(input: {
     subtotal: prepared.subtotal,
     discount: prepared.discount,
     total: prepared.total,
+    eligibleTotal: prepared.eligibleTotal ?? prepared.total,
     benefitType: prepared.benefitType,
     pointsSpent: prepared.pointsSpent,
     pointsEarned: prepared.pointsEarned,

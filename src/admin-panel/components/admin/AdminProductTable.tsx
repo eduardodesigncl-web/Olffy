@@ -22,7 +22,7 @@ const LOW_STOCK_THRESHOLD = 5;
 
 const SYNC_TITLE: Record<SyncState, string> = {
   syncing: "Sincronizando…",
-  synced: "Sincronizado con Shopify en modo demo",
+  synced: "Actualizado desde Shopify",
   none: "Sin sincronizar",
 };
 

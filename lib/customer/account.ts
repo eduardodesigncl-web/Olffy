@@ -167,13 +167,49 @@ export async function getCustomerRule(): Promise<CustomerRule> {
   return data as CustomerRule;
 }
 
+export type ExpiringPoints = {
+  expiringPoints: number;
+  nextExpiry: string | null;
+};
+
+// Puntos próximos a vencer (lotes de 6 meses, consumo FIFO). Tolerante al
+// esquema pre-migración: si la función SQL aún no existe, devuelve null y el
+// aviso simplemente no se muestra.
+export async function getExpiringLoyaltyPoints(
+  customerId: number,
+  withinDays = 30,
+): Promise<ExpiringPoints | null> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "get_expiring_loyalty_points",
+    { p_customer_id: customerId, p_within_days: withinDays },
+  );
+
+  if (error) {
+    console.error("No se pudieron calcular los puntos por vencer:", error);
+    return null;
+  }
+
+  const result = (data ?? {}) as Record<string, unknown>;
+  const expiringPoints = Number(result.expiring_points ?? 0);
+
+  if (!Number.isFinite(expiringPoints) || expiringPoints <= 0) return null;
+
+  return {
+    expiringPoints,
+    nextExpiry:
+      typeof result.next_expiry === "string" ? result.next_expiry : null,
+  };
+}
+
 export async function getCustomerOverview(customer: CustomerAccount) {
-  const [transactions, rewards, redemptions, rule] = await Promise.all([
-    getCustomerTransactions(customer.id, 5),
-    getCustomerRewards(),
-    getCustomerRedemptions(customer.id),
-    getCustomerRule(),
-  ]);
+  const [transactions, rewards, redemptions, rule, expiringPoints] =
+    await Promise.all([
+      getCustomerTransactions(customer.id, 5),
+      getCustomerRewards(),
+      getCustomerRedemptions(customer.id),
+      getCustomerRule(),
+      getExpiringLoyaltyPoints(customer.id),
+    ]);
   const nextReward =
     rewards.find((reward) => reward.points_cost > customer.points_balance) ??
     null;
@@ -193,5 +229,6 @@ export async function getCustomerOverview(customer: CustomerAccount) {
     rule,
     nextReward,
     pendingRedemptions,
+    expiringPoints,
   };
 }

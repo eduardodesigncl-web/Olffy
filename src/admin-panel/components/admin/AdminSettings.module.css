@@ -121,3 +121,16 @@
     max-width: none;
   }
 }
+
+.infoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--olffy-cafe-68);
+}
+
+.infoBlock p {
+  margin: 0;
+}

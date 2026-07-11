@@ -12,8 +12,10 @@ import {
 import {
   adjustCustomerPoints,
   approveRedemption,
+  createRedemption,
   rejectRedemption,
 } from "../../../adapters/frontend-actions";
+import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
 import styles from "./AdminCustomerDetail.module.css";
 
 // Customer detail drawer mock. En producción estos movimientos deben registrarse
@@ -25,13 +27,6 @@ interface AdminCustomerDetailProps {
   canjes: AdminCanje[];
   onClose: () => void;
 }
-
-// Recompensas mock para "Crear canje".
-const REWARD_OPTIONS = [
-  { value: "3000", label: "$3.000 de descuento — 300 pts" },
-  { value: "5000", label: "$5.000 de descuento — 500 pts" },
-  { value: "10000", label: "$10.000 de descuento — 1000 pts" },
-];
 
 // "+2.000" / "-300" → número. Solo para derivar cifras del resumen (mock).
 function parsePts(s: string): number {
@@ -155,7 +150,7 @@ export function AdminCustomerDetail({
         </div>
 
         <AjusteManual customer={customer} onNotify={setNotice} />
-        <CrearCanje onNotify={setNotice} />
+        <CrearCanje customer={customer} onNotify={setNotice} />
 
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Canjes</div>
@@ -174,7 +169,7 @@ export function AdminCustomerDetail({
           <div className={styles.sectionTitle}>Historial de puntos</div>
           <div className={styles.stack}>
             {historial.map((h, idx) => (
-              <HistRow key={idx} item={h} onNotify={setNotice} />
+              <HistRow key={idx} item={h} />
             ))}
           </div>
         </div>
@@ -291,29 +286,58 @@ function AjusteManual({
   );
 }
 
-// ── Crear canje (mock) ──
-function CrearCanje({ onNotify }: { onNotify: (m: string) => void }) {
+// ── Crear canje: registra un reward_redemption real en Supabase ──
+function CrearCanje({
+  customer,
+  onNotify,
+}: {
+  customer: AdminCliente;
+  onNotify: (m: string) => void;
+}) {
   const [recompensa, setRecompensa] = useState("");
   const [responsable, setResponsable] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const rewards = (adminPanelRuntime.data?.rewards ?? []).filter(
+    (reward) => reward.estado === "Activa",
+  );
 
-  const handle = () => {
+  const handle = async () => {
     if (!recompensa || !responsable.trim()) {
       setError("Recompensa y responsable son obligatorios.");
       return;
     }
     setError(null);
-    setRecompensa("");
-    setResponsable("");
-    onNotify("Canje registrado en modo demo.");
+    setLoading(true);
+    try {
+      const responsible = ADMIN_RESPONSIBLES_MOCK.find(
+        (r) => r.id === responsable,
+      );
+      await createRedemption(
+        customer.idx,
+        Number(recompensa),
+        responsible ? responsibleLabel(responsible) : "OLFFY Admin",
+      );
+      setRecompensa("");
+      setResponsable("");
+      onNotify(
+        "Canje solicitado: los puntos quedaron reservados. Apruébalo para generar el beneficio.",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "No se pudo crear el canje.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className={styles.block}>
       <div className={styles.blockTitle}>Crear canje</div>
       <p className={styles.blockText}>
-        Genera un código interno. La creación del descuento en Shopify
-        corresponde a la fase de canjes conectados.
+        Reserva los puntos del cliente y crea la solicitud de canje. El
+        descuento Shopify se genera al aprobar el canje.
       </p>
       <div className={styles.field}>
         <span className={styles.fieldLabel}>Seleccionar recompensa</span>
@@ -323,9 +347,9 @@ function CrearCanje({ onNotify }: { onNotify: (m: string) => void }) {
           onChange={(e) => setRecompensa(e.target.value)}
         >
           <option value="">Seleccionar recompensa</option>
-          {REWARD_OPTIONS.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
+          {rewards.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.nombre} — {r.puntos.toLocaleString("es-CL")} pts
             </option>
           ))}
         </select>
@@ -335,9 +359,19 @@ function CrearCanje({ onNotify }: { onNotify: (m: string) => void }) {
         <ResponsibleSelect value={responsable} onChange={setResponsable} />
       </div>
       {error && <span className={styles.error}>{error}</span>}
-      <button type="button" className={styles.primaryBtn} onClick={handle}>
-        Registrar canje
+      <button
+        type="button"
+        className={styles.primaryBtn}
+        onClick={() => void handle()}
+        disabled={loading || rewards.length === 0}
+      >
+        {loading ? "Registrando..." : "Registrar canje"}
       </button>
+      {rewards.length === 0 ? (
+        <span className={styles.error}>
+          No hay recompensas activas configuradas.
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -466,29 +500,10 @@ function CanjeRow({
   );
 }
 
-// ── Fila de historial con reversa mock ──
-function HistRow({
-  item,
-  onNotify,
-}: {
-  item: AdminHistorialItem;
-  onNotify: (m: string) => void;
-}) {
-  const [motivo, setMotivo] = useState("");
-  const [responsable, setResponsable] = useState("");
-  const [error, setError] = useState<string | null>(null);
+// ── Fila de historial (solo lectura). Las correcciones se hacen con un
+// ajuste manual, que exige motivo y responsable y queda auditado. ──
+function HistRow({ item }: { item: AdminHistorialItem }) {
   const isPositive = item.puntos.trim().startsWith("+");
-
-  const reversar = () => {
-    if (!motivo.trim() || !responsable.trim()) {
-      setError("Motivo y responsable son obligatorios.");
-      return;
-    }
-    setError(null);
-    setMotivo("");
-    setResponsable("");
-    onNotify("Movimiento reversado en modo demo.");
-  };
 
   return (
     <div className={styles.card}>
@@ -506,22 +521,6 @@ function HistRow({
           {item.puntos} pts
         </span>
       </div>
-
-      <div className={styles.inlineForm}>
-        <input
-          className={styles.input}
-          type="text"
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          placeholder="Motivo"
-        />
-        <ResponsibleSelect value={responsable} onChange={setResponsable} />
-        <button type="button" className={styles.cancelBtn} onClick={reversar}>
-          Reversar
-        </button>
-      </div>
-
-      {error && <span className={styles.error}>{error}</span>}
     </div>
   );
 }

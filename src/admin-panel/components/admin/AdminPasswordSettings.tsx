@@ -1,89 +1,36 @@
-// @ts-nocheck
-import { useState } from "react";
-import { AdminSettingsSection, sectionStyles } from "./AdminSettingsSection";
+import { AdminSettingsSection } from "./AdminSettingsSection";
 
 interface AdminPasswordSettingsProps {
   onNotice: (message: string) => void;
 }
 
-// Cambio de contraseña admin (mock/local). No persiste ni valida contra backend.
-// En producción, el cambio de contraseña debe ejecutarse en backend autenticado
-// y nunca exponerse en frontend.
-export function AdminPasswordSettings({
-  onNotice,
-}: AdminPasswordSettingsProps) {
-  const [actual, setActual] = useState("");
-  const [nueva, setNueva] = useState("");
-  const [confirmar, setConfirmar] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSave = () => {
-    if (!actual.trim() || !nueva.trim() || !confirmar.trim()) {
-      setError("Todos los campos son obligatorios.");
-      return;
-    }
-    if (nueva.length < 8) {
-      setError("La nueva contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-    if (nueva !== confirmar) {
-      setError("La nueva contraseña y su confirmación no coinciden.");
-      return;
-    }
-    setError(null);
-    setActual("");
-    setNueva("");
-    setConfirmar("");
-    onNotice("Contraseña de admin actualizada en modo demo.");
-  };
-
+// Acceso admin: la contraseña se administra como variable de entorno
+// (ADMIN_PASSWORD en Vercel), no desde esta pantalla. No se simula un cambio
+// que el sistema no puede persistir. La recuperación por enlace de correo
+// (gabri.dayan16@gmail.com) requiere migrar a un proveedor de autenticación
+// con recovery links y está documentada como pendiente en el plan.
+export function AdminPasswordSettings(_props: AdminPasswordSettingsProps) {
   return (
     <AdminSettingsSection
-      title="Cambiar contraseña de admin"
-      description="Actualiza la contraseña de acceso interno del panel OLFFY. En producción, este cambio debe validarse desde el sistema de autenticación real."
-      footer={
-        <div className={sectionStyles.buttonRow}>
-          <button
-            type="button"
-            className={sectionStyles.saveBtn}
-            onClick={handleSave}
-          >
-            Guardar contraseña
-          </button>
-        </div>
-      }
+      title="Acceso y contraseña de admin"
+      description="Cómo se administra hoy la credencial del panel."
     >
-      <label className={sectionStyles.field}>
-        <span className={sectionStyles.label}>Contraseña actual</span>
-        <input
-          className={sectionStyles.input}
-          type="password"
-          value={actual}
-          onChange={(e) => setActual(e.target.value)}
-          autoComplete="current-password"
-        />
-      </label>
-      <label className={sectionStyles.field}>
-        <span className={sectionStyles.label}>Nueva contraseña</span>
-        <input
-          className={sectionStyles.input}
-          type="password"
-          value={nueva}
-          onChange={(e) => setNueva(e.target.value)}
-          autoComplete="new-password"
-        />
-      </label>
-      <label className={sectionStyles.field}>
-        <span className={sectionStyles.label}>Confirmar nueva contraseña</span>
-        <input
-          className={sectionStyles.input}
-          type="password"
-          value={confirmar}
-          onChange={(e) => setConfirmar(e.target.value)}
-          autoComplete="new-password"
-        />
-      </label>
-      {error && <span className={sectionStyles.error}>{error}</span>}
+      <div
+        style={{ fontSize: 13, lineHeight: 1.6, color: "var(--olffy-cafe-68)" }}
+      >
+        <p style={{ margin: "0 0 10px" }}>
+          La contraseña del panel se define con la variable de entorno{" "}
+          <strong>ADMIN_PASSWORD</strong> del proyecto en Vercel. Para
+          cambiarla: actualizar la variable, redeployar y las sesiones activas
+          anteriores dejarán de renovarse.
+        </p>
+        <p style={{ margin: 0 }}>
+          <strong>Pendiente:</strong> recuperación de contraseña mediante enlace
+          de un solo uso al correo administrativo. Requiere migrar el login a
+          Supabase Auth (u otro proveedor con recovery links); hasta entonces
+          esta pantalla no ofrece un flujo simulado.
+        </p>
+      </div>
     </AdminSettingsSection>
   );
 }
