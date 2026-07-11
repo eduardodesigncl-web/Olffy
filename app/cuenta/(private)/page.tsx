@@ -20,6 +20,18 @@ export default async function CustomerAccountPage() {
   const transactions = toFrontendTransactions(overview.transactions);
   const redemptions = toFrontendRedemptions(overview.redemptions);
 
+  const expiringNotice = overview.expiringPoints
+    ? {
+        points: overview.expiringPoints.expiringPoints,
+        dateLabel: overview.expiringPoints.nextExpiry
+          ? new Intl.DateTimeFormat("es-CL", {
+              dateStyle: "long",
+              timeZone: "America/Santiago",
+            }).format(new Date(overview.expiringPoints.nextExpiry))
+          : null,
+      }
+    : null;
+
   return (
     <OlffyShell>
       <AccountPageClient
@@ -31,6 +43,7 @@ export default async function CustomerAccountPage() {
         transactions={transactions}
         rewards={toFrontendRewards(overview.rewards)}
         redemptions={redemptions}
+        expiringNotice={expiringNotice}
       />
     </OlffyShell>
   );

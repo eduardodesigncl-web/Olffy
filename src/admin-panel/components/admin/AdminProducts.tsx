@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { EmptyState } from "../ui";
 import { AdminSearchInput } from "./AdminSearchInput";
 import {
@@ -20,9 +21,8 @@ import styles from "./AdminProducts.module.css";
 
 // Sección Productos del panel admin — workspace visual de catálogo.
 // FUENTE OFICIAL: Shopify es la fuente oficial de productos, precios, stock,
-// variantes y publicación. OLFFY Admin visualiza y sincroniza el catálogo; la
-// creación y edición oficial ocurren en Shopify. Aquí todo es mock/local: las
-// acciones no modifican PRODUCTS ni ADMIN_DATA.
+// variantes y publicación. OLFFY Admin visualiza el catálogo real y la
+// creación/edición oficial ocurren en Shopify.
 
 // Agregar/editar productos redirige a Shopify Admin (fuente comercial).
 // Cuando se conozca el store handle, reemplazar por la URL directa
@@ -46,8 +46,20 @@ const EDIT_INTENT: ShopifyIntent = {
 // Reemplazar dominio por el dominio final cuando esté publicado.
 const STOREFRONT_PRODUCT_BASE_URL = "https://olffy.cl/products/";
 
-// Regla mock de "destacados": no hay campo en el modelo, usamos ids fijos.
-const FEATURED_IDS = new Set([1, 2, 3, 4]);
+// "Destacados" es una marca local del panel (persistida en este navegador);
+// no existe campo equivalente en Shopify todavía.
+const FEATURED_STORAGE_KEY = "olffy-admin-featured-products";
+
+function loadFeaturedIds(): Set<number> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(FEATURED_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as number[]) : [];
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
 
 function slugify(name: string): string {
   return name
@@ -68,6 +80,7 @@ interface AdminProductsProps {
 type ProductView = "galeria" | "lista";
 
 export function AdminProducts({ navContext }: AdminProductsProps = {}) {
+  const router = useRouter();
   const shopifyProductsUrl = `${
     adminPanelRuntime.data?.shopifyAdminUrl ?? "https://admin.shopify.com"
   }/products`;
@@ -119,9 +132,14 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
   );
   const [syncingId, setSyncingId] = useState<number | null>(null);
   const [syncedIds, setSyncedIds] = useState<Set<number>>(new Set());
-  const [featuredIds, setFeaturedIds] = useState<Set<number>>(
-    new Set(FEATURED_IDS),
-  );
+  const [featuredIds, setFeaturedIds] = useState<Set<number>>(loadFeaturedIds);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      FEATURED_STORAGE_KEY,
+      JSON.stringify([...featuredIds]),
+    );
+  }, [featuredIds]);
   const [activeFilter, setActiveFilter] = useState<ProductFilter>("all");
   // Producto abierto en el drawer de detalle (null = cerrado).
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -232,17 +250,18 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     setShopifyIntent(EDIT_INTENT);
   };
 
-  // Sincronizar = traer cambios desde Shopify hacia OLFFY Admin (mock). No toca
-  // PRODUCTS real ni persiste nada.
+  // Sincronizar = volver a pedir el catálogo real a Shopify (refresh del
+  // server component que hidrata el panel).
   const handleSync = (product: AdminProductRow) => {
     if (syncingId !== null) return;
     setSyncingId(product.id);
     setNotice(null);
+    router.refresh();
     window.setTimeout(() => {
       setSyncingId(null);
       setSyncedIds((prev) => new Set(prev).add(product.id));
-      setNotice("Producto sincronizado desde Shopify en modo demo.");
-    }, 700);
+      setNotice("Catálogo actualizado desde Shopify.");
+    }, 900);
   };
 
   const handleToggleFeatured = (product: AdminProductRow) => {
@@ -255,8 +274,8 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     });
     setNotice(
       wasFeatured
-        ? `"${product.nombre}" quitado de destacados en modo demo.`
-        : `"${product.nombre}" marcado como destacado en modo demo.`,
+        ? `"${product.nombre}" quitado de destacados (marca local del panel).`
+        : `"${product.nombre}" marcado como destacado (marca local del panel).`,
     );
   };
 

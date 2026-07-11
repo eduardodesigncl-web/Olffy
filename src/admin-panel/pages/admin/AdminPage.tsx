@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AdminLayout,
   AdminDashboard,
@@ -8,8 +7,8 @@ import {
   AdminRewards,
   AdminProducts,
   AdminCollections,
-  AdminPhysicalSales,
-  AdminDigitalSales,
+  AdminSales,
+  AdminPos,
   AdminSettings,
   type AdminTab,
   type AdminNavContext,
@@ -17,16 +16,32 @@ import {
 
 interface AdminPageProps {
   onExit: () => void;
+  initialTab?: AdminTab;
 }
 
-// Panel Admin interno de OLFFY — mock local, sin backend.
+// URL persistente por pestaña: Ventas y Tienda POS tienen ruta propia; el resto
+// usa ?tab= sobre /admin para poder recargar o compartir la vista activa.
+function tabUrl(tab: AdminTab): string {
+  if (tab === "dashboard") return "/admin";
+  if (tab === "ventas") return "/admin/ventas";
+  if (tab === "pos") return "/admin/pos";
+  return `/admin?tab=${tab}`;
+}
+
+// Panel Admin interno de OLFFY. Los datos reales se hidratan en
+// AdminPanelClient (hydrateAdminPanelData) antes del primer render.
 // Navegación interna: `activeTab` + `navContext` permiten que una sección abra
 // otra con un filtro/entidad ya aplicado (ej. desde el Dashboard).
-// SEGURIDAD: en producción esta zona debe ir detrás de auth real y permisos
-// internos (no expuesta públicamente). Aquí no hay login admin todavía.
-export function AdminPage({ onExit }: AdminPageProps) {
-  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+export function AdminPage({
+  onExit,
+  initialTab = "dashboard",
+}: AdminPageProps) {
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [navContext, setNavContext] = useState<AdminNavContext | null>(null);
+
+  useEffect(() => {
+    window.history.replaceState(null, "", tabUrl(activeTab));
+  }, [activeTab]);
 
   // Navegación con contexto (desde Dashboard u otras secciones).
   const navigate = (tab: AdminTab, ctx?: AdminNavContext) => {
@@ -52,8 +67,8 @@ export function AdminPage({ onExit }: AdminPageProps) {
       {activeTab === "recompensas" && <AdminRewards />}
       {activeTab === "productos" && <AdminProducts navContext={navContext} />}
       {activeTab === "colecciones" && <AdminCollections />}
-      {activeTab === "ventas" && <AdminPhysicalSales />}
-      {activeTab === "ventas-digitales" && <AdminDigitalSales />}
+      {activeTab === "ventas" && <AdminSales />}
+      {activeTab === "pos" && <AdminPos />}
       {activeTab === "ajustes" && <AdminSettings />}
     </AdminLayout>
   );

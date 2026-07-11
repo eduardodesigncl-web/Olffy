@@ -3,10 +3,17 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AdminPage } from "../pages/admin/AdminPage";
+import type { AdminTab } from "../components/admin";
 import { hydrateAdminPanelData } from "./hydrate-admin-panel-data";
 import type { AdminPanelData } from "./types";
 
-export function AdminPanelClient({ data }: { data: AdminPanelData }) {
+export function AdminPanelClient({
+  data,
+  initialTab = "dashboard",
+}: {
+  data: AdminPanelData;
+  initialTab?: AdminTab;
+}) {
   const router = useRouter();
 
   useMemo(() => hydrateAdminPanelData(data), [data]);
@@ -20,5 +27,5 @@ export function AdminPanelClient({ data }: { data: AdminPanelData }) {
     router.refresh();
   };
 
-  return <AdminPage onExit={handleExit} />;
+  return <AdminPage onExit={handleExit} initialTab={initialTab} />;
 }

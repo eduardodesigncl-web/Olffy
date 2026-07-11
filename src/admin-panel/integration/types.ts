@@ -4,7 +4,6 @@ import type {
   AdminHistorialItem,
   AdminProductoRow,
 } from "../data/adminData.mock";
-import type { DigitalSale } from "../data/adminDigitalSales.mock";
 import type { AdminMetric, Product } from "../types";
 
 export type AdminPanelCustomer = {
@@ -14,6 +13,50 @@ export type AdminPanelCustomer = {
   tel: string;
   puntos: number;
   estado: string;
+};
+
+export type UnifiedSaleOrigin = "online" | "fisica";
+
+export type UnifiedSaleItem = {
+  nombre: string;
+  qty: number;
+  precio: string;
+};
+
+export type UnifiedSale = {
+  id: string;
+  folio: string;
+  cliente: string;
+  email: string;
+  fechaISO: string;
+  fecha: string;
+  total: string;
+  totalN: number;
+  metodoPago: string;
+  estadoPago: "Pagado" | "Pendiente" | "Rechazado" | "Revisión";
+  origen: UnifiedSaleOrigin;
+  origenLabel: string;
+  referenciaPago: string | null;
+  boleta: string;
+  puntos: number;
+  loyaltyStatus: string;
+  shopifyOrderId: string | null;
+  detalleCanal: string;
+  productos: UnifiedSaleItem[];
+};
+
+export type PosLoyaltyRule = {
+  spendingUnitClp: number;
+  pointsPerUnit: number;
+  pointRedemptionValueClp: number;
+};
+
+export type PosProductVariant = {
+  id: string;
+  title: string;
+  price: number;
+  availableForSale: boolean;
+  quantityAvailable?: number;
 };
 
 export type AdminPanelData = {
@@ -34,9 +77,13 @@ export type AdminPanelData = {
       stock?: number;
       image?: string;
       images?: string[];
+      variants?: PosProductVariant[];
+      /** Marcado en Shopify con la categoría de exclusión de OLFFY Puntos. */
+      sinPuntos?: boolean;
     }
   >;
-  digitalSales: DigitalSale[];
+  sales: UnifiedSale[];
+  loyaltyRule: PosLoyaltyRule | null;
   physicalSalesHistory: Array<{
     id: number;
     folio: string;
@@ -61,5 +108,21 @@ export type AdminPanelData = {
     estado: "Activa" | "Pausada";
     descripcion: string;
   }>;
+  abandonedCheckouts: {
+    available: boolean;
+    source: string;
+    fetchedAt: string;
+    count: number;
+    totalAmount: number;
+    checkouts: Array<{
+      id: string;
+      name: string;
+      createdAt: string;
+      totalPrice: number;
+      customerEmail: string | null;
+      lineItems: string[];
+    }>;
+    error?: string;
+  };
   shopifyAdminUrl: string;
 };

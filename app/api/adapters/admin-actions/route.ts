@@ -1,11 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
-import {
-  adjustCustomerPoints,
-  calculatePointsForAmount,
-  getActiveLoyaltyRule,
-  registerPhysicalSale,
-} from "lib/loyalty/service";
+import { adjustCustomerPoints, redeemReward } from "lib/loyalty/service";
 import {
   approveRewardRedemption,
   cancelShopifyRewardRedemption,
@@ -18,7 +12,7 @@ import { NextResponse } from "next/server";
 
 type AdminAction =
   | "adjustCustomerPoints"
-  | "registerTuuSale"
+  | "createRedemption"
   | "approveRedemption"
   | "rejectRedemption"
   | "retryBoleta";
@@ -35,34 +29,6 @@ function finiteNumber(value: unknown, label: string) {
   }
 
   return amount;
-}
-
-function positiveNumber(value: unknown, label: string) {
-  const amount = finiteNumber(value, label);
-
-  if (amount <= 0) {
-    throw new Error(`${label} debe ser mayor a cero`);
-  }
-
-  return amount;
-}
-
-async function findCustomerIdByEmail(email?: string) {
-  const normalizedEmail = text(email).toLowerCase();
-
-  if (!normalizedEmail) return undefined;
-
-  const { data, error } = await getSupabaseAdmin()
-    .from("loyalty_customers")
-    .select("id")
-    .ilike("email", normalizedEmail)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`No se pudo buscar el cliente: ${error.message}`);
-  }
-
-  return typeof data?.id === "number" ? data.id : undefined;
 }
 
 async function retryBoletaForId(id: string) {
@@ -133,38 +99,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, balance });
       }
 
-      case "registerTuuSale": {
-        const total = positiveNumber(payload.amount, "amount");
-        const customerId = await findCustomerIdByEmail(
-          text(payload.customerEmail),
-        );
-        const rule = await getActiveLoyaltyRule();
-        const pointsEarned = customerId
-          ? calculatePointsForAmount(total, rule)
-          : 0;
-        const saleId = await registerPhysicalSale({
+      case "createRedemption": {
+        const customerId = finiteNumber(payload.customerId, "customerId");
+        const rewardId = finiteNumber(payload.rewardId, "rewardId");
+        const redemption = await redeemReward({
           customerId,
-          tuuTransactionId:
-            text(payload.tuuTransactionId) || `manual-${randomUUID()}`,
-          receiptNumber: text(payload.receiptNumber),
-          subtotal: total,
-          discount: 0,
-          total,
-          pointsEarned,
-          items: [],
-          notes: text(payload.notes),
-          createdBy: text(payload.operator) || "OLFFY Admin",
-          metadata: {
-            source: "frontend-admin-adapter",
-            customerEmail: text(payload.customerEmail),
-          },
+          rewardId,
+          createdBy: text(payload.createdBy) || "OLFFY Admin",
         });
 
         revalidatePath("/admin/puntos");
-        revalidatePath("/admin/puntos/ventas");
+        revalidatePath(`/admin/puntos/clientes/${customerId}`);
         revalidatePath("/cuenta");
+        revalidatePath("/cuenta/canjes");
 
-        return NextResponse.json({ success: true, saleId, pointsEarned });
+        return NextResponse.json({ success: true, redemption });
       }
 
       case "approveRedemption": {

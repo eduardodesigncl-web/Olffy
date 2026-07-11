@@ -1,10 +1,9 @@
-// @ts-nocheck
 import styles from "./AdminActivityList.module.css";
 
 export type AdminActivityTone = "venta" | "puntos" | "canje" | "producto";
 
 export interface AdminActivityItem {
-  id: number;
+  id: number | string;
   tipo: string;
   texto: string;
   tiempo: string;

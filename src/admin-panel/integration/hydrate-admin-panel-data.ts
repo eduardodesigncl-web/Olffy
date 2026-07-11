@@ -1,7 +1,6 @@
 "use client";
 
 import { ADMIN_DATA, DASHBOARD_METRICS } from "../data/adminData.mock";
-import { DIGITAL_SALES } from "../data/adminDigitalSales.mock";
 import { PRODUCTS } from "../data/products.mock";
 import type { AdminPanelData } from "./types";
 
@@ -39,7 +38,6 @@ export function hydrateAdminPanelData(data: AdminPanelData) {
   );
 
   PRODUCTS.splice(0, PRODUCTS.length, ...data.products);
-  DIGITAL_SALES.splice(0, DIGITAL_SALES.length, ...data.digitalSales);
   DASHBOARD_METRICS.splice(
     0,
     DASHBOARD_METRICS.length,

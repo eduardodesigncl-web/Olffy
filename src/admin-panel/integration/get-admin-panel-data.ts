@@ -3,8 +3,13 @@ import "server-only";
 import { getFrontendAdminData } from "src/integration/admin-data";
 import { listOrderReferences } from "lib/transactions/repository";
 import { getSupabaseAdmin } from "lib/supabase/admin";
-import { listRewards } from "lib/loyalty/service";
-import type { AdminPanelData } from "./types";
+import { getActiveLoyaltyRule, listRewards } from "lib/loyalty/service";
+import { getAbandonedCheckoutsSummary } from "lib/shopify/abandoned-checkouts";
+import { isExcludedFromLoyalty } from "lib/loyalty/eligibility";
+import type { OrderReference } from "lib/transactions/types";
+import type { AdminPanelData, UnifiedSale } from "./types";
+
+const CHILE_TIME_ZONE = "America/Santiago";
 
 const productBackgrounds = [
   "#F2E0CC",
@@ -26,7 +31,17 @@ function dateLabel(value: string | null | undefined) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: CHILE_TIME_ZONE,
   }).format(new Date(value));
+}
+
+function chileDayKey(value: string | Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: CHILE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(typeof value === "string" ? new Date(value) : value);
 }
 
 function sourceLabel(source: string | null | undefined) {
@@ -60,6 +75,36 @@ function paymentMethodLabel(provider: string | null | undefined) {
   }
 }
 
+function paymentStatusLabel(
+  status: OrderReference["payment_status"],
+): UnifiedSale["estadoPago"] {
+  switch (status) {
+    case "confirmed":
+      return "Pagado";
+    case "rejected":
+      return "Rechazado";
+    case "manual_review":
+      return "Revisión";
+    default:
+      return "Pendiente";
+  }
+}
+
+function taxStatusLabel(status: OrderReference["tax_status"]) {
+  switch (status) {
+    case "issued":
+      return "Emitida";
+    case "accepted":
+      return "Aceptada";
+    case "rejected":
+      return "Rechazada";
+    case "manual_review":
+      return "Revisión manual";
+    default:
+      return "Pendiente";
+  }
+}
+
 function movementType(type: string | null | undefined) {
   switch (type) {
     case "earned":
@@ -73,6 +118,56 @@ function movementType(type: string | null | undefined) {
     default:
       return "Ajuste manual";
   }
+}
+
+function toUnifiedSale(order: OrderReference): UnifiedSale {
+  const metadata = (order.metadata ?? {}) as {
+    customer_name?: string | null;
+    items?: Array<{
+      productTitle?: string;
+      variantTitle?: string;
+      quantity?: number;
+      unitPrice?: number;
+    }> | null;
+  };
+  const customerName =
+    typeof metadata.customer_name === "string" && metadata.customer_name.trim()
+      ? metadata.customer_name.trim()
+      : null;
+  const origen = order.channel === "physical" ? "fisica" : "online";
+
+  return {
+    id: order.id,
+    folio: order.shopify_order_name || order.olffy_reference,
+    cliente:
+      customerName ||
+      order.customer_email ||
+      (origen === "fisica" ? "Venta anónima" : "Cliente invitado"),
+    email: order.customer_email ?? "",
+    fechaISO: order.created_at,
+    fecha: dateLabel(order.created_at),
+    total: clp(Number(order.total ?? 0)),
+    totalN: Number(order.total ?? 0),
+    metodoPago: paymentMethodLabel(order.payment_provider),
+    estadoPago: paymentStatusLabel(order.payment_status),
+    origen,
+    origenLabel: origen === "fisica" ? "Tienda física" : "Online",
+    referenciaPago: order.payment_reference,
+    boleta: taxStatusLabel(order.tax_status),
+    puntos: Number(order.points_earned ?? 0),
+    loyaltyStatus: order.loyalty_status,
+    shopifyOrderId: order.shopify_order_id,
+    detalleCanal: order.sale_channel_detail,
+    productos: Array.isArray(metadata.items)
+      ? metadata.items.map((item) => ({
+          nombre: [item.productTitle, item.variantTitle]
+            .filter((part) => part && part !== "Default Title")
+            .join(" · "),
+          qty: Number(item.quantity ?? 0),
+          precio: clp(Number(item.unitPrice ?? 0)),
+        }))
+      : [],
+  };
 }
 
 async function getRecentPointMovements(): Promise<
@@ -133,10 +228,17 @@ async function getShopifyAdminUrl() {
 }
 
 export async function getAdminPanelData(): Promise<AdminPanelData> {
-  const [frontend, orderRefs, rewards, pointMovements] = await Promise.all([
+  const [
+    frontend,
+    orderRefs,
+    rewards,
+    pointMovements,
+    loyaltyRuleResult,
+    abandonedCheckouts,
+  ] = await Promise.all([
     getFrontendAdminData(),
-    listOrderReferences(50).catch((error) => {
-      console.error("No se pudieron cargar ventas digitales:", error);
+    listOrderReferences(100).catch((error) => {
+      console.error("No se pudieron cargar las ventas:", error);
       return [];
     }),
     listRewards(false).catch((error) => {
@@ -144,6 +246,11 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
       return [];
     }),
     getRecentPointMovements(),
+    getActiveLoyaltyRule().catch((error) => {
+      console.error("No se pudo cargar la regla activa de puntos:", error);
+      return null;
+    }),
+    getAbandonedCheckoutsSummary(),
   ]);
 
   const customers = frontend.customers.map((customer, index) => ({
@@ -184,6 +291,8 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
       handle: product.handle,
       shopifyId: product.id,
       variantId: product.variantId ?? variant?.id,
+      variants: product.variants ?? [],
+      sinPuntos: isExcludedFromLoyalty(product.tags),
       status: product.status?.toUpperCase?.() ?? "ACTIVE",
       stock,
     };
@@ -232,47 +341,30 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
     responsable: sale.operatorName || "Equipo OLFFY",
   }));
 
-  const digitalSales = orderRefs
-    .filter((order) => order.channel === "online")
-    .map((order, index) => {
-      const raw = order as typeof order & {
-        customer_email?: string | null;
-        payment_provider?: string | null;
-        points_earned?: number | null;
-        metadata?: { customer_name?: string | null } | null;
-      };
-      const customerName =
-        typeof raw.metadata?.customer_name === "string" &&
-        raw.metadata.customer_name.trim()
-          ? raw.metadata.customer_name.trim()
-          : null;
-      return {
-        id: index + 1,
-        folio: order.shopify_order_name || order.olffy_reference,
-        cliente: customerName || raw.customer_email || "Cliente invitado",
-        email: raw.customer_email || "invitado@olffy.cl",
-        fecha: dateLabel(order.created_at),
-        total: clp(Number(order.total ?? 0)),
-        totalN: Number(order.total ?? 0),
-        metodoPago: paymentMethodLabel(raw.payment_provider),
-        estadoPago:
-          order.payment_status === "confirmed"
-            ? ("Pagado" as const)
-            : ("Pendiente" as const),
-        canal: "Web / Shopify",
-        puntos: Number(raw.points_earned ?? 0),
-        supabaseSync: order.loyalty_status === "processed",
-        productos: [],
-      };
-    });
+  const sales = orderRefs.map(toUnifiedSale);
+  const todayKey = chileDayKey(new Date());
+  const salesTodayList = sales.filter(
+    (sale) => chileDayKey(sale.fechaISO) === todayKey,
+  );
+  const salesTodayPaid = salesTodayList.filter(
+    (sale) => sale.estadoPago === "Pagado",
+  );
+  const salesTodayTotal = salesTodayPaid.reduce(
+    (sum, sale) => sum + sale.totalN,
+    0,
+  );
+  const onlineToday = salesTodayPaid.filter(
+    (sale) => sale.origen === "online",
+  ).length;
+  const fisicasToday = salesTodayPaid.filter(
+    (sale) => sale.origen === "fisica",
+  ).length;
 
-  const salesToday = frontend.dashboard.salesToday ?? 0;
-  const ordersToday = frontend.dashboard.ordersToday ?? 0;
   const dashboardMetrics = [
     {
       label: "Ventas hoy",
-      value: clp(salesToday),
-      footnote: `${ordersToday} ventas físicas`,
+      value: clp(salesTodayTotal),
+      footnote: `${onlineToday} online · ${fisicasToday} físicas`,
       color: "morado",
     },
     {
@@ -313,9 +405,17 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
     },
     dashboardMetrics,
     products,
-    digitalSales,
+    sales,
+    loyaltyRule: loyaltyRuleResult
+      ? {
+          spendingUnitClp: loyaltyRuleResult.spending_unit_clp,
+          pointsPerUnit: loyaltyRuleResult.points_per_unit,
+          pointRedemptionValueClp: loyaltyRuleResult.point_redemption_value_clp,
+        }
+      : null,
     physicalSalesHistory,
     pointMovements,
+    abandonedCheckouts,
     rewards: rewards.map((reward) => ({
       id: reward.id,
       nombre: reward.name,

@@ -1,11 +1,9 @@
-// @ts-nocheck
 import { useState } from "react";
 import { AdminMetricCard, type AdminMetricCardData } from "./AdminMetricCard";
 import { AdminActivityList, type AdminActivityItem } from "./AdminActivityList";
 import { AdminOperationalStatusFloating } from "./AdminOperationalStatusFloating";
 import { AdminAbandonedCarts } from "./AdminAbandonedCarts";
 import { AdminRecentCustomers } from "./AdminRecentCustomers";
-import { AdminSalesDayDetail } from "./AdminSalesDayDetail";
 import { AdminActiveCustomersDetail } from "./AdminActiveCustomersDetail";
 import type { AdminNavigate } from "./adminNav";
 import { ADMIN_DATA } from "../../data/adminData.mock";
@@ -16,19 +14,17 @@ interface AdminDashboardProps {
   onNavigate: AdminNavigate;
 }
 
-// Métricas del dashboard (mock). Algunas cuentas se derivan de ADMIN_DATA
-// para que rimen con el resto del panel; el resto son valores mock estáticos.
-type DashView = "main" | "ventas-dia" | "clientes-activos";
+type DashView = "main" | "clientes-activos";
 
 // Dashboard del panel admin — KPIs accionables, actividad, abandono de carrito
-// y clientes recientes. Todo mock (sin backend).
+// y clientes recientes, alimentados con los datos hidratados del servidor.
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [view, setView] = useState<DashView>("main");
   const runtime = adminPanelRuntime.data;
   const metrics: AdminMetricCardData[] = [
     {
       label: "Ventas del día",
-      value: runtime?.dashboardMetrics[0]?.value ?? "$0",
+      value: String(runtime?.dashboardMetrics[0]?.value ?? "$0"),
       secondary: runtime?.dashboardMetrics[0]?.footnote,
       tone: "morado",
     },
@@ -40,7 +36,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     },
     {
       label: "Puntos entregados",
-      value: runtime?.dashboardMetrics[3]?.value ?? "0",
+      value: String(runtime?.dashboardMetrics[3]?.value ?? "0"),
       footnote: "en circulación",
       tone: "amarillo",
     },
@@ -68,15 +64,18 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     },
   ];
   const activity: AdminActivityItem[] = [
-    ...(runtime?.physicalSalesHistory.slice(0, 2).map((sale) => ({
+    ...(runtime?.sales.slice(0, 3).map((sale) => ({
       id: sale.id,
-      tipo: "Venta física registrada",
+      tipo:
+        sale.origen === "fisica"
+          ? "Venta física registrada"
+          : "Venta online registrada",
       texto: `${sale.folio} · ${sale.total}`,
-      tiempo: "reciente",
+      tiempo: sale.fecha,
       tone: "venta" as const,
     })) ?? []),
     ...(runtime?.pointMovements.slice(0, 2).map((movement) => ({
-      id: movement.id,
+      id: String(movement.id),
       tipo: movement.tipo,
       texto: `${movement.cliente} · ${movement.puntos >= 0 ? "+" : ""}${movement.puntos} pts`,
       tiempo: movement.fecha,
@@ -89,7 +88,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const metricAction = (label: string): (() => void) | undefined => {
     switch (label) {
       case "Ventas del día":
-        return () => setView("ventas-dia");
+        return () => onNavigate("ventas");
       case "Clientes activos":
         return () => setView("clientes-activos");
       case "Puntos entregados":
@@ -125,9 +124,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     }
   };
 
-  if (view === "ventas-dia") {
-    return <AdminSalesDayDetail onBack={() => setView("main")} />;
-  }
   if (view === "clientes-activos") {
     return <AdminActiveCustomersDetail onBack={() => setView("main")} />;
   }

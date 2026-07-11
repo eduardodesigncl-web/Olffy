@@ -1,6 +1,6 @@
 type AdminAction =
   | "adjustCustomerPoints"
-  | "registerTuuSale"
+  | "createRedemption"
   | "approveRedemption"
   | "rejectRedemption"
   | "retryBoleta";
@@ -45,15 +45,16 @@ export async function adjustCustomerPoints(
   });
 }
 
-export async function registerTuuSale(data: {
-  customerEmail?: string;
-  amount: number;
-  operator: string;
-  tuuTransactionId?: string;
-  receiptNumber?: string;
-  notes?: string;
-}) {
-  return callAdminAction("registerTuuSale", data);
+export async function createRedemption(
+  customerId: number,
+  rewardId: number,
+  createdBy = "OLFFY Admin",
+) {
+  return callAdminAction("createRedemption", {
+    customerId,
+    rewardId,
+    createdBy,
+  });
 }
 
 export async function approveRedemption(

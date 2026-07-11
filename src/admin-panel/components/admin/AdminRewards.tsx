@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AdminMetricCard, type AdminMetricCardData } from "./AdminMetricCard";
 import { AdminRewardCard, type AdminReward } from "./AdminRewardCard";
-import { AdminRewardFormMock } from "./AdminRewardFormMock";
+import { AdminRewardForm } from "./AdminRewardForm";
 import { AdminRewardRequests } from "./AdminRewardRequests";
 import { ADMIN_DATA } from "../../data/adminData.mock";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
@@ -107,7 +107,7 @@ export function AdminRewards() {
           </div>
         </div>
 
-        <AdminRewardFormMock />
+        <AdminRewardForm />
       </div>
 
       <AdminRewardRequests

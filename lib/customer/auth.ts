@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { User } from "@supabase/supabase-js";
+import { claimGuestLoyaltyPoints } from "lib/loyalty/guest-claims";
 import { getSupabaseAdmin } from "lib/supabase/admin";
+import { enqueueLoyaltyEmailEvent } from "lib/transactions/marketing";
 import { hasSupabasePublicConfig } from "lib/supabase/config";
 import { getSupabaseServer } from "lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -62,6 +64,30 @@ function registrationProfile(user: User) {
   };
 }
 
+// Al quedar la cuenta verificada y vinculada, reclama los puntos pendientes
+// de compras como invitado hechas con el mismo correo (ventana de 15 días).
+// Un fallo aquí no bloquea el acceso: la reclamación puede reintentarse.
+async function claimPendingGuestPoints(customer: CustomerAccount) {
+  try {
+    const result = await claimGuestLoyaltyPoints(customer.id, customer.email);
+
+    if (result.claimed > 0) {
+      await enqueueLoyaltyEmailEvent({
+        eventType: "Guest Points Activated",
+        entityId: `${customer.id}:${Date.now()}`,
+        email: customer.email,
+        loyaltyCustomerId: customer.id,
+        payload: {
+          claims: result.claimed,
+          points: result.points,
+        },
+      });
+    }
+  } catch (cause) {
+    console.error("No se pudieron reclamar puntos de invitado:", cause);
+  }
+}
+
 export async function completeVerifiedCustomerAccount(
   user: User,
 ): Promise<CustomerAccount | null> {
@@ -85,6 +111,7 @@ export async function completeVerifiedCustomerAccount(
   }
 
   if (existing?.auth_user_id === user.id) {
+    await claimPendingGuestPoints(existing as CustomerAccount);
     return existing as CustomerAccount;
   }
 
@@ -108,6 +135,7 @@ export async function completeVerifiedCustomerAccount(
     }
 
     if (linked) {
+      await claimPendingGuestPoints(linked as CustomerAccount);
       return linked as CustomerAccount;
     }
 
@@ -146,6 +174,7 @@ export async function completeVerifiedCustomerAccount(
     .single();
 
   if (!createError) {
+    await claimPendingGuestPoints(created as CustomerAccount);
     return created as CustomerAccount;
   }
 
