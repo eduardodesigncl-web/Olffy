@@ -10,9 +10,13 @@ import type { AdminPanelData } from "./types";
 export function AdminPanelClient({
   data,
   initialTab = "dashboard",
+  navigationMode = "client",
+  allowedTabs,
 }: {
   data: AdminPanelData;
   initialTab?: AdminTab;
+  navigationMode?: "client" | "routes";
+  allowedTabs: AdminTab[];
 }) {
   const router = useRouter();
 
@@ -27,5 +31,20 @@ export function AdminPanelClient({
     router.refresh();
   };
 
-  return <AdminPage onExit={handleExit} initialTab={initialTab} />;
+  const handleTabRequest = (tab: AdminTab) => {
+    if (!allowedTabs.includes(tab)) return;
+    if (tab === "dashboard") router.push("/admin");
+    else if (tab === "ventas") router.push("/admin/ventas");
+    else if (tab === "pos") router.push("/admin/pos");
+    else router.push(`/admin?tab=${tab}`);
+  };
+
+  return (
+    <AdminPage
+      onExit={handleExit}
+      initialTab={initialTab}
+      onTabRequest={navigationMode === "routes" ? handleTabRequest : undefined}
+      allowedTabs={allowedTabs}
+    />
+  );
 }

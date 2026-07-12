@@ -1,13 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import type { AdminReward } from "./AdminRewardCard";
 import styles from "./AdminRewardForm.module.css";
 
 type RewardType = "discount" | "product" | "experience" | "other";
 
+export type CreatedRewardResult = {
+  reward: {
+    id: number;
+    name: string;
+    description: string | null;
+    reward_type: RewardType;
+    points_cost: number;
+    is_active: boolean;
+    discount_amount_clp: number | null;
+    minimum_purchase_clp: number;
+    validity_days: number;
+  };
+  shopifyCode: string | null;
+};
+
 // Formulario de nueva recompensa: persiste en Supabase (tabla rewards) vía
 // /api/admin/loyalty/rewards. Los canjes usan estos valores para validar
 // saldo, compra mínima y vigencia del beneficio.
-export function AdminRewardForm({ onCreated }: { onCreated?: () => void }) {
+export function AdminRewardForm({
+  onCreated,
+  editingReward,
+  onCancelEdit,
+}: {
+  onCreated?: (result: CreatedRewardResult) => void;
+  editingReward?: AdminReward | null;
+  onCancelEdit?: () => void;
+}) {
   const [nombre, setNombre] = useState("");
   const [puntos, setPuntos] = useState("");
   const [tipo, setTipo] = useState<RewardType>("discount");
@@ -20,6 +44,20 @@ export function AdminRewardForm({ onCreated }: { onCreated?: () => void }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!editingReward) return;
+    setNombre(editingReward.nombre);
+    setPuntos(String(editingReward.puntos));
+    setTipo(editingReward.rewardType);
+    setMontoDescuento(String(editingReward.discountAmountClp || ""));
+    setCompraMinima(String(editingReward.minimumPurchaseClp));
+    setVigenciaDias(String(editingReward.validityDays));
+    setDescripcion(editingReward.descripcion);
+    setEstado(editingReward.estado === "Activa" ? "activa" : "pausada");
+    setNotice(null);
+    setError(null);
+  }, [editingReward]);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setNotice(null);
@@ -27,25 +65,42 @@ export function AdminRewardForm({ onCreated }: { onCreated?: () => void }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/admin/loyalty/rewards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          name: nombre,
-          description: descripcion,
-          rewardType: tipo,
-          pointsCost: Number(puntos),
-          discountAmountClp:
-            tipo === "discount" ? Number(montoDescuento) : undefined,
-          minimumPurchaseClp: Number(compraMinima),
-          validityDays: Number(vigenciaDias),
-          isActive: estado === "activa",
-        }),
-      });
-      const data = (await response.json()) as { error?: string };
+      const response = await fetch(
+        editingReward
+          ? `/api/admin/loyalty/rewards/${editingReward.id}`
+          : "/api/admin/loyalty/rewards",
+        {
+          method: editingReward ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            name: nombre,
+            description: descripcion,
+            rewardType: tipo,
+            pointsCost: Number(puntos),
+            discountAmountClp:
+              tipo === "discount" ? Number(montoDescuento) : undefined,
+            minimumPurchaseClp: Number(compraMinima),
+            validityDays: Number(vigenciaDias),
+            isActive: estado === "activa",
+          }),
+        },
+      );
+      const data = (await response.json()) as {
+        error?: string;
+        reward?: CreatedRewardResult["reward"];
+        shopifyCode?: string | null;
+      };
       if (!response.ok) {
-        throw new Error(data.error || "No se pudo crear la recompensa");
+        throw new Error(
+          data.error ||
+            (editingReward
+              ? "No se pudo actualizar la recompensa"
+              : "No se pudo crear la recompensa"),
+        );
+      }
+      if (!data.reward) {
+        throw new Error("No se recibió la recompensa creada");
       }
       setNombre("");
       setPuntos("");
@@ -53,9 +108,15 @@ export function AdminRewardForm({ onCreated }: { onCreated?: () => void }) {
       setCompraMinima("0");
       setDescripcion("");
       setNotice(
-        "Recompensa creada en Supabase. Estará disponible para canjes según su estado.",
+        editingReward
+          ? "Recompensa actualizada correctamente."
+          : "Recompensa disponible para canje automático.",
       );
-      onCreated?.();
+      onCreated?.({
+        reward: data.reward,
+        shopifyCode: data.shopifyCode ?? editingReward?.shopifyCode ?? null,
+      });
+      if (editingReward) onCancelEdit?.();
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -68,10 +129,14 @@ export function AdminRewardForm({ onCreated }: { onCreated?: () => void }) {
   };
 
   return (
-    <div className={styles.panel}>
-      <h2 className={styles.title}>Nueva recompensa</h2>
+    <div className={styles.panel} id="reward-form">
+      <h2 className={styles.title}>
+        {editingReward ? "Editar recompensa" : "Nueva recompensa"}
+      </h2>
       <p className={styles.subtitle}>
-        Se guarda en Supabase y queda disponible para el programa de canjes.
+        {editingReward
+          ? "Actualiza los valores usados en los próximos canjes."
+          : "Define el beneficio y sus puntos. Shopify genera un código personal automáticamente cuando una clienta lo canjea."}
       </p>
 
       {notice && (
@@ -186,9 +251,25 @@ export function AdminRewardForm({ onCreated }: { onCreated?: () => void }) {
           </select>
         </label>
 
-        <button type="submit" className={styles.submitBtn} disabled={loading}>
-          {loading ? "Creando..." : "Crear recompensa"}
-        </button>
+        <div className={styles.formActions}>
+          <button type="submit" className={styles.submitBtn} disabled={loading}>
+            {loading
+              ? "Guardando..."
+              : editingReward
+                ? "Guardar cambios"
+                : "Crear recompensa"}
+          </button>
+          {editingReward ? (
+            <button
+              type="button"
+              className={styles.cancelBtn}
+              onClick={onCancelEdit}
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+          ) : null}
+        </div>
       </form>
     </div>
   );

@@ -9,11 +9,17 @@ export interface AdminReward {
   puntos: number;
   estado: RewardStatus;
   descripcion: string;
+  shopifyCode?: string;
+  rewardType: "discount" | "product" | "experience" | "other";
+  discountAmountClp: number;
+  minimumPurchaseClp: number;
+  validityDays: number;
 }
 
 interface AdminRewardCardProps {
   reward: AdminReward;
   onMockAction: () => void;
+  onEdit: (reward: AdminReward) => void;
 }
 
 // Card de recompensa del admin. Acciones (Editar / Activar-Pausar / Ver
@@ -21,6 +27,7 @@ interface AdminRewardCardProps {
 export function AdminRewardCard({
   reward,
   onMockAction,
+  onEdit,
 }: AdminRewardCardProps) {
   const isActive = reward.estado === "Activa";
   return (
@@ -44,7 +51,7 @@ export function AdminRewardCard({
         <button
           type="button"
           className={styles.actionBtn}
-          onClick={onMockAction}
+          onClick={() => onEdit(reward)}
         >
           Editar
         </button>
@@ -54,13 +61,6 @@ export function AdminRewardCard({
           onClick={onMockAction}
         >
           {isActive ? "Pausar" : "Activar"}
-        </button>
-        <button
-          type="button"
-          className={styles.actionBtn}
-          onClick={onMockAction}
-        >
-          Ver canjes
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { redeemReward } from "lib/loyalty/service";
+import { issueAutomaticRewardRedemption } from "lib/loyalty/automatic-redemptions";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getSupabaseServer } from "lib/supabase/server";
 import { enqueueCustomerMarketingEvent } from "lib/transactions/marketing";
@@ -36,10 +36,11 @@ export async function requestCustomerReward(input: {
     throw new Error("No tienes puntos suficientes para esta recompensa.");
   }
 
-  const result = await redeemReward({
+  const actor = `customer:${input.userId}`;
+  const result = await issueAutomaticRewardRedemption({
     customerId: input.customer.id,
     rewardId: Number(reward.id),
-    createdBy: `customer:${input.userId}`,
+    createdBy: actor,
     metadata: {
       channel: "customer_dashboard",
       customer_request_id: input.requestId,

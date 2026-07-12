@@ -139,7 +139,6 @@ export async function requestMagicLinkAction(formData: FormData) {
 export async function registerCustomerAction(formData: FormData) {
   const email = requiredString(formData, "email").toLowerCase();
   const fullName = requiredString(formData, "fullName");
-  const phone = requiredString(formData, "phone");
   const password = requiredString(formData, "password");
   const passwordConfirmation = requiredString(formData, "passwordConfirmation");
 
@@ -161,7 +160,6 @@ export async function registerCustomerAction(formData: FormData) {
         emailRedirectTo: `${origin}/auth/confirm?next=/cuenta`,
         data: {
           full_name: fullName,
-          phone,
           registration_source: "customer_account",
         },
       },
@@ -235,5 +233,5 @@ export async function requestRewardAction(formData: FormData) {
   revalidatePath("/cuenta/historial");
   revalidatePath("/cuenta/recompensas");
   revalidatePath("/cuenta/canjes");
-  redirect("/cuenta/canjes?requested=1");
+  redirect("/cuenta/canjes?issued=1");
 }

@@ -47,20 +47,127 @@
   gap: 7px;
   border: 1.5px solid var(--olffy-cafe-08);
   background: var(--olffy-blanco);
-  color: var(--olffy-cafe-55);
+  color: var(--olffy-blanco);
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 600;
   padding: 9px 16px;
   border-radius: var(--radius-md);
-  cursor: not-allowed;
-  opacity: 0.8;
+  cursor: pointer;
+  background: var(--olffy-morado);
+}
+
+.createBtn:hover {
+  background: #4a4893;
 }
 
 .createNote {
   font-size: 10.5px;
   font-weight: 600;
   color: #c8901a;
+}
+
+.success {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #b8dfbe;
+  border-radius: var(--radius-md);
+  background: #edf8ef;
+  color: #28753a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.success button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.createModal {
+  --modal-panel-width: min(480px, 100%);
+}
+
+.createForm {
+  display: grid;
+  gap: 14px;
+  padding: 26px;
+}
+
+.createForm h2 {
+  margin: 0;
+  color: var(--olffy-cafe);
+  font-family: var(--font-display);
+  font-size: 24px;
+}
+
+.createForm p {
+  margin: -8px 40px 4px 0;
+  color: var(--olffy-cafe-55);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.modalEyebrow {
+  color: var(--olffy-morado);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.createForm label {
+  display: grid;
+  gap: 6px;
+  color: var(--olffy-cafe-68);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.createForm label span {
+  font-weight: 500;
+}
+
+.createForm input {
+  padding: 11px 12px;
+  border: 1.5px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  color: var(--olffy-cafe);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.createForm input:focus {
+  border-color: var(--olffy-morado);
+}
+
+.createForm > button {
+  justify-self: start;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--olffy-morado);
+  color: white;
+  padding: 11px 18px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.createForm > button:disabled {
+  opacity: 0.55;
+}
+
+.formError {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: #fff0eb;
+  color: #b93813;
+  font-size: 12px;
 }
 
 .metrics {

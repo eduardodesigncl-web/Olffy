@@ -26,7 +26,8 @@ export function RedemptionsPage({ redemptions }: RedemptionsPageProps) {
           className="text-[14px] text-black/40 mt-1"
           style={{ fontFamily: T.poppins }}
         >
-          Historial de canjes de puntos
+          Tus códigos se generan automáticamente y sirven en la tienda online o
+          física.
         </p>
       </div>
       {redemptions.length === 0 ? (

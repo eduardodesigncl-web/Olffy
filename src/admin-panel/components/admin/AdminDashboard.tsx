@@ -41,10 +41,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       tone: "amarillo",
     },
     {
-      label: "Canjes pendientes",
-      value: ADMIN_DATA.canjesPendientes.length,
-      footnote: "por revisar",
-      tone: "naranjo",
+      label: "Canje automático",
+      value: "Activo",
+      footnote: "Shopify + puntos",
+      tone: "verde",
     },
     {
       label: "Productos activos",
@@ -64,7 +64,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     },
   ];
   const activity: AdminActivityItem[] = [
-    ...(runtime?.sales.slice(0, 3).map((sale) => ({
+    ...(runtime?.sales.map((sale) => ({
       id: sale.id,
       tipo:
         sale.origen === "fisica"
@@ -73,16 +73,21 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       texto: `${sale.folio} · ${sale.total}`,
       tiempo: sale.fecha,
       tone: "venta" as const,
+      timestamp: sale.fechaISO,
     })) ?? []),
-    ...(runtime?.pointMovements.slice(0, 2).map((movement) => ({
+    ...(runtime?.pointMovements.map((movement) => ({
       id: String(movement.id),
       tipo: movement.tipo,
       texto: `${movement.cliente} · ${movement.puntos >= 0 ? "+" : ""}${movement.puntos} pts`,
       tiempo: movement.fecha,
       tone:
         movement.origen === "Canje" ? ("canje" as const) : ("puntos" as const),
+      timestamp: movement.fechaISO,
     })) ?? []),
-  ];
+  ]
+    .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
+    .slice(0, 5)
+    .map(({ timestamp: _timestamp, ...item }) => item);
 
   // Acción por métrica: subvista interna o navegación a otra sección con contexto.
   const metricAction = (label: string): (() => void) | undefined => {
@@ -93,8 +98,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         return () => setView("clientes-activos");
       case "Puntos entregados":
         return () => onNavigate("puntos", { pointsView: "historial" });
-      case "Canjes pendientes":
-        return () => onNavigate("recompensas", { rewardsFilter: "pendientes" });
+      case "Canje automático":
+        return () => onNavigate("recompensas");
       case "Productos activos":
         return () => onNavigate("productos", { productFilter: "active" });
       case "Stock bajo":

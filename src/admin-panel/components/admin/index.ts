@@ -30,7 +30,6 @@ export { AdminRewards } from "./AdminRewards";
 export { AdminRewardCard } from "./AdminRewardCard";
 export type { AdminReward, RewardStatus } from "./AdminRewardCard";
 export { AdminRewardForm } from "./AdminRewardForm";
-export { AdminRewardRequests } from "./AdminRewardRequests";
 export { AdminProducts } from "./AdminProducts";
 export { AdminProductTable } from "./AdminProductTable";
 export type { AdminProductRow } from "./AdminProductTable";

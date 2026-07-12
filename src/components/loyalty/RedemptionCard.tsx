@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useState } from "react";
 import type { Redemption } from "../../contracts/loyalty.types";
 
 const C = { orange: "#e94300", purple: "#5957b0" };
@@ -12,6 +13,8 @@ const STATUS_CONFIG: Record<
   requested: { bg: "#fef3c7", text: "#d97706", label: "Pendiente" },
   rejected: { bg: "#fee2e2", text: "#dc2626", label: "Rechazado" },
   used: { bg: "#ede9fe", text: "#7c3aed", label: "Utilizado" },
+  delivered: { bg: "#ede9fe", text: "#7c3aed", label: "Utilizado" },
+  cancelled: { bg: "#fee2e2", text: "#dc2626", label: "Cancelado" },
 };
 
 interface RedemptionCardProps {
@@ -19,6 +22,7 @@ interface RedemptionCardProps {
 }
 
 export function RedemptionCard({ redemption }: RedemptionCardProps) {
+  const [copied, setCopied] = useState(false);
   const cfg = STATUS_CONFIG[redemption.status] ?? {
     bg: "#f3f4f6",
     text: "#6b7280",
@@ -42,12 +46,24 @@ export function RedemptionCard({ redemption }: RedemptionCardProps) {
           {redemption.pointsUsed} pts
         </p>
         {redemption.code && (
-          <p
-            className="text-[13px] mt-1 font-mono tracking-wider"
-            style={{ color: C.orange }}
-          >
-            {redemption.code}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <code
+              className="text-[13px] font-mono tracking-wider"
+              style={{ color: C.orange }}
+            >
+              {redemption.code}
+            </code>
+            <button
+              type="button"
+              className="rounded-full border border-black/10 px-3 py-1 text-[11px] text-black/60 hover:bg-black/5"
+              onClick={async () => {
+                await navigator.clipboard.writeText(redemption.code!);
+                setCopied(true);
+              }}
+            >
+              {copied ? "Copiado ✓" : "Copiar código"}
+            </button>
+          </div>
         )}
       </div>
       <span

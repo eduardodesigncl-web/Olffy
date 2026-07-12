@@ -4,7 +4,7 @@ import type { AdminIntegrationDiagnosticsResponse } from "lib/admin/diagnostics-
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("ajustes");
   if (unauthorized) return unauthorized;
 
   const checkedAt = new Date().toISOString();

@@ -5,6 +5,8 @@ export type MarketingEvent = {
   eventType: string;
   idempotencyKey: string;
   email?: string;
+  shopifyCustomerId?: string;
+  loyaltyCustomerId?: string;
   payload: Record<string, unknown>;
 };
 

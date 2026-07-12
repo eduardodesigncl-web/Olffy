@@ -77,6 +77,68 @@
   align-items: start;
 }
 
+.columns + * {
+  margin-top: 14px;
+}
+
+.codeBubble {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 48px 14px 16px;
+  border: 1px solid rgba(250, 180, 5, 0.5);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #fff4bd, #f1edff);
+  box-shadow: 0 10px 24px rgba(84, 69, 35, 0.11);
+}
+
+.codeBubble > div {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.codeBubble span {
+  color: var(--olffy-cafe-55);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.codeBubble strong {
+  color: var(--olffy-morado);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.codeBubble > button:not(.codeClose) {
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--olffy-morado);
+  color: white;
+  padding: 9px 13px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.codeClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--olffy-cafe-55);
+  cursor: pointer;
+}
+
+.columns {
+  margin-top: 14px;
+}
+
 .rewardsPanel {
   background: var(--olffy-blanco);
   border: 1px solid var(--olffy-cafe-08);

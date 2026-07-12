@@ -21,14 +21,25 @@ export default async function AdminDashboardPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  await requireAdminPageSession();
+  const actor = await requireAdminPageSession();
   await connection();
 
   const { tab } = await searchParams;
-  const initialTab = VALID_TABS.includes(tab as AdminTab)
-    ? (tab as AdminTab)
-    : "dashboard";
+  const allowedTabs = VALID_TABS.filter((item) =>
+    actor.permissions.includes(item),
+  );
+  const initialTab =
+    VALID_TABS.includes(tab as AdminTab) &&
+    allowedTabs.includes(tab as AdminTab)
+      ? (tab as AdminTab)
+      : (allowedTabs[0] ?? "dashboard");
   const data = await getAdminPanelData();
 
-  return <AdminPanelClient data={data} initialTab={initialTab} />;
+  return (
+    <AdminPanelClient
+      data={data}
+      initialTab={initialTab}
+      allowedTabs={allowedTabs}
+    />
+  );
 }

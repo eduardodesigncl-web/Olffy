@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseAdmin } from "lib/supabase/admin";
+import { processMarketingOutbox } from "lib/transactions/marketing";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,25 +19,38 @@ export async function subscribeNewsletterAction(email: string) {
     return { success: false, error: "Email inválido" };
   }
 
-  const { error } = await getSupabaseAdmin()
-    .from("marketing_event_outbox")
-    .upsert(
-      {
-        event_type: "Newsletter Signup",
-        idempotency_key: `marketing:newsletter:${normalized}`,
-        email: normalized,
-        payload_minimal: { source: "storefront_footer" },
-        provider: marketingProviderName(),
-      },
-      { onConflict: "idempotency_key", ignoreDuplicates: true },
-    );
+  const supabase = getSupabaseAdmin();
+  const idempotencyKey = `marketing:newsletter:${normalized}`;
+  const { error } = await supabase.from("marketing_event_outbox").upsert(
+    {
+      event_type: "Newsletter Signup",
+      idempotency_key: idempotencyKey,
+      email: normalized,
+      payload_minimal: { source: "storefront_footer" },
+      provider: marketingProviderName(),
+    },
+    { onConflict: "idempotency_key", ignoreDuplicates: true },
+  );
 
   if (error) {
     console.error("No se pudo encolar la suscripción al newsletter", error);
     return { success: false, error: "No se pudo procesar la suscripción" };
   }
 
-  return { success: true };
+  if (marketingProviderName() === "klaviyo") {
+    await processMarketingOutbox(10);
+  }
+
+  const { data: queued } = await supabase
+    .from("marketing_event_outbox")
+    .select("status")
+    .eq("idempotency_key", idempotencyKey)
+    .maybeSingle();
+
+  return {
+    success: true,
+    pending: queued?.status !== "processed",
+  };
 }
 
 // Guarda un mensaje del formulario de contacto en Supabase

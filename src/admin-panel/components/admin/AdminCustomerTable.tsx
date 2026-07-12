@@ -33,7 +33,6 @@ export function AdminCustomerTable({
           <tr>
             <th className={styles.th}>Cliente</th>
             <th className={styles.th}>Email</th>
-            <th className={styles.th}>Teléfono</th>
             <th className={styles.th}>Puntos</th>
             <th className={styles.th}>Sistema de pago</th>
             <th className={styles.th}>Estado</th>
@@ -50,7 +49,6 @@ export function AdminCustomerTable({
                 </div>
               </td>
               <td className={`${styles.td} ${styles.muted}`}>{c.email}</td>
-              <td className={`${styles.td} ${styles.muted}`}>{c.tel || "—"}</td>
               <td className={styles.td}>
                 <span className={styles.points}>
                   {c.puntos.toLocaleString("es-CL")}

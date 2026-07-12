@@ -31,22 +31,40 @@
   margin-top: 1px;
 }
 
-.removeBtn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  color: var(--olffy-cafe-55);
+.editBtn,
+.cancelBtn {
+  border: 1px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-morado);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  display: grid;
-  place-items: center;
+  padding: 8px 11px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
-.removeBtn:hover {
-  color: var(--olffy-naranjo);
-  background: var(--olffy-cafe-06);
+.editBtn:hover,
+.cancelBtn:hover {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado-suave);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.tags span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  font-size: 10.5px;
+  font-weight: 700;
 }
 
 .addForm {
@@ -70,4 +88,48 @@
   font-size: 12px;
   color: var(--olffy-naranjo);
   font-weight: 600;
+}
+
+.empty {
+  margin: 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--olffy-crema);
+  color: var(--olffy-cafe-55);
+  font-size: 12.5px;
+}
+
+.permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+}
+
+.permissions legend {
+  padding: 0 6px;
+  color: var(--olffy-cafe-68);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.permissions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-cafe);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

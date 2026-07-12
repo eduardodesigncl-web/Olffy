@@ -110,7 +110,6 @@ export function AdminCustomerDetail({
         </div>
         <div className={styles.contact}>
           <span>{customer.email}</span>
-          <span>{customer.tel || "Sin teléfono"}</span>
         </div>
         <div className={styles.saldoRow}>
           <span className={styles.saldoValue}>{fmt(customer.puntos)}</span>

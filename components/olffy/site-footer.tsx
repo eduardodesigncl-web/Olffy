@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MouseLabsAdminLink } from "./mouselabs-admin-link";
+import { SiteNewsletterForm } from "./site-newsletter-form";
 
 type FooterLink = [label: string, href: string];
 
@@ -102,21 +103,7 @@ export function SiteFooter() {
             <p className="mb-4 font-editorial text-[15px] italic leading-[1.55] text-[#fff5d9]/65">
               Novedades, lanzamientos y ofertas exclusivas.
             </p>
-            <form className="flex flex-col gap-3 md:block">
-              <label className="sr-only" htmlFor="footer-email">
-                Correo electrónico
-              </label>
-              <input
-                id="footer-email"
-                type="email"
-                required
-                placeholder="Correo electrónico"
-                className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[13px] text-white outline-none placeholder:text-white/35 md:text-[14px]"
-              />
-              <button className="w-full rounded-xl bg-olffy-orange px-4 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-90 md:mt-3">
-                Suscribirse
-              </button>
-            </form>
+            <SiteNewsletterForm />
           </div>
         </div>
 

@@ -30,9 +30,9 @@ export function AdminPoints() {
       tone: "morado",
     },
     {
-      label: "Canjes pendientes",
-      value: ADMIN_DATA.canjesPendientes.length,
-      tone: "naranjo",
+      label: "Canje automático",
+      value: "Activo",
+      tone: "verde",
     },
     {
       label: "Recompensas activas",

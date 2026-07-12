@@ -10,6 +10,7 @@ import {
   type PhysicalSaleItemInput,
   type PhysicalSalePosBenefit,
   finalizePhysicalSalePos,
+  markRewardRedemptionUsed,
 } from "lib/loyalty/service";
 import { isExcludedFromLoyalty } from "lib/loyalty/eligibility";
 import {
@@ -17,6 +18,7 @@ import {
   getAdminProductVariantsByIds,
 } from "lib/shopify/admin";
 import { finalizePhysicalOperation } from "lib/transactions/orchestrator";
+import { getSupabaseAdmin } from "lib/supabase/admin";
 
 export type PhysicalSalePosRequest = {
   customerId?: number | null;
@@ -35,6 +37,7 @@ export type PreparedPhysicalSale = {
   pointsSpent: number;
   pointsEarned: number;
   discountCode?: string;
+  rewardRedemptionId?: number;
   manualDiscountReason?: string;
   subtotal: number;
   /** Subtotal de productos que participan en OLFFY Puntos (carrito mixto). */
@@ -174,6 +177,7 @@ export async function preparePhysicalSale(
   let discount = 0;
   let pointsSpent = 0;
   let discountCode: string | undefined;
+  let rewardRedemptionId: number | undefined;
   let manualDiscountReason: string | undefined;
 
   if (customer && customer.status !== "active") {
@@ -201,11 +205,56 @@ export async function preparePhysicalSale(
       );
     }
   } else if (benefitType === "discount_code") {
+    if (!customer) {
+      throw new Error("Selecciona la clienta dueña del código de descuento");
+    }
+
     discountCode = requiredPhysicalSaleText(
       input.discountCode,
       "el codigo de descuento",
+    ).toUpperCase();
+    const { data: redemption, error: redemptionError } =
+      await getSupabaseAdmin()
+        .from("reward_redemptions")
+        .select(
+          "id, customer_id, status, shopify_discount_ends_at, rewards(discount_amount_clp, minimum_purchase_clp)",
+        )
+        .ilike("shopify_discount_code", discountCode)
+        .maybeSingle();
+
+    if (redemptionError) {
+      throw new Error(
+        `No se pudo validar el código de descuento: ${redemptionError.message}`,
+      );
+    }
+    if (!redemption || redemption.status !== "approved") {
+      throw new Error("El código no existe, ya fue usado o no está activo");
+    }
+    if (Number(redemption.customer_id) !== customer.id) {
+      throw new Error("El código pertenece a otra clienta");
+    }
+    if (
+      redemption.shopify_discount_ends_at &&
+      new Date(redemption.shopify_discount_ends_at).getTime() <= Date.now()
+    ) {
+      throw new Error("El código de descuento está vencido");
+    }
+
+    const reward = Array.isArray(redemption.rewards)
+      ? redemption.rewards[0]
+      : redemption.rewards;
+    const minimumPurchase = Number(reward?.minimum_purchase_clp ?? 0);
+    if (subtotal < minimumPurchase) {
+      throw new Error(
+        `El código requiere una compra mínima de $${minimumPurchase.toLocaleString("es-CL")}`,
+      );
+    }
+
+    discount = positiveAmount(
+      reward?.discount_amount_clp,
+      "El monto configurado del descuento",
     );
-    discount = positiveAmount(input.benefitAmount, "El monto del descuento");
+    rewardRedemptionId = Number(redemption.id);
   } else if (benefitType === "manual_discount") {
     manualDiscountReason = requiredPhysicalSaleText(
       input.manualDiscountReason,
@@ -259,6 +308,7 @@ export async function preparePhysicalSale(
     pointsSpent,
     pointsEarned,
     discountCode,
+    rewardRedemptionId,
     manualDiscountReason,
     subtotal,
     eligibleSubtotal,
@@ -406,6 +456,29 @@ export async function finalizePreparedPhysicalSale(input: {
       "Physical sale completed with transaction pipeline warning:",
       pipelineError,
     );
+  }
+
+  if (prepared.rewardRedemptionId && !result.alreadyCompleted) {
+    try {
+      await markRewardRedemptionUsed({
+        redemptionId: prepared.rewardRedemptionId,
+        usageCount: 1,
+        createdBy: input.responsible,
+      });
+    } catch (redemptionError) {
+      transactionPipelineWarning = [
+        transactionPipelineWarning,
+        redemptionError instanceof Error
+          ? redemptionError.message
+          : "El uso del código requiere conciliación",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      console.error(
+        "Physical sale completed but reward redemption usage was not recorded:",
+        redemptionError,
+      );
+    }
   }
 
   return {

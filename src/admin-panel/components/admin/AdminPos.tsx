@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
 import type {
   AdminPanelCustomer,
@@ -70,6 +71,7 @@ export function AdminPos() {
   const products = runtime?.products ?? [];
   const customers = runtime?.adminData.clientes ?? [];
   const rule = runtime?.loyaltyRule ?? null;
+  const readiness = runtime?.posReadiness;
 
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<PosCartLine[]>([]);
@@ -88,6 +90,13 @@ export function AdminPos() {
   >({ kind: "none" });
   const [customerQuery, setCustomerQuery] = useState("");
   const [charge, setCharge] = useState<ChargeState>(IDLE_CHARGE);
+  const [redeemingRewardId, setRedeemingRewardId] = useState<number | null>(
+    null,
+  );
+  const [rewardFeedback, setRewardFeedback] = useState<{
+    tone: "success" | "error";
+    text: string;
+  } | null>(null);
   const pollTokenRef = useRef(0);
 
   useEffect(() => {
@@ -125,8 +134,7 @@ export function AdminPos() {
     return customers.filter(
       (item) =>
         item.nombre.toLowerCase().includes(q) ||
-        item.email.toLowerCase().includes(q) ||
-        item.tel.toLowerCase().includes(q),
+        item.email.toLowerCase().includes(q),
     );
   }, [customers, customerQuery]);
 
@@ -172,6 +180,24 @@ export function AdminPos() {
         )
       : 0;
   const itemCount = cart.reduce((sum, line) => sum + line.qty, 0);
+  const discountRewards = useMemo(
+    () =>
+      (runtime?.rewards ?? [])
+        .filter(
+          (reward) =>
+            reward.estado === "Activa" &&
+            reward.rewardType === "discount" &&
+            reward.discountAmountClp > 0,
+        )
+        .sort((a, b) => a.puntos - b.puntos),
+    [runtime?.rewards],
+  );
+  const eligibleRewards = customer
+    ? discountRewards.filter((reward) => reward.puntos <= customer.puntos)
+    : [];
+  const nextReward = customer
+    ? discountRewards.find((reward) => reward.puntos > customer.puntos)
+    : undefined;
 
   const benefitInvalid =
     (benefitType === "points" &&
@@ -179,10 +205,7 @@ export function AdminPos() {
         !rule ||
         amount(pointsToUse) <= 0 ||
         amount(pointsToUse) > maxPointsForSale)) ||
-    (benefitType === "discount_code" &&
-      (!discountCode.trim() ||
-        amount(benefitAmount) <= 0 ||
-        amount(benefitAmount) >= subtotal)) ||
+    (benefitType === "discount_code" && (!customer || !discountCode.trim())) ||
     (benefitType === "manual_discount" &&
       (!manualDiscountReason.trim() ||
         amount(benefitAmount) <= 0 ||
@@ -194,7 +217,9 @@ export function AdminPos() {
     cart.length === 0 ||
     total <= 0 ||
     benefitInvalid ||
-    !responsible.trim();
+    !responsible.trim() ||
+    !readiness?.tuuRemote ||
+    !readiness?.tuuWebhook;
 
   function addVariantToCart(product: PosProduct, variant: PosProductVariant) {
     const maxQty = Math.max(Number(variant.quantityAvailable ?? 0), 0);
@@ -261,6 +286,8 @@ export function AdminPos() {
     setDiscountCode("");
     setBenefitAmount("");
     setManualDiscountReason("");
+    setRedeemingRewardId(null);
+    setRewardFeedback(null);
     setCharge(IDLE_CHARGE);
   }
 
@@ -424,6 +451,64 @@ export function AdminPos() {
     }
   }
 
+  async function redeemPosReward(reward: AdminPanelData["rewards"][number]) {
+    if (!customer || redeemingRewardId !== null) return;
+    setRedeemingRewardId(reward.id);
+    setRewardFeedback(null);
+
+    try {
+      const response = await fetch("/api/admin/loyalty/redemptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          customerId: customer.idx,
+          rewardId: reward.id,
+          responsible,
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        code?: string;
+        pointsBalance?: number;
+      };
+
+      if (!response.ok || !data.code) {
+        throw new Error(data.error || "No se pudo generar el descuento");
+      }
+
+      setCustomer((current) =>
+        current
+          ? {
+              ...current,
+              puntos: Number.isFinite(data.pointsBalance)
+                ? Number(data.pointsBalance)
+                : Math.max(current.puntos - reward.puntos, 0),
+            }
+          : current,
+      );
+      setBenefitType("discount_code");
+      setDiscountCode(data.code);
+      setBenefitAmount(String(reward.discountAmountClp));
+      setPointsToUse("");
+      setManualDiscountReason("");
+      setRewardFeedback({
+        tone: "success",
+        text: `${reward.nombre} canjeado. Código ${data.code} aplicado a la venta.`,
+      });
+    } catch (cause) {
+      setRewardFeedback({
+        tone: "error",
+        text:
+          cause instanceof Error
+            ? cause.message
+            : "No se pudo canjear la recompensa",
+      });
+    } finally {
+      setRedeemingRewardId(null);
+    }
+  }
+
   const benefitSummary =
     benefitType === "points"
       ? `${Math.trunc(amount(pointsToUse)).toLocaleString("es-CL")} pts`
@@ -435,6 +520,43 @@ export function AdminPos() {
 
   return (
     <div className={styles.pos}>
+      <header className={styles.posHeader}>
+        <div>
+          <span className={styles.posEyebrow}>OLFFY · TIENDA FÍSICA</span>
+          <h1 className={styles.posHeading}>Caja creativa</h1>
+        </div>
+        <div
+          className={styles.readiness}
+          aria-label="Estado de integraciones POS"
+        >
+          <span className={readiness?.shopify ? styles.ready : styles.pending}>
+            <i /> Shopify {readiness?.shopify ? "conectado" : "pendiente"}
+          </span>
+          <span
+            className={readiness?.discounts ? styles.ready : styles.pending}
+          >
+            <i /> Descuentos {readiness?.discounts ? "listos" : "pendientes"}
+          </span>
+          <span
+            className={readiness?.tuuRemote ? styles.ready : styles.pending}
+          >
+            <i /> TUU {readiness?.tuuRemote ? "conectado" : "pendiente API"}
+          </span>
+          <span
+            className={readiness?.tuuWebhook ? styles.ready : styles.pending}
+          >
+            <i /> Webhook TUU {readiness?.tuuWebhook ? "listo" : "pendiente"}
+          </span>
+          <span
+            className={
+              readiness?.shopifyWebhooks ? styles.ready : styles.pending
+            }
+          >
+            <i /> Webhooks Shopify{" "}
+            {readiness?.shopifyWebhooks ? "listos" : "pendientes"}
+          </span>
+        </div>
+      </header>
       {/* Columna izquierda: catálogo */}
       <div className={styles.catalog}>
         <div className={styles.searchBar}>
@@ -511,7 +633,7 @@ export function AdminPos() {
             {benefitType === "none" ? "Aplicar descuento" : "Editar descuento"}
           </button>
 
-          {filteredProducts.map((product) => {
+          {filteredProducts.map((product, index) => {
             const outOfStock = (product.stock ?? 0) <= 0;
             return (
               <button
@@ -524,11 +646,20 @@ export function AdminPos() {
                 <span
                   className={styles.tileImage}
                   style={
-                    product.image
-                      ? { backgroundImage: `url(${product.image})` }
-                      : { backgroundColor: product.bg }
+                    product.image ? undefined : { backgroundColor: product.bg }
                   }
                 >
+                  {product.image ? (
+                    <Image
+                      src={product.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 900px) 45vw, 190px"
+                      quality={62}
+                      priority={index < 2}
+                      className={styles.tileImageAsset}
+                    />
+                  ) : null}
                   <span
                     className={`${styles.stockBadge} ${outOfStock ? styles.stockOut : ""}`}
                   >
@@ -719,6 +850,81 @@ export function AdminPos() {
             </div>
 
             <div className={styles.summary}>
+              {!readiness?.tuuRemote ? (
+                <div className={styles.apiNotice} role="status">
+                  <strong>Modo preparación</strong>
+                  El carrito y los descuentos se validan ahora. El cobro se
+                  habilitará al configurar la API y el webhook de TUU.
+                </div>
+              ) : null}
+              {customer ? (
+                <div className={styles.loyaltyNotice} role="status">
+                  <div className={styles.loyaltyNoticeHeader}>
+                    <strong>Beneficios disponibles</strong>
+                    <span>{customer.puntos.toLocaleString("es-CL")} pts</span>
+                  </div>
+                  {eligibleRewards.length > 0 ? (
+                    <>
+                      <p>{customer.nombre} tiene puntos suficientes para:</p>
+                      <div className={styles.loyaltyRewards}>
+                        {eligibleRewards.map((reward) => {
+                          const minimumMet =
+                            subtotal >= reward.minimumPurchaseClp;
+                          const alreadyApplied =
+                            benefitType === "discount_code" &&
+                            Boolean(discountCode);
+                          return (
+                            <button
+                              key={reward.id}
+                              type="button"
+                              onClick={() => void redeemPosReward(reward)}
+                              disabled={
+                                !minimumMet ||
+                                alreadyApplied ||
+                                redeemingRewardId !== null
+                              }
+                            >
+                              <span>
+                                {reward.nombre} · {reward.puntos} pts
+                              </span>
+                              <small>
+                                {alreadyApplied
+                                  ? "Ya hay un código aplicado"
+                                  : minimumMet
+                                    ? redeemingRewardId === reward.id
+                                      ? "Generando..."
+                                      : "Canjear y aplicar"
+                                    : `Compra mínima ${clp(reward.minimumPurchaseClp)}`}
+                              </small>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : nextReward ? (
+                    <p>
+                      Le faltan{" "}
+                      {(nextReward.puntos - customer.puntos).toLocaleString(
+                        "es-CL",
+                      )}{" "}
+                      puntos para {nextReward.nombre}.
+                    </p>
+                  ) : (
+                    <p>No hay recompensas de descuento activas.</p>
+                  )}
+                  {rewardFeedback ? (
+                    <p
+                      className={
+                        rewardFeedback.tone === "success"
+                          ? styles.loyaltySuccess
+                          : styles.loyaltyError
+                      }
+                    >
+                      {rewardFeedback.text}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <div className={styles.summaryRow}>
                 <span>Subtotal</span>
                 <span>{clp(subtotal)}</span>
@@ -819,7 +1025,7 @@ export function AdminPos() {
               type="search"
               value={customerQuery}
               onChange={(event) => setCustomerQuery(event.target.value)}
-              placeholder="Buscar por nombre, correo o teléfono"
+              placeholder="Buscar por nombre o correo"
               autoFocus
             />
             <div className={styles.sheetList}>
@@ -990,15 +1196,10 @@ export function AdminPos() {
                     onChange={(event) => setDiscountCode(event.target.value)}
                   />
                 </label>
-                <label>
-                  Monto que descuenta
-                  <input
-                    type="number"
-                    min="1"
-                    value={benefitAmount}
-                    onChange={(event) => setBenefitAmount(event.target.value)}
-                  />
-                </label>
+                <p className={styles.benefitHint}>
+                  El monto, la vigencia y la compra mínima se validan desde el
+                  canje real de la clienta.
+                </p>
               </div>
             ) : null}
 
@@ -1026,10 +1227,21 @@ export function AdminPos() {
               </div>
             ) : null}
 
+            {benefitType !== "none" && benefitInvalid ? (
+              <p className={styles.validationError} role="alert">
+                {benefitType === "points"
+                  ? "Selecciona un cliente e ingresa puntos dentro del máximo permitido."
+                  : benefitType === "discount_code"
+                    ? "Selecciona la clienta dueña del código e ingrésalo."
+                    : "Ingresa un monto menor que el subtotal y la autorización del descuento."}
+              </p>
+            ) : null}
+
             <button
               type="button"
               className={styles.sheetConfirm}
               onClick={() => setOverlay({ kind: "none" })}
+              disabled={benefitType !== "none" && benefitInvalid}
             >
               Listo
             </button>

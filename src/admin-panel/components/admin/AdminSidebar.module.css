@@ -6,6 +6,15 @@
   display: flex;
   flex-direction: column;
   padding: 22px 16px;
+  position: relative;
+  transition:
+    width 0.22s ease,
+    padding 0.22s ease;
+}
+
+.sidebarCollapsed {
+  width: 76px;
+  padding-inline: 12px;
 }
 
 .brand {
@@ -23,6 +32,40 @@
   font-size: 22px;
   color: var(--olffy-blanco);
   letter-spacing: -0.02em;
+}
+
+.logoCompact {
+  display: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--olffy-amarillo);
+  color: var(--olffy-morado);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.collapseButton {
+  position: absolute;
+  z-index: 2;
+  top: 82px;
+  right: -13px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 2px solid #fffaf0;
+  border-radius: 999px;
+  background: var(--olffy-amarillo);
+  color: var(--olffy-morado);
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(44, 28, 102, 0.2);
+}
+
+.collapseButton:hover {
+  transform: scale(1.06);
 }
 
 .badge {
@@ -84,6 +127,28 @@
   color: var(--olffy-amarillo);
 }
 
+.sidebarCollapsed .brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.sidebarCollapsed .logo,
+.sidebarCollapsed .badge,
+.sidebarCollapsed .itemLabel {
+  display: none;
+}
+
+.sidebarCollapsed .logoCompact {
+  display: grid;
+}
+
+.sidebarCollapsed .item,
+.sidebarCollapsed .exit {
+  justify-content: center;
+  gap: 0;
+  padding-inline: 0;
+}
+
 .exit {
   display: flex;
   align-items: center;
@@ -140,5 +205,19 @@
     padding: 8px 12px;
     flex-shrink: 0;
     white-space: nowrap;
+  }
+  .collapseButton {
+    display: none;
+  }
+  .sidebarCollapsed {
+    width: 100%;
+    padding: 10px 12px;
+  }
+  .sidebarCollapsed .logo,
+  .sidebarCollapsed .itemLabel {
+    display: inline;
+  }
+  .sidebarCollapsed .logoCompact {
+    display: none;
   }
 }

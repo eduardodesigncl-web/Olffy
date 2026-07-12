@@ -204,6 +204,7 @@ async function getRecentPointMovements(): Promise<
       tipo: movementType(String(item.transaction_type)),
       cliente: customer?.full_name ?? customer?.email ?? "Cliente OLFFY",
       fecha: dateLabel(String(item.created_at)),
+      fechaISO: String(item.created_at),
       puntos: Number(item.points ?? 0),
       origen: sourceLabel(String(item.source)) as
         | "Shopify"
@@ -227,7 +228,10 @@ async function getShopifyAdminUrl() {
   return `https://admin.shopify.com/store/${store}`;
 }
 
-export async function getAdminPanelData(): Promise<AdminPanelData> {
+export async function getAdminPanelData(options?: {
+  scope?: "all" | "pos";
+}): Promise<AdminPanelData> {
+  const posOnly = options?.scope === "pos";
   const [
     frontend,
     orderRefs,
@@ -237,20 +241,31 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
     abandonedCheckouts,
   ] = await Promise.all([
     getFrontendAdminData(),
-    listOrderReferences(100).catch((error) => {
-      console.error("No se pudieron cargar las ventas:", error);
-      return [];
-    }),
+    posOnly
+      ? Promise.resolve([])
+      : listOrderReferences(100).catch((error) => {
+          console.error("No se pudieron cargar las ventas:", error);
+          return [];
+        }),
     listRewards(false).catch((error) => {
       console.error("No se pudieron cargar recompensas:", error);
       return [];
     }),
-    getRecentPointMovements(),
+    posOnly ? Promise.resolve([]) : getRecentPointMovements(),
     getActiveLoyaltyRule().catch((error) => {
       console.error("No se pudo cargar la regla activa de puntos:", error);
       return null;
     }),
-    getAbandonedCheckoutsSummary(),
+    posOnly
+      ? Promise.resolve({
+          available: false,
+          source: "shopify" as const,
+          fetchedAt: new Date().toISOString(),
+          count: 0,
+          totalAmount: 0,
+          checkouts: [],
+        })
+      : getAbandonedCheckoutsSummary(),
   ]);
 
   const customers = frontend.customers.map((customer, index) => ({
@@ -260,6 +275,7 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
     tel: customer.phone || "",
     puntos: customer.points ?? customer.pointsBalance ?? 0,
     estado: customer.status === "active" ? "Activo" : "Bloqueado",
+    createdAt: customer.createdAt,
   }));
 
   const products = frontend.products.map((product, index) => {
@@ -341,7 +357,9 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
     responsable: sale.operatorName || "Equipo OLFFY",
   }));
 
-  const sales = orderRefs.map(toUnifiedSale);
+  const sales = orderRefs
+    .map(toUnifiedSale)
+    .sort((a, b) => Date.parse(b.fechaISO) - Date.parse(a.fechaISO));
   const todayKey = chileDayKey(new Date());
   const salesTodayList = sales.filter(
     (sale) => chileDayKey(sale.fechaISO) === todayKey,
@@ -388,6 +406,27 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
   ];
 
   return {
+    posReadiness: {
+      shopify: Boolean(
+        process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim() ||
+          (process.env.SHOPIFY_ADMIN_API_CLIENT_ID?.trim() &&
+            process.env.SHOPIFY_ADMIN_API_CLIENT_SECRET?.trim()),
+      ),
+      discounts: Boolean(
+        process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN?.trim() ||
+          (process.env.SHOPIFY_ADMIN_API_CLIENT_ID?.trim() &&
+            process.env.SHOPIFY_ADMIN_API_CLIENT_SECRET?.trim()),
+      ),
+      tuuRemote:
+        process.env.TUU_REMOTE_POS_ENABLED?.trim().toLowerCase() === "true" &&
+        Boolean(
+          process.env.TUU_POS_API_KEY?.trim() &&
+            process.env.TUU_POS_DEVICE_UUID?.trim() &&
+            process.env.TUU_POS_DEVICE_SERIAL?.trim(),
+        ),
+      tuuWebhook: Boolean(process.env.TUU_POS_WEBHOOK_SECRET?.trim()),
+      shopifyWebhooks: Boolean(process.env.SHOPIFY_WEBHOOK_SECRET?.trim()),
+    },
     adminData: {
       clientes: customers,
       canjesPendientes: redemptions.filter(
@@ -423,6 +462,26 @@ export async function getAdminPanelData(): Promise<AdminPanelData> {
       estado: reward.is_active ? "Activa" : "Pausada",
       descripcion:
         reward.description || "Recompensa sincronizada desde Supabase.",
+      shopifyCode:
+        typeof (
+          reward.metadata?.shopify_template_discount as Record<
+            string,
+            unknown
+          > | null
+        )?.code === "string"
+          ? String(
+              (
+                reward.metadata.shopify_template_discount as Record<
+                  string,
+                  unknown
+                >
+              ).code,
+            )
+          : undefined,
+      rewardType: reward.reward_type,
+      discountAmountClp: Number(reward.discount_amount_clp ?? 0),
+      minimumPurchaseClp: Number(reward.minimum_purchase_clp ?? 0),
+      validityDays: Number(reward.validity_days ?? 30),
     })),
     shopifyAdminUrl: await getShopifyAdminUrl(),
   };

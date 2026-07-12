@@ -13,6 +13,7 @@ export type AdminPanelCustomer = {
   tel: string;
   puntos: number;
   estado: string;
+  createdAt: string;
 };
 
 export type UnifiedSaleOrigin = "online" | "fisica";
@@ -60,6 +61,13 @@ export type PosProductVariant = {
 };
 
 export type AdminPanelData = {
+  posReadiness: {
+    shopify: boolean;
+    discounts: boolean;
+    tuuRemote: boolean;
+    tuuWebhook: boolean;
+    shopifyWebhooks: boolean;
+  };
   adminData: {
     clientes: AdminPanelCustomer[];
     canjesPendientes: AdminCanje[];
@@ -97,6 +105,7 @@ export type AdminPanelData = {
     tipo: string;
     cliente: string;
     fecha: string;
+    fechaISO: string;
     puntos: number;
     origen: "Shopify" | "TUU" | "Canje" | "Admin";
     estado: "Aprobado" | "Pendiente" | "Reversado";
@@ -107,10 +116,15 @@ export type AdminPanelData = {
     puntos: number;
     estado: "Activa" | "Pausada";
     descripcion: string;
+    shopifyCode?: string;
+    rewardType: "discount" | "product" | "experience" | "other";
+    discountAmountClp: number;
+    minimumPurchaseClp: number;
+    validityDays: number;
   }>;
   abandonedCheckouts: {
     available: boolean;
-    source: string;
+    source: "klaviyo" | "shopify";
     fetchedAt: string;
     count: number;
     totalAmount: number;

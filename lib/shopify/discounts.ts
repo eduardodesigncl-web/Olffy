@@ -240,7 +240,7 @@ export async function createShopifyBasicCodeDiscount(input: {
     appliesOncePerCustomer: true,
     context: customerGid
       ? { customers: { add: [customerGid] } }
-      : { all: true },
+      : { all: "ALL" },
     customerGets: {
       value: {
         discountAmount: {

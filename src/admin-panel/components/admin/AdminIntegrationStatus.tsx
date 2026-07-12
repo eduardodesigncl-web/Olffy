@@ -1,4 +1,5 @@
 import type { AdminIntegrationDiagnostic } from "lib/admin/diagnostics-types";
+import { useState } from "react";
 import { AdminSettingsSection, sectionStyles } from "./AdminSettingsSection";
 import { useAdminDiagnostics } from "./useAdminDiagnostics";
 import styles from "./AdminIntegrationStatus.module.css";
@@ -45,11 +46,6 @@ const INTEGRATIONS: {
     desc: "Pago presencial en tienda física.",
   },
   { name: "Email marketing", status: "mock", desc: "Campañas y newsletter." },
-  {
-    name: "Google Analytics / SEO",
-    status: "pendiente",
-    desc: "Métricas de tráfico y posicionamiento.",
-  },
 ];
 
 function statusFromDiagnostic(
@@ -70,7 +66,37 @@ function formatDiagnosticDesc(diagnostic: AdminIntegrationDiagnostic) {
 export function AdminIntegrationStatus({
   onNotice,
 }: AdminIntegrationStatusProps) {
+  const [syncingMarketing, setSyncingMarketing] = useState(false);
   const { diagnostics, loading, error, refresh } = useAdminDiagnostics(true);
+  const syncMarketing = async () => {
+    setSyncingMarketing(true);
+    try {
+      const response = await fetch("/api/admin/marketing", {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = (await response.json()) as {
+        error?: string;
+        contactsQueued?: number;
+        delivery?: { processed: number; failed: number };
+      };
+      if (!response.ok) {
+        throw new Error(body.error || "No se pudo sincronizar Klaviyo");
+      }
+      onNotice(
+        `Klaviyo sincronizado: ${body.delivery?.processed ?? 0} eventos enviados, ${body.delivery?.failed ?? 0} con error y ${body.contactsQueued ?? 0} perfiles autorizados preparados.`,
+      );
+      await refresh();
+    } catch (cause) {
+      onNotice(
+        cause instanceof Error
+          ? cause.message
+          : "No se pudo sincronizar Klaviyo",
+      );
+    } finally {
+      setSyncingMarketing(false);
+    }
+  };
   const diagnosticRows =
     diagnostics?.map((diagnostic) => ({
       name: diagnostic.name === "Email" ? "Email marketing" : diagnostic.name,
@@ -79,15 +105,7 @@ export function AdminIntegrationStatus({
       diagnostic,
     })) ?? [];
   const rows = diagnostics
-    ? [
-        ...diagnosticRows,
-        {
-          name: "Google Analytics / SEO",
-          status: "pendiente" as const,
-          desc: "Métricas de tráfico y posicionamiento pendientes de configurar.",
-          diagnostic: null,
-        },
-      ]
+    ? diagnosticRows
     : INTEGRATIONS.map((integration) => ({
         ...integration,
         diagnostic: null,
@@ -117,6 +135,7 @@ export function AdminIntegrationStatus({
       <div className={styles.list}>
         {rows.map((it) => {
           const meta = STATUS_META[it.status];
+          const isEmailMarketing = it.name === "Email marketing";
           return (
             <div key={it.name} className={styles.item}>
               <div className={styles.info}>
@@ -143,17 +162,38 @@ export function AdminIntegrationStatus({
                 >
                   Ver diagnóstico
                 </button>
-                <button
-                  type="button"
-                  className={sectionStyles.smallBtn}
-                  onClick={() =>
-                    onNotice(
-                      "Revisa las variables de entorno en Vercel o en .env.local para esta integración.",
-                    )
-                  }
-                >
-                  Configurar
-                </button>
+                {isEmailMarketing ? (
+                  <>
+                    <button
+                      type="button"
+                      className={sectionStyles.smallBtn}
+                      onClick={() => void syncMarketing()}
+                      disabled={syncingMarketing || loading}
+                    >
+                      {syncingMarketing ? "Sincronizando..." : "Sincronizar"}
+                    </button>
+                    <a
+                      className={sectionStyles.smallBtn}
+                      href="https://www.klaviyo.com/login"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir Klaviyo
+                    </a>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={sectionStyles.smallBtn}
+                    onClick={() =>
+                      onNotice(
+                        "Revisa las variables de entorno en Vercel o en .env.local para esta integración.",
+                      )
+                    }
+                  >
+                    Configurar
+                  </button>
+                )}
               </div>
             </div>
           );

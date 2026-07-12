@@ -4,7 +4,11 @@ import type { PublicPage } from "./navigation";
 
 interface FooterProps {
   onNavigate: (page: PublicPage) => void;
-  onSubscribe?: (email: string) => void;
+  onSubscribe?: (email: string) => Promise<{
+    success: boolean;
+    error?: string;
+    pending?: boolean;
+  }>;
 }
 
 const COPYRIGHT_YEAR = 2026;

@@ -17,9 +17,7 @@ function dateLabel(value: string): string {
   }).format(new Date(value));
 }
 
-// Abandono de carrito con datos nativos de Shopify (fuente inicial del plan;
-// Klaviyo podrá complementar cuando esté contratado). Si el Admin API no está
-// disponible, se informa explícitamente: nunca se muestran datos inventados.
+// Abandono de carrito real desde Klaviyo, con Shopify como respaldo explícito.
 export function AdminAbandonedCarts() {
   const [open, setOpen] = useState(false);
   const data = adminPanelRuntime.data?.abandonedCheckouts;
@@ -31,9 +29,9 @@ export function AdminAbandonedCarts() {
           <h2 className={styles.panelTitle}>Abandono de carrito</h2>
         </div>
         <p className={styles.unavailable}>
-          La fuente Shopify no está disponible en este momento
-          {data?.error ? " (Admin API sin acceso)" : ""}. Los checkouts
-          abandonados se mostrarán aquí cuando la conexión se restablezca.
+          Las fuentes Klaviyo y Shopify no están disponibles en este momento.
+          {data?.error ? ` ${data.error}` : ""} Los checkouts abandonados se
+          mostrarán aquí cuando la conexión se restablezca.
         </p>
       </div>
     );
@@ -78,7 +76,9 @@ export function AdminAbandonedCarts() {
       </div>
 
       <p className={styles.sourceNote}>
-        Fuente: Shopify · actualizado {dateLabel(data.fetchedAt)}
+        Fuente: {data.source === "klaviyo" ? "Klaviyo" : "Shopify (respaldo)"}
+        {data.error ? " · Klaviyo pendiente de credencial" : ""} · actualizado{" "}
+        {dateLabel(data.fetchedAt)}
       </p>
 
       <Modal
@@ -90,8 +90,9 @@ export function AdminAbandonedCarts() {
           <div className={styles.modalHead}>
             <h3 className={styles.modalTitle}>Checkouts abandonados</h3>
             <p className={styles.modalSubtitle}>
-              Datos nativos de Shopify. Un checkout que luego compró no se
-              cuenta como abandonado.
+              Datos reales de{" "}
+              {data.source === "klaviyo" ? "Klaviyo" : "Shopify"}. Un checkout
+              que luego compró no se cuenta como abandonado.
             </p>
           </div>
 

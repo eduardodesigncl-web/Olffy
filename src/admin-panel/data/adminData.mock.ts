@@ -9,6 +9,7 @@ export interface AdminCliente {
   tel?: string;
   puntos: number;
   estado: string;
+  createdAt?: string;
 }
 
 export interface AdminCanje {

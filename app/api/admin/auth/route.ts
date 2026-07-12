@@ -9,15 +9,21 @@ import {
   recordAdminLoginAttempt,
 } from "lib/admin/rate-limit";
 import { timingSafeEqual } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "lib/supabase/admin";
+import { getSupabasePublicConfig } from "lib/supabase/config";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { password } = await request.json();
+    const { email, password } = await request.json();
+    const normalizedEmail = String(email ?? "")
+      .trim()
+      .toLowerCase();
     const adminPassword = getAdminPassword();
 
-    if (!adminPassword) {
+    if (!normalizedEmail && !adminPassword) {
       return NextResponse.json(
         { error: "La contraseña de administrador no está configurada." },
         { status: 500 },
@@ -39,17 +45,55 @@ export async function POST(request: Request) {
       );
     }
 
-    const provided = Buffer.from(String(password ?? ""));
-    const expected = Buffer.from(adminPassword);
-    const matches =
-      provided.length === expected.length &&
-      timingSafeEqual(provided, expected);
+    let matches = false;
+    let sessionToken = "";
+
+    if (normalizedEmail) {
+      const { url, key } = getSupabasePublicConfig();
+      const authClient = createClient(url, key, {
+        auth: {
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          persistSession: false,
+        },
+      });
+      const { data: authData, error: authError } =
+        await authClient.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: String(password ?? ""),
+        });
+
+      if (!authError && authData.user) {
+        const { data: account } = await getSupabaseAdmin()
+          .from("admin_accounts")
+          .select("auth_user_id,email,full_name,role,permissions,status")
+          .eq("auth_user_id", authData.user.id)
+          .maybeSingle();
+        if (account?.status === "active") {
+          matches = true;
+          sessionToken = createAdminSessionToken({
+            userId: account.auth_user_id,
+            email: account.email,
+            name: account.full_name,
+            role: account.role,
+            permissions: account.permissions,
+          });
+        }
+      }
+    } else {
+      const provided = Buffer.from(String(password ?? ""));
+      const expected = Buffer.from(adminPassword!);
+      matches =
+        provided.length === expected.length &&
+        timingSafeEqual(provided, expected);
+      if (matches) sessionToken = createAdminSessionToken();
+    }
 
     await recordAdminLoginAttempt(ipHash, matches);
 
     if (matches) {
       const cookieStore = await cookies();
-      cookieStore.set("admin_session", createAdminSessionToken(), {
+      cookieStore.set("admin_session", sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -61,7 +105,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "Contraseña incorrecta." },
+      { error: "Email o contraseña incorrectos, o cuenta deshabilitada." },
       { status: 401 },
     );
   } catch (error) {

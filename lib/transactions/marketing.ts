@@ -180,6 +180,70 @@ export async function enqueueLoyaltyEmailEvent(input: {
   }
 }
 
+export async function enqueueConsentedCustomerProfileSync(limit = 500) {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("loyalty_customers")
+    .select("id,email,shopify_customer_id,points_balance,metadata")
+    .not("email", "is", null)
+    .contains("metadata", { marketing_consent: true })
+    .order("id", { ascending: true })
+    .limit(Math.min(Math.max(limit, 1), 1000));
+
+  if (error) {
+    throw new Error(`No se pudieron leer los contactos: ${error.message}`);
+  }
+
+  const rows = (data ?? [])
+    .filter((customer) => Boolean(customer.email?.trim()))
+    .map((customer) => ({
+      event_type: "Marketing Profile Sync",
+      idempotency_key: `marketing:profile-sync:${customer.id}`,
+      shopify_customer_id: customer.shopify_customer_id ?? null,
+      loyalty_customer_id: customer.id,
+      email: customer.email.trim().toLowerCase(),
+      payload_minimal: {
+        source: "loyalty_customer",
+        points_balance: Number(customer.points_balance ?? 0),
+        marketing_consent: true,
+      },
+      provider: "klaviyo",
+    }));
+
+  if (rows.length > 0) {
+    const { error: upsertError } = await supabase
+      .from("marketing_event_outbox")
+      .upsert(rows, { onConflict: "idempotency_key", ignoreDuplicates: true });
+    if (upsertError) {
+      throw new Error(
+        `No se pudo preparar la sincronización: ${upsertError.message}`,
+      );
+    }
+  }
+
+  return rows.length;
+}
+
+export async function getMarketingQueueSummary() {
+  const supabase = getSupabaseAdmin();
+  const statuses = ["pending", "processing", "processed", "failed"] as const;
+  const counts = await Promise.all(
+    statuses.map(async (status) => {
+      const { count, error } = await supabase
+        .from("marketing_event_outbox")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status);
+      if (error) throw new Error(error.message);
+      return [status, count ?? 0] as const;
+    }),
+  );
+
+  return Object.fromEntries(counts) as Record<
+    (typeof statuses)[number],
+    number
+  >;
+}
+
 export async function processMarketingOutbox(limit = 25) {
   const supabase = getSupabaseAdmin();
   const provider = await getMarketingProvider();
@@ -202,6 +266,12 @@ export async function processMarketingOutbox(limit = 25) {
         eventType: String(row.event_type),
         idempotencyKey: String(row.idempotency_key),
         email: row.email ? String(row.email) : undefined,
+        shopifyCustomerId: row.shopify_customer_id
+          ? String(row.shopify_customer_id)
+          : undefined,
+        loyaltyCustomerId: row.loyalty_customer_id
+          ? String(row.loyalty_customer_id)
+          : undefined,
         payload: (row.payload_minimal ?? {}) as Record<string, unknown>,
       });
       const { error: updateError } = await supabase

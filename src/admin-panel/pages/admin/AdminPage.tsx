@@ -17,6 +17,8 @@ import {
 interface AdminPageProps {
   onExit: () => void;
   initialTab?: AdminTab;
+  onTabRequest?: (tab: AdminTab) => void;
+  allowedTabs: AdminTab[];
 }
 
 // URL persistente por pestaña: Ventas y Tienda POS tienen ruta propia; el resto
@@ -35,6 +37,8 @@ function tabUrl(tab: AdminTab): string {
 export function AdminPage({
   onExit,
   initialTab = "dashboard",
+  onTabRequest,
+  allowedTabs,
 }: AdminPageProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [navContext, setNavContext] = useState<AdminNavContext | null>(null);
@@ -45,12 +49,17 @@ export function AdminPage({
 
   // Navegación con contexto (desde Dashboard u otras secciones).
   const navigate = (tab: AdminTab, ctx?: AdminNavContext) => {
+    if (!allowedTabs.includes(tab)) return;
     setActiveTab(tab);
     setNavContext(ctx ?? null);
   };
 
   // Cambio manual desde el sidebar: limpia el contexto.
   const handleTabChange = (tab: AdminTab) => {
+    if (onTabRequest) {
+      onTabRequest(tab);
+      return;
+    }
     setActiveTab(tab);
     setNavContext(null);
   };
@@ -60,6 +69,7 @@ export function AdminPage({
       activeTab={activeTab}
       onTabChange={handleTabChange}
       onExit={onExit}
+      allowedTabs={allowedTabs}
     >
       {activeTab === "dashboard" && <AdminDashboard onNavigate={navigate} />}
       {activeTab === "clientes" && <AdminCustomers navContext={navContext} />}

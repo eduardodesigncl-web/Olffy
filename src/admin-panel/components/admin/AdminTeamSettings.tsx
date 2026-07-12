@@ -3,141 +3,329 @@ import type { FormEvent } from "react";
 import { AdminSettingsSection, sectionStyles } from "./AdminSettingsSection";
 import styles from "./AdminTeamSettings.module.css";
 
-interface AdminTeamSettingsProps {
-  onNotice: (message: string) => void;
-}
+type Permission =
+  | "dashboard"
+  | "ventas"
+  | "pos"
+  | "clientes"
+  | "puntos"
+  | "recompensas"
+  | "productos"
+  | "colecciones"
+  | "ajustes";
+type Role = "owner" | "manager" | "cashier" | "custom";
 
 interface TeamMember {
-  id: number;
-  nombre: string;
-  cargo: string;
-  rut?: string;
+  id: string;
+  email: string;
+  full_name: string;
+  role: Role;
+  permissions: Permission[];
+  status: "active" | "disabled";
 }
 
-const TEAM_STORAGE_KEY = "olffy-admin-team";
-
-const SEED_TEAM: TeamMember[] = [
-  { id: 1, nombre: "María José", cargo: "Vendedora" },
-  { id: 2, nombre: "Equipo OLFFY", cargo: "Tienda" },
-  { id: 3, nombre: "Administradora", cargo: "Admin" },
+const PERMISSIONS: Array<{ id: Permission; label: string }> = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "ventas", label: "Ventas" },
+  { id: "pos", label: "Tienda POS" },
+  { id: "clientes", label: "Clientes" },
+  { id: "puntos", label: "Puntos" },
+  { id: "recompensas", label: "Recompensas" },
+  { id: "productos", label: "Productos" },
+  { id: "colecciones", label: "Colecciones" },
+  { id: "ajustes", label: "Ajustes" },
 ];
 
-function loadTeam(): TeamMember[] {
-  if (typeof window === "undefined") return SEED_TEAM;
-  try {
-    const raw = window.localStorage.getItem(TEAM_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as TeamMember[]) : null;
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : SEED_TEAM;
-  } catch {
-    return SEED_TEAM;
-  }
-}
+const ROLE_PERMISSIONS: Record<Exclude<Role, "custom">, Permission[]> = {
+  owner: PERMISSIONS.map((item) => item.id),
+  manager: PERMISSIONS.filter((item) => item.id !== "ajustes").map(
+    (item) => item.id,
+  ),
+  cashier: ["dashboard", "ventas", "pos", "clientes"],
+};
 
-// Equipo y responsables: lista operativa del panel, guardada en este
-// dispositivo (localStorage). No es un sistema de permisos: el acceso al
-// panel sigue siendo la única cuenta admin.
-export function AdminTeamSettings({ onNotice }: AdminTeamSettingsProps) {
-  const [team, setTeam] = useState<TeamMember[]>(loadTeam);
+const ROLE_LABEL: Record<Role, string> = {
+  owner: "Propietaria",
+  manager: "Encargada",
+  cashier: "Caja",
+  custom: "Personalizado",
+};
 
-  useEffect(() => {
-    window.localStorage.setItem(TEAM_STORAGE_KEY, JSON.stringify(team));
-  }, [team]);
-  const [nombre, setNombre] = useState("");
-  const [cargo, setCargo] = useState("");
-  const [rut, setRut] = useState("");
+export function AdminTeamSettings({
+  onNotice,
+}: {
+  onNotice: (message: string) => void;
+}) {
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [editing, setEditing] = useState<TeamMember | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>("cashier");
+  const [permissions, setPermissions] = useState<Permission[]>(
+    ROLE_PERMISSIONS.cashier,
+  );
+  const [status, setStatus] = useState<"active" | "disabled">("active");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAdd = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!nombre.trim() || !cargo.trim()) {
-      setError("Nombre y cargo son obligatorios.");
-      return;
+  const loadTeam = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/admin/accounts", {
+        credentials: "include",
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        accounts?: TeamMember[];
+      };
+      if (!response.ok)
+        throw new Error(data.error || "No se pudo cargar el equipo");
+      setTeam(data.accounts ?? []);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "No se pudo cargar el equipo",
+      );
+    } finally {
+      setLoading(false);
     }
-    setError(null);
-    setTeam((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        nombre: nombre.trim(),
-        cargo: cargo.trim(),
-        rut: rut.trim() || undefined,
-      },
-    ]);
-    setNombre("");
-    setCargo("");
-    setRut("");
-    onNotice("Responsable agregado a la lista de este dispositivo.");
   };
 
-  const handleRemove = (id: number) => {
-    setTeam((prev) => prev.filter((m) => m.id !== id));
-    onNotice("Responsable eliminado de la lista de este dispositivo.");
+  useEffect(() => {
+    void loadTeam();
+  }, []);
+
+  const resetForm = () => {
+    setEditing(null);
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setRole("cashier");
+    setPermissions(ROLE_PERMISSIONS.cashier);
+    setStatus("active");
+    setError(null);
+  };
+
+  const selectRole = (next: Role) => {
+    setRole(next);
+    if (next !== "custom") setPermissions(ROLE_PERMISSIONS[next]);
+  };
+
+  const startEditing = (member: TeamMember) => {
+    setEditing(member);
+    setFullName(member.full_name);
+    setEmail(member.email);
+    setPassword("");
+    setRole(member.role);
+    setPermissions(member.permissions);
+    setStatus(member.status);
+    setError(null);
+  };
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/accounts", {
+        method: editing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: editing?.id,
+          fullName,
+          email,
+          password,
+          role,
+          permissions,
+          status,
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        account?: TeamMember;
+      };
+      if (!response.ok || !data.account) {
+        throw new Error(data.error || "No se pudo guardar la cuenta");
+      }
+      setTeam((current) =>
+        editing
+          ? current.map((item) =>
+              item.id === data.account!.id ? data.account! : item,
+            )
+          : [...current, data.account!],
+      );
+      onNotice(
+        editing
+          ? "Permisos de la cuenta actualizados."
+          : "Cuenta administrativa creada.",
+      );
+      resetForm();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "No se pudo guardar la cuenta",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <AdminSettingsSection
-      title="Equipo y responsables"
-      description="Lista operativa de quienes registran ventas (guardada en este dispositivo)."
+      title="Equipo, roles y permisos"
+      description="Cuentas con contraseña propia y acceso limitado por pestañas."
     >
       <div className={styles.list}>
-        {team.map((m) => (
-          <div key={m.id} className={styles.member}>
+        {loading ? <p className={styles.empty}>Cargando cuentas…</p> : null}
+        {!loading && team.length === 0 ? (
+          <p className={styles.empty}>
+            Aún no hay cuentas de equipo. El acceso principal sigue disponible.
+          </p>
+        ) : null}
+        {team.map((member) => (
+          <div key={member.id} className={styles.member}>
             <div className={styles.info}>
-              <div className={styles.name}>{m.nombre}</div>
+              <div className={styles.name}>{member.full_name}</div>
               <div className={styles.meta}>
-                {m.cargo}
-                {m.rut ? ` · ${m.rut}` : ""}
+                {member.email} · {ROLE_LABEL[member.role]} ·{" "}
+                {member.status === "active" ? "Activa" : "Deshabilitada"}
+              </div>
+              <div className={styles.tags}>
+                {member.permissions.map((permission) => (
+                  <span key={permission}>
+                    {PERMISSIONS.find((item) => item.id === permission)
+                      ?.label ?? permission}
+                  </span>
+                ))}
               </div>
             </div>
             <button
               type="button"
-              className={styles.removeBtn}
-              onClick={() => handleRemove(m.id)}
-              aria-label={`Eliminar ${m.nombre}`}
+              className={styles.editBtn}
+              onClick={() => startEditing(member)}
             >
-              ✕
+              Editar permisos
             </button>
           </div>
         ))}
       </div>
 
-      <form className={styles.addForm} onSubmit={handleAdd}>
-        <span className={styles.addTitle}>Agregar responsable</span>
+      <form className={styles.addForm} onSubmit={submit}>
+        <span className={styles.addTitle}>
+          {editing
+            ? `Editar ${editing.full_name}`
+            : "Crear cuenta administrativa"}
+        </span>
         <div className={sectionStyles.fieldRow}>
           <label className={sectionStyles.field}>
             <span className={sectionStyles.label}>Nombre</span>
             <input
               className={sectionStyles.input}
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              required
             />
           </label>
           <label className={sectionStyles.field}>
-            <span className={sectionStyles.label}>Cargo</span>
+            <span className={sectionStyles.label}>Email</span>
             <input
               className={sectionStyles.input}
-              type="text"
-              value={cargo}
-              onChange={(e) => setCargo(e.target.value)}
-              placeholder="Ej: Vendedora"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={Boolean(editing)}
+              required
             />
           </label>
         </div>
-        <label className={sectionStyles.field}>
-          <span className={sectionStyles.label}>RUT (opcional)</span>
-          <input
-            className={sectionStyles.input}
-            type="text"
-            value={rut}
-            onChange={(e) => setRut(e.target.value)}
-            placeholder="12.345.678-9"
-          />
-        </label>
-        {error && <span className={styles.error}>{error}</span>}
-        <button type="submit" className={sectionStyles.saveBtn}>
-          Agregar responsable
-        </button>
+        <div className={sectionStyles.fieldRow}>
+          <label className={sectionStyles.field}>
+            <span className={sectionStyles.label}>
+              Contraseña {editing ? "(vacía para conservarla)" : ""}
+            </span>
+            <input
+              className={sectionStyles.input}
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              minLength={8}
+              required={!editing}
+            />
+          </label>
+          <label className={sectionStyles.field}>
+            <span className={sectionStyles.label}>Rol</span>
+            <select
+              className={sectionStyles.select}
+              value={role}
+              onChange={(event) => selectRole(event.target.value as Role)}
+            >
+              {Object.entries(ROLE_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <fieldset className={styles.permissions}>
+          <legend>Permisos por pestaña</legend>
+          {PERMISSIONS.map((permission) => (
+            <label key={permission.id}>
+              <input
+                type="checkbox"
+                checked={permissions.includes(permission.id)}
+                disabled={role !== "custom"}
+                onChange={(event) =>
+                  setPermissions((current) =>
+                    event.target.checked
+                      ? [...current, permission.id]
+                      : current.filter((item) => item !== permission.id),
+                  )
+                }
+              />
+              {permission.label}
+            </label>
+          ))}
+        </fieldset>
+        {editing ? (
+          <label className={sectionStyles.field}>
+            <span className={sectionStyles.label}>Estado de la cuenta</span>
+            <select
+              className={sectionStyles.select}
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value as "active" | "disabled")
+              }
+            >
+              <option value="active">Activa</option>
+              <option value="disabled">Deshabilitada</option>
+            </select>
+          </label>
+        ) : null}
+        {error ? <span className={styles.error}>{error}</span> : null}
+        <div className={styles.formActions}>
+          <button
+            type="submit"
+            className={sectionStyles.saveBtn}
+            disabled={saving}
+          >
+            {saving
+              ? "Guardando…"
+              : editing
+                ? "Guardar permisos"
+                : "Crear cuenta"}
+          </button>
+          {editing ? (
+            <button
+              type="button"
+              className={styles.cancelBtn}
+              onClick={resetForm}
+            >
+              Cancelar
+            </button>
+          ) : null}
+        </div>
       </form>
     </AdminSettingsSection>
   );

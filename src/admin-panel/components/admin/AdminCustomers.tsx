@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "../ui";
+import { Modal } from "../ui/Modal";
 import { AdminMetricCard, type AdminMetricCardData } from "./AdminMetricCard";
 import { AdminSearchInput } from "./AdminSearchInput";
 import { AdminCustomerTable } from "./AdminCustomerTable";
@@ -27,8 +28,75 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selected, setSelected] = useState<AdminCliente | null>(null);
   const [filter, setFilter] = useState<CustomerFilter>("all");
+  const [clientes, setClientes] = useState<AdminCliente[]>(() => [
+    ...ADMIN_DATA.clientes,
+  ]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
 
-  const clientes = ADMIN_DATA.clientes;
+  const createCustomer = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreating(true);
+    setCreateError(null);
+    const form = new FormData(event.currentTarget);
+
+    try {
+      const response = await fetch("/api/admin/loyalty/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          fullName: form.get("fullName"),
+          email: form.get("email"),
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        customer?: {
+          id: number;
+          email: string;
+          full_name: string | null;
+          status: string;
+          points_balance: number;
+          created_at: string;
+        };
+      };
+      if (!response.ok || !data.customer) {
+        throw new Error(data.error || "No se pudo crear el cliente");
+      }
+      const created: AdminCliente = {
+        idx: data.customer.id,
+        nombre: data.customer.full_name ?? data.customer.email,
+        email: data.customer.email,
+        tel: "",
+        puntos: data.customer.points_balance,
+        estado: data.customer.status === "active" ? "Activo" : "Bloqueado",
+        createdAt: data.customer.created_at,
+      };
+      setClientes((current) => [
+        created,
+        ...current.filter((item) => item.idx !== created.idx),
+      ]);
+      ADMIN_DATA.clientes.splice(
+        0,
+        ADMIN_DATA.clientes.length,
+        created,
+        ...ADMIN_DATA.clientes.filter((item) => item.idx !== created.idx),
+      );
+      setCreateOpen(false);
+      setCreateSuccess(
+        `${created.nombre} fue creada en Shopify y OLFFY Puntos.`,
+      );
+    } catch (cause) {
+      setCreateError(
+        cause instanceof Error ? cause.message : "No se pudo crear el cliente",
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
 
   // Navegación con contexto (ej. desde el Dashboard).
   useEffect(() => {
@@ -59,8 +127,10 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
         tone: "amarillo",
       },
       {
-        label: "Canjes pendientes",
-        value: ADMIN_DATA.canjesPendientes.length,
+        label: "Puntos totales",
+        value: clientes
+          .reduce((sum, cliente) => sum + cliente.puntos, 0)
+          .toLocaleString("es-CL"),
         tone: "naranjo",
       },
     ];
@@ -69,7 +139,6 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
   // Card → filtro (solo activas). El resto de métricas no filtran.
   const metricOnClick = (label: string): (() => void) | undefined => {
     if (label === "Clientes activos") return () => setFilter("activos");
-    if (label === "Canjes pendientes") return () => setFilter("canjes");
     return undefined;
   };
 
@@ -104,8 +173,10 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
           <button
             type="button"
             className={styles.createBtn}
-            disabled
-            title="Disponible en próxima fase"
+            onClick={() => {
+              setCreateError(null);
+              setCreateOpen(true);
+            }}
           >
             <svg
               width="15"
@@ -121,9 +192,21 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
             </svg>
             Crear cliente
           </button>
-          <span className={styles.createNote}>Próxima fase</span>
         </div>
       </div>
+
+      {createSuccess ? (
+        <div className={styles.success} role="status">
+          {createSuccess}
+          <button
+            type="button"
+            onClick={() => setCreateSuccess(null)}
+            aria-label="Cerrar confirmación"
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
 
       <div className={styles.metrics}>
         {metrics.map((m) => (
@@ -139,7 +222,7 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
         <AdminSearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="Buscar por nombre, email o teléfono..."
+          placeholder="Buscar por nombre o email..."
         />
         {filter !== "all" && (
           <div className={styles.filterStatus}>
@@ -168,6 +251,40 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
         customer={selected}
         onClose={() => setSelected(null)}
       />
+
+      <Modal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        panelClassName={styles.createModal}
+      >
+        <form
+          className={styles.createForm}
+          onSubmit={(event) => void createCustomer(event)}
+        >
+          <div className={styles.modalEyebrow}>NUEVA CLIENTA</div>
+          <h2>Crear cliente</h2>
+          <p>
+            Se crea en Shopify y queda inscrita en OLFFY Puntos con saldo
+            inicial cero.
+          </p>
+          <label>
+            Nombre completo
+            <input name="fullName" required minLength={2} autoFocus />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" required />
+          </label>
+          {createError ? (
+            <div className={styles.formError} role="alert">
+              {createError}
+            </div>
+          ) : null}
+          <button type="submit" disabled={creating}>
+            {creating ? "Creando..." : "Crear en Shopify y OLFFY"}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }

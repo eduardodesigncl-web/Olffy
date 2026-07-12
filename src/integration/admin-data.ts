@@ -97,7 +97,7 @@ function toCustomer(
   customer: Awaited<
     ReturnType<typeof getCustomerPortalDashboard>
   >["recentCustomers"][number],
-): Customer & { name: string; points: number } {
+): Customer & { name: string; points: number; createdAt: string } {
   return {
     id: String(customer.id),
     fullName: customer.full_name ?? customer.email,
@@ -109,6 +109,7 @@ function toCustomer(
     points: customer.points_balance,
     lifetimePointsEarned: 0,
     lifetimePointsRedeemed: 0,
+    createdAt: customer.created_at,
   };
 }
 

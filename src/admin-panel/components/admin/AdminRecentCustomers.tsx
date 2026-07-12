@@ -4,46 +4,21 @@ import { AdminCustomerDrawer } from "./AdminCustomerDrawer";
 import { ADMIN_DATA, type AdminCliente } from "../../data/adminData.mock";
 import styles from "./AdminRecentCustomers.module.css";
 
-// Clientes recientes (mock). Los primeros salen de ADMIN_DATA para rimar con la
-// sección Clientes; se agregan un par locales solo para poblar la vista.
-// Cada item lleva su AdminCliente para reutilizar el drawer de detalle de Clientes.
 interface RecentCustomer {
   cliente: AdminCliente;
   actividad: string;
 }
 
-const ACTIVIDAD_BASE = ["Compra · hoy", "Canje · ayer", "Compra · hace 2 d"];
-
-const EXTRA: RecentCustomer[] = [
-  {
-    cliente: {
-      idx: 101,
-      nombre: "Josefa Ríos",
-      email: "jose@example.com",
-      puntos: 120,
-      estado: "Nuevo",
-    },
-    actividad: "Registro · hoy",
-  },
-  {
-    cliente: {
-      idx: 102,
-      nombre: "Ignacia Soto",
-      email: "igna@example.com",
-      puntos: 60,
-      estado: "Nuevo",
-    },
-    actividad: "Registro · ayer",
-  },
-];
-
-const RECENT: RecentCustomer[] = [
-  ...ADMIN_DATA.clientes.map((c, i) => ({
-    cliente: c,
-    actividad: ACTIVIDAD_BASE[i] ?? "Actividad reciente",
-  })),
-  ...EXTRA,
-].slice(0, 5);
+function registrationLabel(value?: string): string {
+  if (!value) return "Registro reciente";
+  const days = Math.max(
+    0,
+    Math.floor((Date.now() - Date.parse(value)) / (24 * 60 * 60 * 1000)),
+  );
+  if (days === 0) return "Registro · hoy";
+  if (days === 1) return "Registro · ayer";
+  return `Registro · hace ${days} d`;
+}
 
 function iniciales(nombre: string): string {
   return nombre
@@ -61,8 +36,18 @@ export function AdminRecentCustomers() {
   const [selected, setSelected] = useState<AdminCliente | null>(null);
   const [listAviso, setListAviso] = useState(false);
 
-  const visibles = RECENT.slice(0, VISIBLE_MAX);
-  const hasMore = RECENT.length > VISIBLE_MAX;
+  const recent: RecentCustomer[] = ADMIN_DATA.clientes
+    .map((cliente) => ({
+      cliente,
+      actividad: registrationLabel(cliente.createdAt),
+    }))
+    .sort(
+      (a, b) =>
+        Date.parse(b.cliente.createdAt ?? "") -
+        Date.parse(a.cliente.createdAt ?? ""),
+    );
+  const visibles = recent.slice(0, VISIBLE_MAX);
+  const hasMore = recent.length > VISIBLE_MAX;
 
   return (
     <div className={styles.panel}>

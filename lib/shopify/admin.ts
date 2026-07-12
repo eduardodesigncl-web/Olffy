@@ -356,6 +356,30 @@ const getCollectionsQuery = /* GraphQL */ `
   }
 `;
 
+const customerSetMutation = /* GraphQL */ `
+  mutation upsertOlffyCustomer(
+    $identifier: CustomerSetIdentifiers
+    $input: CustomerSetInput!
+  ) {
+    customerSet(identifier: $identifier, input: $input) {
+      customer {
+        id
+        displayName
+        defaultEmailAddress {
+          emailAddress
+        }
+        defaultPhoneNumber {
+          phoneNumber
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 // --- MUTATIONS ---
 
 const productCreateMutation = /* GraphQL */ `
@@ -1126,6 +1150,68 @@ export async function getAdminCollections(): Promise<AdminCollection[]> {
     variables: { first: 50 },
   });
   return removeEdgesAndNodes(res.body.data.collections);
+}
+
+export async function upsertAdminCustomer(input: {
+  email: string;
+  fullName: string;
+  phone?: string;
+}) {
+  const parts = input.fullName.trim().split(/\s+/);
+  const firstName = parts.shift() ?? input.fullName.trim();
+  const lastName = parts.join(" ");
+  const response = await adminFetch<{
+    data: {
+      customerSet: {
+        customer: {
+          id: string;
+          displayName: string;
+          defaultEmailAddress: { emailAddress: string } | null;
+          defaultPhoneNumber: { phoneNumber: string } | null;
+        } | null;
+        userErrors: Array<{ field?: string[]; message: string }>;
+      };
+    };
+    variables: {
+      identifier: { email: string };
+      input: Record<string, unknown>;
+    };
+  }>({
+    query: customerSetMutation,
+    variables: {
+      identifier: { email: input.email.trim().toLowerCase() },
+      input: {
+        email: input.email.trim().toLowerCase(),
+        firstName,
+        ...(lastName ? { lastName } : {}),
+        ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
+        tags: ["OLFFY Puntos"],
+        note: "Cliente creado desde OLFFY Admin",
+      },
+    },
+  });
+  const payload = response.body.data.customerSet;
+
+  if (payload.userErrors.length > 0) {
+    throw new Error(
+      `Shopify no pudo crear el cliente: ${payload.userErrors
+        .map((error) => error.message)
+        .join("; ")}`,
+    );
+  }
+  if (!payload.customer) {
+    throw new Error("Shopify no devolvió el cliente creado");
+  }
+
+  return {
+    id: payload.customer.id,
+    name: payload.customer.displayName,
+    email:
+      payload.customer.defaultEmailAddress?.emailAddress ??
+      input.email.trim().toLowerCase(),
+    phone:
+      payload.customer.defaultPhoneNumber?.phoneNumber ?? input.phone ?? "",
+  };
 }
 
 export async function getAdminCollection(

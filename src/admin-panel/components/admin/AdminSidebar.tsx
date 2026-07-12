@@ -16,6 +16,9 @@ interface AdminSidebarProps {
   activeTab: AdminTab;
   onTabChange: (tab: AdminTab) => void;
   onExit: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
+  allowedTabs: AdminTab[];
 }
 
 const NAV: { id: AdminTab; label: string }[] = [
@@ -120,32 +123,70 @@ export function AdminSidebar({
   activeTab,
   onTabChange,
   onExit,
+  collapsed,
+  onToggle,
+  allowedTabs,
 }: AdminSidebarProps) {
   return (
-    <aside className={styles.sidebar}>
+    <aside
+      className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ""}`}
+    >
       <div className={styles.brand}>
         <span className={styles.logo}>OLFFY®</span>
+        <span className={styles.logoCompact}>O</span>
         <span className={styles.badge}>Admin</span>
       </div>
 
+      <button
+        type="button"
+        className={styles.collapseButton}
+        onClick={onToggle}
+        aria-label={
+          collapsed ? "Expandir barra lateral" : "Guardar barra lateral"
+        }
+        title={collapsed ? "Expandir barra" : "Guardar barra"}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d={collapsed ? "m9 18 6-6-6-6" : "m15 18-6-6 6-6"} />
+        </svg>
+      </button>
+
       <nav className={styles.nav}>
-        {NAV.map((item) => (
+        {NAV.filter((item) => allowedTabs.includes(item.id)).map((item) => (
           <button
             key={item.id}
             type="button"
             className={`${styles.item} ${activeTab === item.id ? styles.itemActive : ""}`}
             onClick={() => onTabChange(item.id)}
             aria-current={activeTab === item.id ? "page" : undefined}
+            aria-label={item.label}
+            title={collapsed ? item.label : undefined}
           >
             <span className={styles.itemIcon}>
               <AdminIcon tab={item.id} />
             </span>
-            {item.label}
+            <span className={styles.itemLabel}>{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <button type="button" className={styles.exit} onClick={onExit}>
+      <button
+        type="button"
+        className={styles.exit}
+        onClick={onExit}
+        aria-label="Salir al sitio"
+        title={collapsed ? "Salir al sitio" : undefined}
+      >
         <svg
           width="16"
           height="16"
@@ -160,7 +201,7 @@ export function AdminSidebar({
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
           <path d="M16 17l5-5-5-5M21 12H9" />
         </svg>
-        Salir al sitio
+        <span className={styles.itemLabel}>Salir al sitio</span>
       </button>
     </aside>
   );

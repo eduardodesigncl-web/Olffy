@@ -11,7 +11,7 @@ function errorMessage(error: unknown): string {
 
 export async function GET() {
   await connection();
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("recompensas");
   if (unauthorized) return unauthorized;
 
   try {
@@ -24,7 +24,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("recompensas");
   if (unauthorized) return unauthorized;
 
   try {
@@ -49,30 +49,45 @@ export async function POST(request: Request) {
       throw new Error("Los puntos requeridos deben ser mayores que cero");
     }
 
+    const rewardType = body.rewardType ?? "discount";
+    const discountAmountClp =
+      body.discountAmountClp && Number(body.discountAmountClp) > 0
+        ? Math.trunc(Number(body.discountAmountClp))
+        : undefined;
+    const minimumPurchaseClp = Math.max(
+      Math.trunc(Number(body.minimumPurchaseClp ?? 0)) || 0,
+      0,
+    );
+    const validityDays = Math.max(
+      Math.trunc(Number(body.validityDays ?? 30)) || 30,
+      1,
+    );
+
+    if (rewardType === "discount" && !discountAmountClp) {
+      throw new Error("El descuento requiere un monto mayor que cero");
+    }
+
     const reward = await createReward({
       name,
       description: body.description,
-      rewardType: body.rewardType ?? "discount",
+      rewardType,
       pointsCost,
-      discountAmountClp:
-        body.discountAmountClp && Number(body.discountAmountClp) > 0
-          ? Math.trunc(Number(body.discountAmountClp))
-          : undefined,
-      minimumPurchaseClp: Math.max(
-        Math.trunc(Number(body.minimumPurchaseClp ?? 0)) || 0,
-        0,
-      ),
-      validityDays: Math.max(
-        Math.trunc(Number(body.validityDays ?? 30)) || 30,
-        1,
-      ),
+      discountAmountClp,
+      minimumPurchaseClp,
+      validityDays,
       isActive: body.isActive ?? true,
+      metadata: {},
     });
 
     revalidatePath("/admin/puntos/recompensas");
     revalidatePath("/cuenta/recompensas");
 
-    return NextResponse.json({ success: true, reward });
+    return NextResponse.json({
+      success: true,
+      reward,
+      shopifyCode: null,
+      shopifyDiscountNodeId: null,
+    });
   } catch (error) {
     console.error("Error creating reward:", error);
     return NextResponse.json({ error: errorMessage(error) }, { status: 400 });

@@ -8,7 +8,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 820px;
+  min-width: 700px;
 }
 
 /* Badge de sistema de pago (mock). */

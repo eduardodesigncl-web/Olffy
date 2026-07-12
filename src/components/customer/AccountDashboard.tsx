@@ -142,7 +142,6 @@ export function AccountDashboard({
           {[
             ["Nombre", customer.name],
             ["Correo", customer.email],
-            ["Teléfono", customer.phone ?? "—"],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between">
               <span className="text-black/40" style={{ fontFamily: T.poppins }}>

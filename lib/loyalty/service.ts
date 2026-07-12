@@ -261,7 +261,7 @@ export type CreateRewardInput = {
   description?: string;
   rewardType?: LoyaltyReward["reward_type"];
   pointsCost: number;
-  discountAmountClp?: number;
+  discountAmountClp?: number | null;
   minimumPurchaseClp?: number;
   validityDays?: number;
   shopifyProductId?: string;

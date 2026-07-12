@@ -86,9 +86,7 @@ function ChromeInner({ children }: { children: ReactNode }) {
 
         <Footer
           onNavigate={handleNavigate}
-          onSubscribe={(email) => {
-            void subscribeNewsletterAction(email);
-          }}
+          onSubscribe={subscribeNewsletterAction}
         />
 
         <MobileMenuDrawer

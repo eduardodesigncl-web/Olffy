@@ -8,6 +8,7 @@ import type {
   AdminIntegrationDiagnosticTone,
 } from "lib/admin/diagnostics-types";
 import { getSupabaseAdmin } from "lib/supabase/admin";
+import { getMarketingQueueSummary } from "lib/transactions/marketing";
 import {
   checkAdminOrderAccess,
   checkAdminShopifyConnection,
@@ -335,14 +336,19 @@ async function probeEmail() {
     });
   }
 
-  const response = await fetch(`https://a.klaviyo.com/api/lists/${listId}`, {
-    headers: {
-      accept: "application/vnd.api+json",
-      Authorization: `Klaviyo-API-Key ${apiKey}`,
-      revision,
-    },
-    cache: "no-store",
-  });
+  const url = new URL(`https://a.klaviyo.com/api/lists/${listId}`);
+  url.searchParams.set("additional-fields[list]", "profile_count");
+  const [response, queue] = await Promise.all([
+    fetch(url, {
+      headers: {
+        accept: "application/vnd.api+json",
+        Authorization: `Klaviyo-API-Key ${apiKey}`,
+        revision,
+      },
+      cache: "no-store",
+    }),
+    getMarketingQueueSummary(),
+  ]);
 
   if (!response.ok) {
     throw new Error(
@@ -350,10 +356,25 @@ async function probeEmail() {
     );
   }
 
+  const body = (await response.json()) as {
+    data?: { attributes?: { name?: string; profile_count?: number } };
+  };
+  const listName = body.data?.attributes?.name || "Newsletter";
+  const profileCount = Number(body.data?.attributes?.profile_count ?? 0);
+  const queueWaiting = queue.pending + queue.processing;
+
   return makeResult({
-    status: "connected",
-    details: "Klaviyo responde y la lista newsletter existe.",
-    checks: [...checks, check("API Klaviyo", true)],
+    status: queue.failed > 0 ? "degraded" : "connected",
+    details: `${listName}: ${profileCount} perfiles · cola: ${queueWaiting} pendientes, ${queue.failed} con error.`,
+    checks: [
+      ...checks,
+      check("API Klaviyo", true),
+      check(
+        "Cola sin errores",
+        queue.failed === 0,
+        `${queue.processed} procesados`,
+      ),
+    ],
   });
 }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (res.ok) {
@@ -52,6 +53,24 @@ export default function LoginPage() {
           </p>
         </div>
         <form className="mt-6 space-y-5" method="post" onSubmit={handleSubmit}>
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="text-[12px] text-olffy-ink/55">
+              Email de la cuenta
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="block w-full rounded-xl border border-olffy-ink/15 px-4 py-3 text-sm text-olffy-ink outline-none transition focus:border-olffy-purple"
+              placeholder="equipo@olffy.cl"
+            />
+            <p className="text-[11px] text-olffy-ink/40">
+              Déjalo vacío para usar el acceso principal existente.
+            </p>
+          </div>
           <div className="space-y-1.5">
             <label htmlFor="password" className="text-[12px] text-olffy-ink/55">
               Contraseña

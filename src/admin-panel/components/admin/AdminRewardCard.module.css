@@ -97,3 +97,22 @@
   border-color: var(--olffy-morado);
   background: var(--olffy-morado-suave);
 }
+
+.actionBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.codeChip {
+  align-self: flex-start;
+  margin: -4px 0 12px;
+  border: 1px dashed rgba(89, 87, 176, 0.35);
+  border-radius: var(--radius-pill);
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  padding: 5px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
