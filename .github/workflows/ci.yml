@@ -35,6 +35,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Environment contract
+        run: npm run env:check:ci
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          MARKETING_PROVIDER: noop
+          DTE_PROVIDER: noop
+          PAYMENTS_TUU_ENABLED: "false"
+          TUU_REMOTE_POS_ENABLED: "false"
+
       - name: Unit tests
         run: npm run test:unit
 
