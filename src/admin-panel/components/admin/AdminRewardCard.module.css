@@ -78,6 +78,13 @@
   gap: 7px;
 }
 
+.unavailable {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--olffy-cafe-55);
+}
+
 .actionBtn {
   border: 1.5px solid var(--olffy-cafe-08);
   background: var(--olffy-blanco);
@@ -96,4 +103,11 @@
 .actionBtn:hover {
   border-color: var(--olffy-morado);
   background: var(--olffy-morado-suave);
+}
+
+.actionBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  border-color: var(--olffy-cafe-08);
+  background: var(--olffy-cafe-06);
 }

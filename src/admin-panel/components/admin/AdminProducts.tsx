@@ -46,21 +46,6 @@ const EDIT_INTENT: ShopifyIntent = {
 // Reemplazar dominio por el dominio final cuando esté publicado.
 const STOREFRONT_PRODUCT_BASE_URL = "https://olffy.cl/products/";
 
-// "Destacados" es una marca local del panel (persistida en este navegador);
-// no existe campo equivalente en Shopify todavía.
-const FEATURED_STORAGE_KEY = "olffy-admin-featured-products";
-
-function loadFeaturedIds(): Set<number> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = window.localStorage.getItem(FEATURED_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as number[]) : [];
-    return new Set(Array.isArray(parsed) ? parsed : []);
-  } catch {
-    return new Set();
-  }
-}
-
 function slugify(name: string): string {
   return name
     .normalize("NFD")
@@ -120,8 +105,7 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         : "$0",
     [],
   );
-  // Catálogo mock (solo lectura desde la UI). En producción se sincroniza desde
-  // Shopify; aquí no hay edición local que muta esta lista.
+  // Catálogo hidratado desde Shopify. No existe edición local que muta la lista.
   const [products] = useState<AdminProductRow[]>(productRows);
   const [searchTerm, setSearchTerm] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -131,15 +115,6 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     null,
   );
   const [syncingId, setSyncingId] = useState<number | null>(null);
-  const [syncedIds, setSyncedIds] = useState<Set<number>>(new Set());
-  const [featuredIds, setFeaturedIds] = useState<Set<number>>(loadFeaturedIds);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      FEATURED_STORAGE_KEY,
-      JSON.stringify([...featuredIds]),
-    );
-  }, [featuredIds]);
   const [activeFilter, setActiveFilter] = useState<ProductFilter>("all");
   // Producto abierto en el drawer de detalle (null = cerrado).
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -180,50 +155,40 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         tone: "naranjo",
         filter: "lowStock",
       },
-      {
-        label: "Productos destacados",
-        value: featuredIds.size,
-        tone: "amarillo",
-        filter: "featured",
-      },
       // Informativas: sin filtro, no clickeables.
       { label: "Productos Shopify", value: PRODUCTS.length, tone: "morado" },
       { label: "Precio promedio", value: avgPrice, tone: "morado" },
     ],
-    [products, featuredIds, avgPrice],
+    [products, avgPrice],
   );
 
   // Cuentas para los chips de filtro.
   const counts = useMemo<Record<ProductFilter, number>>(
     () => ({
       all: products.length,
-      mock: products.length,
       active: products.filter((p) => p.estado === "ACTIVE").length,
       lowStock: products.filter((p) => p.stock <= LOW_STOCK).length,
-      featured: featuredIds.size,
       draft: products.filter((p) => p.estado === "DRAFT").length,
       archived: products.filter((p) => p.estado === "ARCHIVED").length,
     }),
-    [products, featuredIds],
+    [products],
   );
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return products.filter((p) => {
       const byFilter =
-        activeFilter === "all" || activeFilter === "mock"
+        activeFilter === "all"
           ? true
           : activeFilter === "active"
             ? p.estado === "ACTIVE"
             : activeFilter === "lowStock"
               ? p.stock <= LOW_STOCK
-              : activeFilter === "featured"
-                ? featuredIds.has(p.id)
-                : activeFilter === "draft"
-                  ? p.estado === "DRAFT"
-                  : activeFilter === "archived"
-                    ? p.estado === "ARCHIVED"
-                    : true;
+              : activeFilter === "draft"
+                ? p.estado === "DRAFT"
+                : activeFilter === "archived"
+                  ? p.estado === "ARCHIVED"
+                  : true;
       const bySearch =
         !q ||
         p.nombre.toLowerCase().includes(q) ||
@@ -232,14 +197,14 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         p.precio.toLowerCase().includes(q);
       return byFilter && bySearch;
     });
-  }, [products, searchTerm, activeFilter, featuredIds]);
+  }, [products, searchTerm, activeFilter]);
 
   const detailProduct = products.find((p) => p.id === detailId) ?? null;
   const visibleProducts =
     view === "galeria" ? filtered.slice(0, visibleCount) : filtered;
 
   const syncStateOf = (id: number): SyncState =>
-    syncingId === id ? "syncing" : syncedIds.has(id) ? "synced" : "none";
+    syncingId === id ? "syncing" : "none";
 
   // Editar oficialmente = ir a Shopify. Cierra el detalle y abre el modal de
   // redirección (no hay edición local del producto).
@@ -250,8 +215,8 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     setShopifyIntent(EDIT_INTENT);
   };
 
-  // Sincronizar = volver a pedir el catálogo real a Shopify (refresh del
-  // server component que hidrata el panel).
+  // Recarga la vista server-side. No afirma que Shopify cambió ni persiste un
+  // estado local de sincronización.
   const handleSync = (product: AdminProductRow) => {
     if (syncingId !== null) return;
     setSyncingId(product.id);
@@ -259,24 +224,8 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     router.refresh();
     window.setTimeout(() => {
       setSyncingId(null);
-      setSyncedIds((prev) => new Set(prev).add(product.id));
-      setNotice("Catálogo actualizado desde Shopify.");
+      setNotice("Recarga solicitada. No se modificó el catálogo en Shopify.");
     }, 900);
-  };
-
-  const handleToggleFeatured = (product: AdminProductRow) => {
-    const wasFeatured = featuredIds.has(product.id);
-    setFeaturedIds((prev) => {
-      const next = new Set(prev);
-      if (wasFeatured) next.delete(product.id);
-      else next.add(product.id);
-      return next;
-    });
-    setNotice(
-      wasFeatured
-        ? `"${product.nombre}" quitado de destacados (marca local del panel).`
-        : `"${product.nombre}" marcado como destacado (marca local del panel).`,
-    );
   };
 
   const handleOpenShopify = () => {
@@ -412,7 +361,6 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
                   image={meta?.image}
                   cat={meta?.cat}
                   selected={p.id === detailId}
-                  featured={featuredIds.has(p.id)}
                   syncState={syncStateOf(p.id)}
                   onSelect={() => setDetailId(p.id)}
                 />
@@ -438,13 +386,11 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
       <AdminProductDetailDrawer
         product={detailProduct}
         meta={detailProduct ? productMeta.get(detailProduct.id) : undefined}
-        featured={detailProduct ? featuredIds.has(detailProduct.id) : false}
         syncState={detailProduct ? syncStateOf(detailProduct.id) : "none"}
         onClose={() => setDetailId(null)}
         onEdit={handleEditInShopify}
         onSync={handleSync}
         onView={setPreview}
-        onToggleFeatured={handleToggleFeatured}
         onOpenShopify={handleOpenShopify}
       />
 

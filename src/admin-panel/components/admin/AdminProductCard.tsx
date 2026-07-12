@@ -10,7 +10,6 @@ interface AdminProductCardProps {
   cat?: string;
   image?: string;
   selected: boolean;
-  featured: boolean;
   syncState: SyncState;
   onSelect: () => void;
 }
@@ -43,7 +42,6 @@ export function AdminProductCard({
   cat,
   image,
   selected,
-  featured,
   syncState,
   onSelect,
 }: AdminProductCardProps) {
@@ -76,7 +74,6 @@ export function AdminProductCard({
             {product.nombre.charAt(0).toUpperCase()}
           </span>
         )}
-        {featured && <span className={styles.featuredTag}>Destacado</span>}
         <span className={`${styles.estadoTag} ${estado.cls}`}>
           {estado.label}
         </span>
