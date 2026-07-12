@@ -32,7 +32,6 @@ type AbandonedCheckoutsQuery = {
           totalPriceSet?: {
             shopMoney?: { amount?: string | null } | null;
           } | null;
-          customer?: { email?: string | null } | null;
           lineItems?: {
             edges: Array<{
               node: { title?: string | null; quantity?: number | null };
@@ -56,9 +55,6 @@ const query = /* GraphQL */ `
             shopMoney {
               amount
             }
-          }
-          customer {
-            email
           }
           lineItems(first: 10) {
             edges {
@@ -92,7 +88,9 @@ export async function getAbandonedCheckoutsSummary(): Promise<AbandonedCheckouts
       name: node.name ?? node.id.split("/").pop() ?? "checkout",
       createdAt: node.createdAt,
       totalPrice: Number(node.totalPriceSet?.shopMoney?.amount ?? 0),
-      customerEmail: node.customer?.email ?? null,
+      // El correo requiere el scope read_customers; se omite para que el
+      // resumen funcione con un token de permisos mínimos.
+      customerEmail: null,
       lineItems: (node.lineItems?.edges ?? []).map(
         (edge) =>
           `${edge.node.title ?? "Producto"}${
