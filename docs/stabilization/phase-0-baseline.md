@@ -74,3 +74,16 @@ git ls-tree -r --name-only origin/codex/integrar-frontend-claude -- .github/work
 ```
 
 PR metadata was retrieved through the connected GitHub application on 2026-07-12. The public unauthenticated API had previously returned a rate-limit error and was not used as evidence.
+
+## Rebase outcome
+
+- Pre-rebase remote branch: `backup/pr-1-before-rebase-20260712-1436-bb326ef`
+- Pre-rebase annotated tag: `backup-pr1-before-rebase-20260712-1436-bb326ef`
+- Both resolve to original head `bb326efb7e1795bd9f2a94c3492c614176073746`.
+- Rebase completed without textual conflicts.
+- Git skipped equivalent commits `a415c58` (digital sales) and `372c14c` (Hobby cron) because their patches were already in `main` as `9fd6f47` and `c1de351`.
+- Tree comparison between the original backup and rebased result found no missing original change; before Phase 0 docs/CI, the only tree difference was the new baseline document.
+- Published with explicit `--force-with-lease` expecting remote `bb326ef`.
+- First published stabilized/CI head: `82d06a744d53ff8771c48d63d0583c883a4f99b8`.
+- Final merge-base after rebase: `c1de351095a3ee290a2901a3bb56a3dd745d3dfb`.
+- Verified divergence after publication: 0 behind, 20 ahead.
