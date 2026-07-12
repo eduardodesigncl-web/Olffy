@@ -17,13 +17,11 @@ export interface ProductDetailMeta {
 interface AdminProductDetailDrawerProps {
   product: AdminProductRow | null;
   meta?: ProductDetailMeta;
-  featured: boolean;
   syncState: SyncState;
   onClose: () => void;
   onEdit: (product: AdminProductRow) => void;
   onSync: (product: AdminProductRow) => void;
   onView: (product: AdminProductRow) => void;
-  onToggleFeatured: (product: AdminProductRow) => void;
   onOpenShopify: () => void;
 }
 
@@ -40,13 +38,11 @@ const SYNC_LABEL: Record<SyncState, string> = {
 export function AdminProductDetailDrawer({
   product,
   meta,
-  featured,
   syncState,
   onClose,
   onEdit,
   onSync,
   onView,
-  onToggleFeatured,
   onOpenShopify,
 }: AdminProductDetailDrawerProps) {
   return (
@@ -81,7 +77,6 @@ export function AdminProductDetailDrawer({
                 {product.nombre.charAt(0).toUpperCase()}
               </span>
             )}
-            {featured && <span className={styles.featuredTag}>Destacado</span>}
             <button
               type="button"
               className={styles.closeBtn}
@@ -122,12 +117,6 @@ export function AdminProductDetailDrawer({
               <div className={styles.row}>
                 <span className={styles.rowLabel}>Sincronización</span>
                 <span className={styles.rowValue}>{SYNC_LABEL[syncState]}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Destacado</span>
-                <span className={styles.rowValue}>
-                  {featured ? "Sí" : "No"}
-                </span>
               </div>
             </div>
 
@@ -172,7 +161,9 @@ export function AdminProductDetailDrawer({
                 onClick={() => onSync(product)}
                 disabled={syncState === "syncing"}
               >
-                {syncState === "syncing" ? "Sincronizando..." : "Sincronizar"}
+                {syncState === "syncing"
+                  ? "Recargando..."
+                  : "Recargar desde Shopify"}
               </button>
               <button
                 type="button"
@@ -184,9 +175,10 @@ export function AdminProductDetailDrawer({
               <button
                 type="button"
                 className={styles.secondaryBtn}
-                onClick={() => onToggleFeatured(product)}
+                disabled
+                title="No disponible en esta versión"
               >
-                {featured ? "Quitar destacado" : "Marcar destacado"}
+                Destacado no disponible
               </button>
               <button
                 type="button"

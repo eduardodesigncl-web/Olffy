@@ -13,15 +13,11 @@ export interface AdminReward {
 
 interface AdminRewardCardProps {
   reward: AdminReward;
-  onMockAction: () => void;
 }
 
 // Card de recompensa del admin. Acciones (Editar / Activar-Pausar / Ver
 // canjes) son mock: disparan un aviso, no modifican datos.
-export function AdminRewardCard({
-  reward,
-  onMockAction,
-}: AdminRewardCardProps) {
+export function AdminRewardCard({ reward }: AdminRewardCardProps) {
   const isActive = reward.estado === "Activa";
   return (
     <div className={styles.card}>
@@ -39,27 +35,18 @@ export function AdminRewardCard({
       </div>
 
       <p className={styles.desc}>{reward.descripcion}</p>
+      <p className={styles.unavailable}>
+        Acciones no disponibles en esta versión.
+      </p>
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.actionBtn}
-          onClick={onMockAction}
-        >
+        <button type="button" className={styles.actionBtn} disabled>
           Editar
         </button>
-        <button
-          type="button"
-          className={styles.actionBtn}
-          onClick={onMockAction}
-        >
+        <button type="button" className={styles.actionBtn} disabled>
           {isActive ? "Pausar" : "Activar"}
         </button>
-        <button
-          type="button"
-          className={styles.actionBtn}
-          onClick={onMockAction}
-        >
+        <button type="button" className={styles.actionBtn} disabled>
           Ver canjes
         </button>
       </div>

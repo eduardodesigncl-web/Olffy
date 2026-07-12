@@ -6,8 +6,6 @@ export type ProductFilter =
   | "all"
   | "active"
   | "lowStock"
-  | "featured"
-  | "mock"
   | "draft"
   | "archived";
 

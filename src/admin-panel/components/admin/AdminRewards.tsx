@@ -1,27 +1,20 @@
 // @ts-nocheck
-import { useState } from "react";
 import { AdminMetricCard, type AdminMetricCardData } from "./AdminMetricCard";
 import { AdminRewardCard, type AdminReward } from "./AdminRewardCard";
 import { AdminRewardForm } from "./AdminRewardForm";
 import { AdminRewardRequests } from "./AdminRewardRequests";
-import { ADMIN_DATA } from "../../data/adminData.mock";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
 import styles from "./AdminRewards.module.css";
 
-// Sección Recompensas del panel admin.
-// AdminRewards MOCK: en producción debe operar con Supabase, permisos internos
-// y auditoría. Nada aquí modifica datos (acciones y formulario son simulados).
+// Sección Recompensas del panel admin. La creación persiste en Supabase; las
+// mutaciones aún no implementadas permanecen deshabilitadas.
 
-const MOCK_MESSAGE = "Acción disponible en próxima fase.";
-
-// Orquesta la vista de Recompensas: header + métricas + (recompensas |
-// formulario) + solicitudes de canje. Un aviso compartido responde a las
-// acciones mock, que no modifican ningún dato.
+// Orquesta la vista de Recompensas. Las mutaciones no implementadas se
+// muestran deshabilitadas y nunca simulan éxito.
 export function AdminRewards() {
-  const [notice, setNotice] = useState<string | null>(null);
-  const showMockNotice = () => setNotice(MOCK_MESSAGE);
   const runtime = adminPanelRuntime.data;
   const rewards: AdminReward[] = runtime?.rewards ?? [];
+  const requests = runtime?.adminData.canjesPendientes ?? [];
   const metrics: AdminMetricCardData[] = [
     {
       label: "Recompensas activas",
@@ -30,11 +23,9 @@ export function AdminRewards() {
     },
     {
       label: "Canjes pendientes",
-      value: ADMIN_DATA.canjesPendientes.length,
+      value: requests.length,
       tone: "naranjo",
     },
-    { label: "Canjes aprobados", value: 0, tone: "verde" },
-    { label: "Canjes usados", value: 0, tone: "morado" },
     {
       label: "Puntos promedio",
       value: rewards.length
@@ -64,45 +55,12 @@ export function AdminRewards() {
         ))}
       </div>
 
-      {notice && (
-        <div className={styles.notice}>
-          <svg
-            className={styles.noticeIcon}
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9.5" />
-            <path d="M12 8v5M12 16.5h.01" />
-          </svg>
-          <span className={styles.noticeText}>{notice}</span>
-          <button
-            type="button"
-            className={styles.noticeClose}
-            onClick={() => setNotice(null)}
-            aria-label="Cerrar aviso"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       <div className={styles.columns}>
         <div className={styles.rewardsPanel}>
           <h2 className={styles.panelTitle}>Recompensas disponibles</h2>
           <div className={styles.rewardsGrid}>
             {rewards.map((reward) => (
-              <AdminRewardCard
-                key={reward.id}
-                reward={reward}
-                onMockAction={showMockNotice}
-              />
+              <AdminRewardCard key={reward.id} reward={reward} />
             ))}
           </div>
         </div>
@@ -110,10 +68,7 @@ export function AdminRewards() {
         <AdminRewardForm />
       </div>
 
-      <AdminRewardRequests
-        requests={ADMIN_DATA.canjesPendientes}
-        onMockAction={showMockNotice}
-      />
+      <AdminRewardRequests requests={requests} />
     </div>
   );
 }

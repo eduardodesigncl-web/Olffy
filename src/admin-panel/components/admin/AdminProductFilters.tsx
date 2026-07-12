@@ -6,8 +6,6 @@ const CHIPS: { id: ProductFilter; label: string }[] = [
   { id: "all", label: "Todos" },
   { id: "active", label: "Activos" },
   { id: "lowStock", label: "Stock bajo" },
-  { id: "featured", label: "Destacados" },
-  { id: "mock", label: "Mock" },
   { id: "draft", label: "Borrador" },
   { id: "archived", label: "Archivado" },
 ];

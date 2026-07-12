@@ -4,18 +4,17 @@ import styles from "./AdminRewardRequests.module.css";
 
 interface AdminRewardRequestsProps {
   requests: AdminCanje[];
-  onMockAction: () => void;
 }
 
 // Solicitudes de canje pendientes (lectura). Aprobar / Rechazar / Ver cliente
 // son mock: disparan un aviso, no cambian el estado de la solicitud.
-export function AdminRewardRequests({
-  requests,
-  onMockAction,
-}: AdminRewardRequestsProps) {
+export function AdminRewardRequests({ requests }: AdminRewardRequestsProps) {
   return (
     <div className={styles.panel}>
       <h2 className={styles.title}>Solicitudes de canje pendientes</h2>
+      <p className={styles.unavailable}>
+        Aprobar, rechazar y abrir clientes no está disponible en esta versión.
+      </p>
       {requests.length === 0 ? (
         <div className={styles.empty}>
           No hay solicitudes de canje pendientes.
@@ -34,25 +33,13 @@ export function AdminRewardRequests({
               </div>
               <span className={styles.estado}>{r.estado}</span>
               <div className={styles.actions}>
-                <button
-                  type="button"
-                  className={styles.approveBtn}
-                  onClick={onMockAction}
-                >
+                <button type="button" className={styles.approveBtn} disabled>
                   Aprobar
                 </button>
-                <button
-                  type="button"
-                  className={styles.rejectBtn}
-                  onClick={onMockAction}
-                >
+                <button type="button" className={styles.rejectBtn} disabled>
                   Rechazar
                 </button>
-                <button
-                  type="button"
-                  className={styles.viewBtn}
-                  onClick={onMockAction}
-                >
+                <button type="button" className={styles.viewBtn} disabled>
                   Ver cliente
                 </button>
               </div>

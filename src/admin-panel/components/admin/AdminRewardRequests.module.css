@@ -13,6 +13,13 @@
   color: var(--olffy-cafe);
 }
 
+.unavailable {
+  margin: -6px 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--olffy-cafe-55);
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -115,6 +122,13 @@
   padding: 8px 14px;
   border-radius: var(--radius-md);
   cursor: pointer;
+}
+
+.approveBtn:disabled,
+.rejectBtn:disabled,
+.viewBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .empty {
