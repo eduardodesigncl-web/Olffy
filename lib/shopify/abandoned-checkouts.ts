@@ -134,6 +134,17 @@ async function klaviyoGet<T>(
     cache: "no-store",
   });
 
+  if (response.status === 429) {
+    const retryAfter = Number(response.headers.get("retry-after") ?? 0);
+    const retryMessage =
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? ` Reintento disponible en ${Math.ceil(retryAfter)} s.`
+        : "";
+    throw new Error(
+      `Klaviyo limitó temporalmente la consulta de carritos; se usa Shopify como respaldo.${retryMessage}`,
+    );
+  }
+
   if (!response.ok) {
     throw new Error(
       `Klaviyo respondió ${response.status}: ${await response.text()}`,

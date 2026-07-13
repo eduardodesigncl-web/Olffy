@@ -1230,3 +1230,6 @@
  GET /cuenta/login 200 in 124ms (next.js: 20ms, proxy.ts: 15ms, application-code: 89ms)
  GET /fonts/PiepieW01-Regular.woff2 404 in 150ms (next.js: 14ms, application-code: 137ms)
  GET /fonts/PiepieW01-Regular.woff 404 in 175ms (next.js: 22ms, application-code: 153ms)
+ GET /admin?tab=ajustes 200 in 2.6s (next.js: 22ms, proxy.ts: 18ms, application-code: 2.6s)
+ GET /api/admin/accounts 200 in 166ms (next.js: 61ms, application-code: 106ms)
+ GET /api/admin/accounts 200 in 97ms (next.js: 5ms, application-code: 92ms)

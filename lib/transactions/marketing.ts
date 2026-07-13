@@ -145,7 +145,8 @@ export async function enqueueCustomerMarketingEvent(input: {
 // reclamar puntos, activación, recordatorios de vencimiento). A diferencia de
 // los eventos de marketing, no dependen del consentimiento comercial: son
 // avisos operativos del beneficio del propio cliente. El envío real ocurre
-// cuando exista proveedor (hoy noop) y es idempotente por evento.
+// mediante el proveedor configurado (Klaviyo en producción) y es idempotente
+// por evento.
 export async function enqueueLoyaltyEmailEvent(input: {
   eventType: string;
   entityId: string | number;

@@ -299,6 +299,122 @@ async function probeTuu() {
   });
 }
 
+type KlaviyoListProbe =
+  | { status: "connected"; listName: string }
+  | { status: "rate_limited"; retryAfterSeconds: number };
+
+const KLAVIYO_PROBE_CACHE_MS = 60_000;
+let klaviyoProbeCache:
+  | {
+      key: string;
+      expiresAt: number;
+      value: KlaviyoListProbe;
+    }
+  | undefined;
+let klaviyoProbeInFlight:
+  | { key: string; promise: Promise<KlaviyoListProbe> }
+  | undefined;
+
+function klaviyoErrorDetail(body: string) {
+  try {
+    const parsed = JSON.parse(body) as {
+      errors?: Array<{ detail?: string; title?: string }>;
+    };
+    return (
+      parsed.errors?.[0]?.detail ||
+      parsed.errors?.[0]?.title ||
+      "Respuesta no reconocida"
+    ).slice(0, 300);
+  } catch {
+    return body.trim().slice(0, 300) || "Respuesta vacía";
+  }
+}
+
+async function requestKlaviyoListProbe(input: {
+  apiKey: string;
+  listId: string;
+  revision: string;
+}): Promise<KlaviyoListProbe> {
+  // No se solicita profile_count: ese campo adicional consume una cuota más
+  // estricta y no es necesario para comprobar que la integración responde.
+  const response = await fetch(
+    `https://a.klaviyo.com/api/lists/${input.listId}`,
+    {
+      headers: {
+        accept: "application/vnd.api+json",
+        Authorization: `Klaviyo-API-Key ${input.apiKey}`,
+        revision: input.revision,
+      },
+      cache: "no-store",
+    },
+  );
+
+  if (response.status === 429) {
+    const retryAfter = Number(response.headers.get("retry-after") ?? 1);
+    return {
+      status: "rate_limited",
+      retryAfterSeconds: Number.isFinite(retryAfter)
+        ? Math.min(Math.max(Math.ceil(retryAfter), 1), 300)
+        : 1,
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Klaviyo respondió ${response.status}: ${klaviyoErrorDetail(
+        await response.text(),
+      )}`,
+    );
+  }
+
+  const body = (await response.json()) as {
+    data?: { attributes?: { name?: string } };
+  };
+
+  return {
+    status: "connected",
+    listName: body.data?.attributes?.name || "Newsletter",
+  };
+}
+
+async function getCachedKlaviyoListProbe(input: {
+  apiKey: string;
+  listId: string;
+  revision: string;
+}) {
+  const key = `${input.listId}:${input.revision}`;
+  const now = Date.now();
+
+  if (klaviyoProbeCache?.key === key && klaviyoProbeCache.expiresAt > now) {
+    return klaviyoProbeCache.value;
+  }
+
+  if (klaviyoProbeInFlight?.key === key) {
+    return klaviyoProbeInFlight.promise;
+  }
+
+  const promise = requestKlaviyoListProbe(input);
+  klaviyoProbeInFlight = { key, promise };
+
+  try {
+    const value = await promise;
+    const retryCacheMs =
+      value.status === "rate_limited"
+        ? value.retryAfterSeconds * 1000
+        : KLAVIYO_PROBE_CACHE_MS;
+    klaviyoProbeCache = {
+      key,
+      value,
+      expiresAt: now + Math.max(retryCacheMs, KLAVIYO_PROBE_CACHE_MS),
+    };
+    return value;
+  } finally {
+    if (klaviyoProbeInFlight?.promise === promise) {
+      klaviyoProbeInFlight = undefined;
+    }
+  }
+}
+
 async function probeEmail() {
   const provider = envValue("MARKETING_PROVIDER").toLowerCase() || "noop";
 
@@ -336,36 +452,35 @@ async function probeEmail() {
     });
   }
 
-  const url = new URL(`https://a.klaviyo.com/api/lists/${listId}`);
-  url.searchParams.set("additional-fields[list]", "profile_count");
-  const [response, queue] = await Promise.all([
-    fetch(url, {
-      headers: {
-        accept: "application/vnd.api+json",
-        Authorization: `Klaviyo-API-Key ${apiKey}`,
-        revision,
-      },
-      cache: "no-store",
-    }),
+  const [klaviyo, queue] = await Promise.all([
+    getCachedKlaviyoListProbe({ apiKey, listId, revision }),
     getMarketingQueueSummary(),
   ]);
-
-  if (!response.ok) {
-    throw new Error(
-      `Klaviyo respondió ${response.status}: ${await response.text()}`,
-    );
-  }
-
-  const body = (await response.json()) as {
-    data?: { attributes?: { name?: string; profile_count?: number } };
-  };
-  const listName = body.data?.attributes?.name || "Newsletter";
-  const profileCount = Number(body.data?.attributes?.profile_count ?? 0);
   const queueWaiting = queue.pending + queue.processing;
+
+  if (klaviyo.status === "rate_limited") {
+    return makeResult({
+      status: "degraded",
+      details: `Klaviyo limitó temporalmente el diagnóstico. Reintento disponible en ${klaviyo.retryAfterSeconds} s · cola: ${queueWaiting} pendientes, ${queue.failed} con error.`,
+      checks: [
+        ...checks,
+        check(
+          "API Klaviyo",
+          false,
+          `Límite temporal; respetar Retry-After (${klaviyo.retryAfterSeconds} s)`,
+        ),
+        check(
+          "Cola sin errores",
+          queue.failed === 0,
+          `${queue.processed} procesados`,
+        ),
+      ],
+    });
+  }
 
   return makeResult({
     status: queue.failed > 0 ? "degraded" : "connected",
-    details: `${listName}: ${profileCount} perfiles · cola: ${queueWaiting} pendientes, ${queue.failed} con error.`,
+    details: `${klaviyo.listName} conectada · cola: ${queueWaiting} pendientes, ${queue.failed} con error.`,
     checks: [
       ...checks,
       check("API Klaviyo", true),

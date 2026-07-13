@@ -68,4 +68,33 @@ describe("klaviyoMarketingProvider", () => {
       ),
     ).toBe(false);
   });
+
+  it("respeta Retry-After y devuelve el evento a la cola ante un 429 largo", async () => {
+    vi.stubEnv("KLAVIYO_PRIVATE_API_KEY", "test-private-key");
+    vi.stubEnv("KLAVIYO_LIST_ID", "test-list");
+    vi.stubEnv("KLAVIYO_REVISION", "2026-04-15");
+    const fetchMock = vi.fn(
+      async () =>
+        new Response('{"errors":[{"status":"429"}]}', {
+          status: 429,
+          headers: { "retry-after": "30" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { klaviyoMarketingProvider } = await import("./klaviyo");
+
+    await expect(
+      klaviyoMarketingProvider.send({
+        id: "event-429",
+        eventType: "Points Expiring Soon",
+        idempotencyKey: "loyalty:Points Expiring Soon:2:2026-07-20",
+        email: "test@example.com",
+        loyaltyCustomerId: "2",
+        payload: { expiring_points: 100 },
+      }),
+    ).rejects.toThrow(
+      "Klaviyo limitó temporalmente el envío; la cola lo reintentará.",
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

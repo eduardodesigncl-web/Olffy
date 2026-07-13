@@ -54,14 +54,19 @@ async function klaviyoRequest(path: string, init: RequestInit) {
     if (response.ok) return response;
 
     const body = (await response.text()).slice(0, 1200);
-    lastError = `Klaviyo respondió ${response.status}: ${body}`;
+    lastError =
+      response.status === 429
+        ? "Klaviyo limitó temporalmente el envío; la cola lo reintentará."
+        : `Klaviyo respondió ${response.status}: ${body}`;
     if (response.status !== 429 && response.status < 500) break;
 
     const retryAfter = Number(response.headers.get("retry-after") ?? 0);
-    const waitMs = Math.min(
-      Math.max(retryAfter * 1000, 300 * 2 ** attempt),
-      5000,
-    );
+    const waitMs = Math.max(retryAfter * 1000, 300 * 2 ** attempt);
+
+    // No se reintenta antes de que venza Retry-After. Si Klaviyo solicita una
+    // espera larga, se devuelve el evento a la cola para el siguiente ciclo.
+    if (attempt === 2 || waitMs > 5000) break;
+
     await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
 

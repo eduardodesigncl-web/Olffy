@@ -4,6 +4,11 @@ import { hasSupabasePublicConfig } from "lib/supabase/config";
 import { getSupabaseServer } from "lib/supabase/server";
 import { NextResponse } from "next/server";
 import { safeCustomerReturnUrl } from "lib/customer/return-url";
+import {
+  CUSTOMER_RECOVERY_COOKIE,
+  CUSTOMER_RECOVERY_COOKIE_VALUE,
+  CUSTOMER_RECOVERY_MAX_AGE_SECONDS,
+} from "lib/customer/recovery";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -78,5 +83,23 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  const response = NextResponse.redirect(new URL(next, url.origin));
+  const isPasswordRecovery =
+    type === "recovery" || next === "/cuenta/restablecer";
+
+  if (isPasswordRecovery) {
+    response.cookies.set(
+      CUSTOMER_RECOVERY_COOKIE,
+      CUSTOMER_RECOVERY_COOKIE_VALUE,
+      {
+        httpOnly: true,
+        maxAge: CUSTOMER_RECOVERY_MAX_AGE_SECONDS,
+        path: "/cuenta/restablecer",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
+    );
+  }
+
+  return response;
 }

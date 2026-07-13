@@ -215,7 +215,7 @@ export const mockCustomers: Customer[] = [
   {
     id: "cust-002",
     fullName: "Eduardo Díaz",
-    email: "eduardo.design.cl@gmail.com",
+    email: "olffy.contact@gmail.com",
     phone: "+56 9 0000 0000",
     status: "pending",
     pointsBalance: 0,
