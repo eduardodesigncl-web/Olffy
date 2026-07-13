@@ -156,6 +156,9 @@ export type RewardRedemption = {
   shopify_discount_deactivated_at: string | null;
   shopify_discount_usage_count: number;
   shopify_discount_last_error: string | null;
+  storefront_cart_id: string | null;
+  storefront_request_id: string | null;
+  shopify_order_id: string | null;
   metadata: Record<string, unknown>;
   redeemed_at: string;
   expires_at: string | null;
@@ -166,6 +169,42 @@ export type RewardRedemption = {
   updated_at: string;
   rewards?: Pick<LoyaltyReward, "name" | "discount_amount_clp"> | null;
 };
+
+export async function redeemStorefrontCartReward(input: {
+  customerId: number;
+  rewardId: number;
+  storefrontCartId: string;
+  requestId: string;
+  createdBy: string;
+  metadata?: Record<string, unknown>;
+}): Promise<{
+  redemptionId: number;
+  transactionId: number;
+  alreadyExists: boolean;
+}> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "redeem_storefront_cart_reward",
+    {
+      p_customer_id: input.customerId,
+      p_reward_id: input.rewardId,
+      p_storefront_cart_id: input.storefrontCartId,
+      p_request_id: input.requestId,
+      p_created_by: input.createdBy.trim(),
+      p_metadata: input.metadata ?? {},
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo reservar el canje del carrito", error);
+  }
+
+  const result = data as Record<string, unknown>;
+  return {
+    redemptionId: toNumber(result.redemption_id),
+    transactionId: toNumber(result.transaction_id),
+    alreadyExists: Boolean(result.already_exists),
+  };
+}
 
 export type PhysicalSale = {
   id: number;
@@ -1276,4 +1315,92 @@ export async function getRewardRedemption(
   }
 
   return data as RewardRedemption;
+}
+
+export async function getActiveStorefrontCartRedemption(input: {
+  customerId: number;
+  storefrontCartId: string;
+}): Promise<RewardRedemption | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("reward_redemptions")
+    .select("*, rewards(name, discount_amount_clp)")
+    .eq("customer_id", input.customerId)
+    .eq("storefront_cart_id", input.storefrontCartId)
+    .in("status", [
+      "requested",
+      "creating",
+      "approved",
+      "cancelling",
+      "reconciliation_required",
+    ])
+    .maybeSingle();
+
+  if (error) {
+    throwSupabaseError("No se pudo cargar el canje activo del carrito", error);
+  }
+
+  return (data ?? null) as RewardRedemption | null;
+}
+
+export async function confirmStorefrontRewardOrder(input: {
+  redemptionId: number;
+  shopifyOrderId: string;
+  createdBy: string;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "confirm_storefront_reward_order",
+    {
+      p_redemption_id: input.redemptionId,
+      p_shopify_order_id: input.shopifyOrderId,
+      p_created_by: input.createdBy.trim(),
+    },
+  );
+
+  if (error) {
+    throwSupabaseError("No se pudo confirmar el canje pagado", error);
+  }
+
+  return data as RewardRedemption;
+}
+
+export async function confirmStorefrontRewardsByCodes(input: {
+  codes: string[];
+  shopifyOrderId: string;
+  createdBy: string;
+}) {
+  const codes = [
+    ...new Set(
+      input.codes
+        .map((code) => code.trim())
+        .filter(Boolean)
+        .flatMap((code) => [code, code.toUpperCase()]),
+    ),
+  ];
+  if (codes.length === 0) return [];
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("reward_redemptions")
+    .select("*")
+    .in("shopify_discount_code", codes)
+    .in("status", ["approved", "cancelling", "fulfilled"]);
+
+  if (error) {
+    throwSupabaseError(
+      "No se pudieron identificar los canjes de la orden",
+      error,
+    );
+  }
+
+  const confirmed: RewardRedemption[] = [];
+  for (const redemption of (data ?? []) as RewardRedemption[]) {
+    confirmed.push(
+      await confirmStorefrontRewardOrder({
+        redemptionId: redemption.id,
+        shopifyOrderId: input.shopifyOrderId,
+        createdBy: input.createdBy,
+      }),
+    );
+  }
+
+  return confirmed;
 }

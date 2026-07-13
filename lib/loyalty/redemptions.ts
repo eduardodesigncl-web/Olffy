@@ -17,6 +17,7 @@ import {
   markRewardRedemptionReconciliationRequired,
   markRewardRedemptionUsed,
 } from "./service";
+import { getSupabaseAdmin } from "lib/supabase/admin";
 
 function errorMessage(cause: unknown) {
   return cause instanceof Error ? cause.message : "Ocurrió un error inesperado";
@@ -261,4 +262,41 @@ export async function syncShopifyRewardRedemptionUsage(input: {
     usageCount: discount.usageCount,
     createdBy: input.createdBy,
   });
+}
+
+export async function expireUnusedStorefrontRewardRedemptions(limit = 50) {
+  const { data, error } = await getSupabaseAdmin()
+    .from("reward_redemptions")
+    .select("id")
+    .not("storefront_cart_id", "is", null)
+    .eq("status", "approved")
+    .lte("shopify_discount_ends_at", new Date().toISOString())
+    .order("shopify_discount_ends_at", { ascending: true })
+    .limit(Math.min(Math.max(limit, 1), 200));
+
+  if (error) {
+    throw new Error(`No se pudieron cargar canjes vencidos: ${error.message}`);
+  }
+
+  let expired = 0;
+  let used = 0;
+  const errors: Array<{ id: number; error: string }> = [];
+
+  for (const row of data ?? []) {
+    try {
+      await cancelShopifyRewardRedemption({
+        redemptionId: Number(row.id),
+        reason: "Canje de carrito vencido sin orden pagada",
+        createdBy: "system:loyalty_expiration",
+        expired: true,
+      });
+      expired += 1;
+    } catch (cause) {
+      const message = errorMessage(cause);
+      if (message.includes("ya fue usado")) used += 1;
+      else errors.push({ id: Number(row.id), error: message });
+    }
+  }
+
+  return { checked: data?.length ?? 0, expired, used, errors };
 }

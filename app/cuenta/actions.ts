@@ -6,6 +6,7 @@ import { getSupabaseServer } from "lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { safeCustomerReturnUrl } from "lib/customer/return-url";
 
 function message(cause: unknown) {
   if (!(cause instanceof Error)) {
@@ -109,6 +110,7 @@ async function getSiteOrigin() {
 export async function requestMagicLinkAction(formData: FormData) {
   const email = requiredString(formData, "email").toLowerCase();
   const password = requiredString(formData, "password");
+  const next = safeCustomerReturnUrl(String(formData.get("next") ?? ""));
 
   try {
     const supabase = await getSupabaseServer();
@@ -130,10 +132,12 @@ export async function requestMagicLinkAction(formData: FormData) {
       throw cause;
     }
 
-    redirect(`/cuenta/login?error=${encodeURIComponent(message(cause))}`);
+    redirect(
+      `/cuenta/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(message(cause))}`,
+    );
   }
 
-  redirect("/cuenta");
+  redirect(next);
 }
 
 export async function registerCustomerAction(formData: FormData) {
@@ -141,6 +145,7 @@ export async function registerCustomerAction(formData: FormData) {
   const fullName = requiredString(formData, "fullName");
   const password = requiredString(formData, "password");
   const passwordConfirmation = requiredString(formData, "passwordConfirmation");
+  const next = safeCustomerReturnUrl(String(formData.get("next") ?? ""));
 
   try {
     if (password.length < 8) {
@@ -157,7 +162,7 @@ export async function registerCustomerAction(formData: FormData) {
       email,
       password,
       options: {
-        emailRedirectTo: `${origin}/auth/confirm?next=/cuenta`,
+        emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}`,
         data: {
           full_name: fullName,
           registration_source: "customer_account",

@@ -39,6 +39,141 @@
   overflow-y: auto;
   padding: 4px 24px;
 }
+.loading,
+.muted {
+  padding: 16px 0;
+  color: var(--olffy-cafe-55);
+  font-size: 13px;
+}
+.loyalty {
+  margin: 18px 0 22px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f6f3ff;
+  border: 1px solid rgba(89, 87, 176, 0.18);
+}
+.loyaltyHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.loyaltyHeading h3 {
+  margin: 2px 0 0;
+  color: var(--olffy-cafe);
+  font: 800 18px var(--font-display);
+}
+.loyaltyHeading > strong {
+  color: #5957b0;
+  font-size: 13px;
+}
+.eyebrow {
+  color: #5957b0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.loginPrompt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.loginPrompt p,
+.nextReward {
+  margin: 0;
+  color: var(--olffy-cafe-55);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.nextReward {
+  margin-top: 10px;
+}
+.rewardList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.rewardCard,
+.appliedReward {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px;
+  background: #fff;
+  border-radius: 11px;
+  border: 1px solid rgba(89, 87, 176, 0.13);
+}
+.rewardCard > div,
+.appliedReward > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rewardCard strong,
+.appliedReward strong {
+  color: var(--olffy-cafe);
+  font-size: 12px;
+}
+.rewardCard span,
+.appliedReward span,
+.rewardCard small,
+.appliedReward small {
+  color: var(--olffy-cafe-55);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+.rewardCard button,
+.appliedReward button {
+  align-self: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #5957b0;
+  color: #fff;
+  font: 700 10px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rewardCard button:disabled,
+.appliedReward button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.appliedReward {
+  margin-top: 12px;
+  border-color: rgba(58, 145, 75, 0.3);
+  background: #f4fbf5;
+}
+.appliedReward button {
+  background: transparent;
+  color: #5957b0;
+  border: 1px solid rgba(89, 87, 176, 0.3);
+}
+.appliedActions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+.successBox,
+.errorBox {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.successBox {
+  color: #26783b;
+  background: #eaf7ed;
+}
+.errorBox {
+  color: #a63819;
+  background: #fff0eb;
+}
 
 .footer {
   padding: 16px 24px 24px;
@@ -49,7 +184,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin: 8px 0 10px;
+}
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  color: var(--olffy-cafe-55);
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.discountRow {
+  color: #26783b;
+  font-weight: 700;
+}
+.shopifyNote {
+  margin: 0 0 12px;
+  color: var(--olffy-cafe-55);
+  font-size: 10.5px;
+  line-height: 1.4;
 }
 
 .totalLabel {

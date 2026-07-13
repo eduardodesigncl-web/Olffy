@@ -3,17 +3,14 @@ import { completeVerifiedCustomerAccount } from "lib/customer/auth";
 import { hasSupabasePublicConfig } from "lib/supabase/config";
 import { getSupabaseServer } from "lib/supabase/server";
 import { NextResponse } from "next/server";
-
-function safeNext(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/cuenta";
-}
+import { safeCustomerReturnUrl } from "lib/customer/return-url";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
   const code = url.searchParams.get("code");
-  const next = safeNext(url.searchParams.get("next"));
+  const next = safeCustomerReturnUrl(url.searchParams.get("next"));
 
   if (!hasSupabasePublicConfig()) {
     return NextResponse.redirect(

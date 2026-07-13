@@ -1,5 +1,6 @@
 import { AccountAuthClient } from "src/integration/AccountAuthClient";
 import { OlffyShell } from "src/integration/OlffyShell";
+import { safeCustomerReturnUrl } from "lib/customer/return-url";
 
 export const metadata = {
   title: "Inicia sesión",
@@ -9,7 +10,7 @@ export const metadata = {
 export default async function CustomerLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; error?: string }>;
+  searchParams: Promise<{ mode?: string; error?: string; next?: string }>;
 }) {
   const params = await searchParams;
 
@@ -18,6 +19,7 @@ export default async function CustomerLoginPage({
       <AccountAuthClient
         initialMode={params.mode === "register" ? "register" : "login"}
         initialError={params.error}
+        returnTo={safeCustomerReturnUrl(params.next)}
       />
     </OlffyShell>
   );

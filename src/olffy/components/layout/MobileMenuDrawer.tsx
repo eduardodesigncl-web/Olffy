@@ -1,11 +1,15 @@
 import { Drawer } from "../ui";
 import styles from "./MobileMenuDrawer.module.css";
 import type { PublicPage } from "./navigation";
+import type { StorefrontLoyaltyState } from "../../types";
 
 interface MobileMenuDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (page: PublicPage) => void;
+  loyalty: StorefrontLoyaltyState | null;
+  onNavigatePath: (path: string) => void;
+  onSignOut: () => Promise<void>;
 }
 
 const LINKS: { label: string; page: PublicPage }[] = [
@@ -22,6 +26,9 @@ export function MobileMenuDrawer({
   isOpen,
   onClose,
   onNavigate,
+  loyalty,
+  onNavigatePath,
+  onSignOut,
 }: MobileMenuDrawerProps) {
   const go = (page: PublicPage) => {
     onNavigate(page);
@@ -47,6 +54,57 @@ export function MobileMenuDrawer({
           </button>
         </div>
         <nav className={styles.nav}>
+          <div className={styles.accountBlock}>
+            {loyalty?.accountStatus === "ready" ||
+            loyalty?.accountStatus === "blocked" ? (
+              <>
+                <div className={styles.mobileIdentity}>
+                  <span>{loyalty.initial}</span>
+                  <div>
+                    <strong>{loyalty.displayName}</strong>
+                    <small>
+                      {loyalty.pointsBalance.toLocaleString("es-CL")} puntos
+                    </small>
+                  </div>
+                </div>
+                <button
+                  className={styles.accountLink}
+                  onClick={() => onNavigatePath("/cuenta")}
+                >
+                  Mi cuenta y puntos
+                </button>
+                <button
+                  className={styles.accountLink}
+                  onClick={() => onNavigatePath("/cuenta/recompensas")}
+                >
+                  Recompensas
+                </button>
+                <button
+                  className={styles.accountLink}
+                  onClick={() => onNavigatePath("/cuenta/canjes")}
+                >
+                  Mis canjes
+                </button>
+                <button
+                  className={styles.signOutLink}
+                  onClick={() => void onSignOut()}
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <button
+                className={styles.loginLink}
+                onClick={() =>
+                  onNavigatePath(
+                    `/cuenta/login?next=${encodeURIComponent(location.pathname + location.search)}`,
+                  )
+                }
+              >
+                Iniciar sesión
+              </button>
+            )}
+          </div>
           {LINKS.map((link) => (
             <button
               key={link.page}

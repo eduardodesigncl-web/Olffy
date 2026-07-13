@@ -129,6 +129,39 @@ export interface AppliedCheckoutReward {
   total: number;
 }
 
+export interface StorefrontLoyaltyReward extends CheckoutLoyaltyReward {
+  eligible: boolean;
+  missingPoints: number;
+  minimumMissingClp: number;
+}
+
+export interface StorefrontAppliedReward {
+  redemptionId: number;
+  rewardId: number;
+  name: string;
+  code: string;
+  pointsSpent: number;
+  discountAmountClp: number;
+  expiresAt: string | null;
+  applicable: boolean;
+}
+
+export type StorefrontLoyaltyState = {
+  accountStatus: "signed_out" | "not_enrolled" | "blocked" | "ready";
+  displayName?: string;
+  initial?: string;
+  pointsBalance: number;
+  subtotal: number;
+  discount: number;
+  total: number;
+  rewards: StorefrontLoyaltyReward[];
+  activeReward: StorefrontAppliedReward | null;
+};
+
+export type StorefrontLoyaltyActionResult =
+  | { ok: true; state: StorefrontLoyaltyState; message?: string }
+  | { ok: false; state?: StorefrontLoyaltyState; message: string };
+
 export interface AdminMetric {
   label: string;
   value: string | number;

@@ -1,12 +1,20 @@
+"use client";
+
 import styles from "./Navbar.module.css";
 import { NavDropdown } from "./NavDropdown";
 import type { PublicPage } from "./navigation";
+import type { StorefrontLoyaltyState } from "../../types";
+import { useEffect, useRef, useState } from "react";
 
 interface NavbarProps {
   cartCount: number;
   onOpenCart: () => void;
   onOpenMenu: () => void;
   onNavigate: (page: PublicPage) => void;
+  loyalty: StorefrontLoyaltyState | null;
+  loyaltyLoading: boolean;
+  onNavigatePath: (path: string) => void;
+  onSignOut: () => Promise<void>;
 }
 
 // Navbar sticky del storefront: logo, nav desktop con dropdowns, cuenta,
@@ -16,7 +24,25 @@ export function Navbar({
   onOpenCart,
   onOpenMenu,
   onNavigate,
+  loyalty,
+  loyaltyLoading,
+  onNavigatePath,
+  onSignOut,
 }: NavbarProps) {
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const signedIn =
+    loyalty?.accountStatus === "ready" || loyalty?.accountStatus === "blocked";
+
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (!accountRef.current?.contains(event.target as Node)) {
+        setAccountOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
   return (
     <nav className={styles.navbar}>
       <div className={styles.inner}>
@@ -89,24 +115,62 @@ export function Navbar({
         </div>
 
         <div className={styles.actions}>
-          <button
-            className={styles.iconBtn}
-            aria-label="Cuenta"
-            onClick={() => onNavigate("puntos")}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
-            </svg>
-          </button>
+          <div className={styles.account} ref={accountRef}>
+            {loyaltyLoading && !loyalty ? (
+              <span
+                className={styles.accountLoading}
+                aria-label="Cargando sesión"
+              />
+            ) : signedIn ? (
+              <button
+                className={styles.avatarBtn}
+                aria-label={`Cuenta de ${loyalty?.displayName ?? "cliente"}`}
+                aria-expanded={accountOpen}
+                onClick={() => setAccountOpen((open) => !open)}
+              >
+                {loyalty?.initial ?? "O"}
+              </button>
+            ) : (
+              <button
+                className={styles.loginBtn}
+                onClick={() =>
+                  onNavigatePath(
+                    `/cuenta/login?next=${encodeURIComponent(location.pathname + location.search)}`,
+                  )
+                }
+              >
+                Iniciar sesión
+              </button>
+            )}
+            {signedIn && accountOpen && (
+              <div className={styles.accountMenu} role="menu">
+                <div className={styles.accountSummary}>
+                  <strong>{loyalty?.displayName}</strong>
+                  <span>
+                    {loyalty?.pointsBalance.toLocaleString("es-CL")} puntos
+                  </span>
+                </div>
+                <button onClick={() => onNavigatePath("/cuenta")}>
+                  Mi cuenta
+                </button>
+                <button onClick={() => onNavigatePath("/cuenta")}>
+                  Mis puntos
+                </button>
+                <button onClick={() => onNavigatePath("/cuenta/recompensas")}>
+                  Recompensas
+                </button>
+                <button onClick={() => onNavigatePath("/cuenta/canjes")}>
+                  Mis canjes
+                </button>
+                <button
+                  className={styles.signOut}
+                  onClick={() => void onSignOut()}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
           <button
             className={styles.cartBtn}
             aria-label="Carrito"

@@ -2,6 +2,7 @@ import { expireGuestLoyaltyClaims } from "lib/loyalty/guest-claims";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { enqueueLoyaltyEmailEvent } from "lib/transactions/marketing";
 import { NextResponse } from "next/server";
+import { expireUnusedStorefrontRewardRedemptions } from "lib/loyalty/redemptions";
 
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
@@ -30,10 +31,18 @@ async function runExpiration() {
     return { error: cause instanceof Error ? cause.message : "error" };
   });
 
+  const cartRedemptions = await expireUnusedStorefrontRewardRedemptions().catch(
+    (cause) => {
+      console.error("No se pudieron expirar canjes de carrito:", cause);
+      return { error: cause instanceof Error ? cause.message : "error" };
+    },
+  );
+
   return {
     ...(data as Record<string, unknown>),
     guest_claims: claims,
     reminders,
+    cart_redemptions: cartRedemptions,
   };
 }
 

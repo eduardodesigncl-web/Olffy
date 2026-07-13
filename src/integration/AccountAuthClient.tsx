@@ -3,29 +3,44 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getSupabaseBrowser } from "lib/supabase/browser";
-import { requestMagicLink } from "../adapters/frontend-actions";
+import { safeCustomerReturnUrl } from "lib/customer/return-url";
 import { LoginPage } from "../components/customer/LoginPage";
 import { RegisterPage } from "../components/customer/RegisterPage";
 
 export function AccountAuthClient({
   initialMode = "login",
   initialError,
+  returnTo = "/cuenta",
 }: {
   initialMode?: "login" | "register";
   initialError?: string;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState(initialMode);
   const [error, setError] = useState(initialError);
 
-  async function login(email: string, _password: string) {
+  const safeReturnTo = safeCustomerReturnUrl(returnTo);
+
+  async function login(email: string, password: string) {
     setError(undefined);
 
     try {
-      await requestMagicLink(email);
-      setError("Te enviamos un enlace de acceso a tu correo.");
-    } catch {
-      setError("No pudimos enviar el enlace de acceso. Intenta nuevamente.");
+      const supabase = getSupabaseBrowser();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (signInError) throw signInError;
+      router.replace(safeReturnTo);
+      router.refresh();
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message.toLowerCase() : "";
+      setError(
+        message.includes("invalid login credentials")
+          ? "El correo o la contraseña no son correctos."
+          : "No pudimos iniciar sesión. Intenta nuevamente.",
+      );
     }
   }
 
@@ -36,6 +51,7 @@ export function AccountAuthClient({
       email: email.trim().toLowerCase(),
       password,
       options: {
+        emailRedirectTo: `${location.origin}/auth/confirm?next=${encodeURIComponent(safeReturnTo)}`,
         data: {
           full_name: name.trim(),
           registration_source: "customer_account",

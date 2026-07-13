@@ -67,3 +67,55 @@
   color: #c8901a;
   margin-top: 8px;
 }
+
+.accountBlock {
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  background: var(--olffy-cafe-06);
+}
+.mobileIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.mobileIdentity > span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--olffy-lila, #5b57b7);
+  color: #fff;
+  font-weight: 800;
+}
+.mobileIdentity div {
+  display: flex;
+  flex-direction: column;
+  color: var(--olffy-cafe);
+}
+.mobileIdentity small {
+  color: var(--olffy-cafe-55);
+}
+.accountLink,
+.signOutLink,
+.loginLink {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--olffy-cafe);
+  font: 600 13px var(--font-body);
+  cursor: pointer;
+}
+.signOutLink {
+  color: #b23300;
+}
+.loginLink {
+  background: var(--olffy-naranjo);
+  color: #fff;
+  text-align: center;
+}

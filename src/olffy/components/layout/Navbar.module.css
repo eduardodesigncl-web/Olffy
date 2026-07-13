@@ -77,6 +77,80 @@
   background: var(--olffy-cafe-06);
 }
 
+.account {
+  position: relative;
+}
+.loginBtn {
+  border: 1px solid var(--olffy-cafe-15, rgba(55, 35, 25, 0.15));
+  background: #fff;
+  color: var(--olffy-cafe);
+  border-radius: var(--radius-pill);
+  padding: 8px 12px;
+  font: 600 12px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.avatarBtn,
+.accountLoading {
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.avatarBtn {
+  border: 0;
+  background: var(--olffy-lila, #5b57b7);
+  color: #fff;
+  font: 800 15px var(--font-body);
+  cursor: pointer;
+}
+.accountLoading {
+  background: var(--olffy-cafe-06);
+}
+.accountMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 220px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: 14px;
+  box-shadow: 0 16px 44px rgba(55, 35, 25, 0.16);
+  z-index: 80;
+}
+.accountMenu button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-align: left;
+  color: var(--olffy-cafe);
+  font: 500 13px var(--font-body);
+  cursor: pointer;
+}
+.accountMenu button:hover {
+  background: var(--olffy-cafe-06);
+}
+.accountSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--olffy-cafe-08);
+  margin-bottom: 4px;
+  color: var(--olffy-cafe);
+  font-size: 12px;
+}
+.accountSummary span {
+  color: var(--olffy-cafe-55);
+}
+.accountMenu .signOut {
+  color: #b23300;
+}
+
 .cartBtn {
   position: relative;
   height: 38px;

@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   addPointsTransaction,
   getActiveLoyaltyRule,
+  confirmStorefrontRewardsByCodes,
   type LoyaltyCustomer,
 } from "lib/loyalty/service";
 import { getProductPointEligibility } from "lib/loyalty/eligibility";
@@ -52,6 +53,7 @@ type ShopifyPaidOrder = {
   total: number;
   subtotal: number;
   discount: number;
+  discountCodes: string[];
   currency: "CLP";
   customer?: {
     id?: string | null;
@@ -243,6 +245,11 @@ function normalizeWebhookOrder(
     firstPresent(payload.admin_graphql_api_id, payload.id),
   );
   const currency = String(payload.currency ?? "CLP").toUpperCase();
+  const discountCodes = Array.isArray(payload.discount_codes)
+    ? payload.discount_codes
+        .map((raw) => toText((raw as Record<string, unknown> | null)?.code))
+        .filter((code): code is string => Boolean(code))
+    : [];
 
   if (!shopifyOrderId) {
     throw new Error("Shopify no envio identificador de orden");
@@ -263,6 +270,7 @@ function normalizeWebhookOrder(
     total: toInt(payload.total_price),
     subtotal: toInt(payload.subtotal_price),
     discount: toInt(payload.total_discounts),
+    discountCodes,
     currency: "CLP",
     customer: {
       id: gid(
@@ -617,6 +625,15 @@ async function processNormalizedShopifyPaidOrder(input: {
 }) {
   if (!isPaid(input.order)) return { ignored: true, reason: "not_paid" };
 
+  // orders/paid es la confirmación definitiva: si la orden contiene un código
+  // OLFFY reservado, se marca como usado de forma idempotente antes de cualquier
+  // retorno temprano del procesamiento de puntos.
+  await confirmStorefrontRewardsByCodes({
+    codes: input.order.discountCodes,
+    shopifyOrderId: input.order.id,
+    createdBy: "system:shopify_orders_paid",
+  });
+
   const { data: existingOrderRef, error: existingOrderRefError } =
     await getSupabaseAdmin()
       .from("olffy_order_refs")
@@ -953,6 +970,7 @@ function normalizeGraphqlOrder(node: RecentPaidOrderNode): ShopifyPaidOrder {
     total: toInt(node.totalPriceSet.shopMoney.amount),
     subtotal: toInt(node.subtotalPriceSet?.shopMoney.amount),
     discount: toInt(node.totalDiscountsSet?.shopMoney.amount),
+    discountCodes: [],
     currency: "CLP",
     lineItemsCount: node.lineItems?.nodes.length,
     lineItems: node.lineItems?.nodes.map((line) => ({
