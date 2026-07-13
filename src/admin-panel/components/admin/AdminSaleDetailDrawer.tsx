@@ -79,7 +79,8 @@ export function AdminSaleDetailDrawer({
                     >
                       <span className={styles.productName}>{p.nombre}</span>
                       <span className={styles.productMeta}>
-                        x{p.qty} · {p.precio}
+                        x{p.qty} · {p.precio} · pagado {p.pagado}
+                        {!p.elegible ? " · No acumula puntos" : ""}
                       </span>
                     </div>
                   ))}
@@ -109,6 +110,18 @@ export function AdminSaleDetailDrawer({
               <div className={styles.row}>
                 <span className={styles.rowLabel}>Boleta</span>
                 <span className={styles.rowValue}>{sale.boleta}</span>
+              </div>
+              <div className={styles.row}>
+                <span className={styles.rowLabel}>Monto elegible</span>
+                <span className={styles.rowValue}>{sale.montoElegible}</span>
+              </div>
+              <div className={styles.row}>
+                <span className={styles.rowLabel}>Monto excluido</span>
+                <span className={styles.rowValue}>{sale.montoExcluido}</span>
+              </div>
+              <div className={styles.row}>
+                <span className={styles.rowLabel}>Regla aplicada</span>
+                <span className={styles.rowValue}>{sale.reglaAplicada}</span>
               </div>
               <div className={styles.row}>
                 <span className={styles.rowLabel}>Puntos generados</span>

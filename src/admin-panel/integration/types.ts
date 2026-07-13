@@ -22,6 +22,8 @@ export type UnifiedSaleItem = {
   nombre: string;
   qty: number;
   precio: string;
+  pagado: string;
+  elegible: boolean;
 };
 
 export type UnifiedSale = {
@@ -44,9 +46,14 @@ export type UnifiedSale = {
   shopifyOrderId: string | null;
   detalleCanal: string;
   productos: UnifiedSaleItem[];
+  montoElegible: string;
+  montoExcluido: string;
+  reglaAplicada: string;
 };
 
 export type PosLoyaltyRule = {
+  id: number;
+  name: string;
   spendingUnitClp: number;
   pointsPerUnit: number;
   pointRedemptionValueClp: number;
@@ -86,7 +93,7 @@ export type AdminPanelData = {
       image?: string;
       images?: string[];
       variants?: PosProductVariant[];
-      /** Marcado en Shopify con la categoría de exclusión de OLFFY Puntos. */
+      /** Metafield booleano Shopify olffy.exclude_from_points. */
       sinPuntos?: boolean;
     }
   >;

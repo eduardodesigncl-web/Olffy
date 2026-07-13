@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { CheckoutPage } from "../pages/checkout/CheckoutPage";
-import { startCheckoutAction } from "./checkout-actions";
+import {
+  estimateCheckoutPointsAction,
+  startCheckoutAction,
+} from "./checkout-actions";
 
 export function CheckoutPageClient({
   customerEmail,
@@ -15,6 +18,7 @@ export function CheckoutPageClient({
     <CheckoutPage
       onGoToTienda={() => router.push("/tienda")}
       customerEmail={customerEmail}
+      onEstimate={estimateCheckoutPointsAction}
       onPay={async ({ email }) => {
         await startCheckoutAction(email);
       }}

@@ -2,10 +2,10 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import {
-  calculatePointsForAmount,
   getActiveLoyaltyRule,
   type LoyaltyCustomer,
 } from "lib/loyalty/service";
+import { calculateLoyaltySnapshot } from "lib/loyalty/calculation";
 import { getAdminProductVariantsByIds } from "lib/shopify/admin";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { createTuuOnlineIntent } from "lib/tuu/online";
@@ -102,18 +102,50 @@ export async function prepareOnlineSale(input: {
   );
   const customer = await findLoyaltyCustomerByEmail(input.customerEmail);
   const rule = await getActiveLoyaltyRule();
+  const ruleSnapshot = {
+    id: rule.id,
+    name: rule.name,
+    spendingUnitClp: rule.spending_unit_clp,
+    pointsPerUnit: rule.points_per_unit,
+  };
+  const calculation = calculateLoyaltySnapshot({
+    lines: items.map((item) => ({
+      grossTotal: item.unitPrice * item.quantity,
+      eligible: !variantById.get(item.shopifyVariantId)?.product
+        .excludeFromPoints,
+      exclusionReason: variantById.get(item.shopifyVariantId)?.product
+        .excludeFromPoints
+        ? "product_metafield_excluded"
+        : undefined,
+    })),
+    discount: 0,
+    rule: ruleSnapshot,
+  });
+  const calculatedItems = items.map((item, index) => ({
+    ...item,
+    grossTotal: calculation.lines[index]!.grossTotal,
+    allocatedDiscount: calculation.lines[index]!.allocatedDiscount,
+    paidTotal: calculation.lines[index]!.paidTotal,
+    eligible: calculation.lines[index]!.eligible,
+    eligibleAmount: calculation.lines[index]!.eligibleAmount,
+    exclusionReason: calculation.lines[index]!.exclusionReason,
+  }));
   const pointsEarned =
-    customer?.status === "active" ? calculatePointsForAmount(total, rule) : 0;
+    customer?.status === "active" ? calculation.pointsEarned : 0;
 
   return {
     channel: "online",
     saleChannelDetail: "online_tuu",
-    items,
+    items: calculatedItems,
     subtotal: total,
     discount: 0,
     total,
+    eligibleTotal: calculation.eligibleTotal,
+    excludedTotal: calculation.excludedTotal,
     currency: "CLP",
     pointsEarned,
+    rule: ruleSnapshot,
+    calculationVersion: calculation.calculationVersion,
     customer:
       customer && input.customerEmail
         ? {

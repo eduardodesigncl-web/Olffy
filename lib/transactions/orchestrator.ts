@@ -51,6 +51,7 @@ async function processOnlinePoints(input: {
     description: "Puntos por compra online OLFFY",
     createdBy: "system:tuu_callback",
     metadata: { shopify_order_id: input.shopifyOrderId },
+    ruleId: input.snapshot.rule.id,
   });
 
   return { status: "processed" as const, transactionId: transaction.id };
@@ -113,6 +114,11 @@ export async function completeTuuOnlinePayment(input: {
           namespace: "olffy",
           key: "loyalty_points_earned",
           value: String(snapshot.pointsEarned),
+        },
+        {
+          namespace: "olffy",
+          key: "loyalty_eligible_total",
+          value: String(snapshot.eligibleTotal),
         },
       ],
     });

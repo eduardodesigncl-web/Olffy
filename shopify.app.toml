@@ -16,3 +16,11 @@ redirect_urls = [ ]
 
 [webhooks]
 api_version = "2026-04"
+
+[[webhooks.subscriptions]]
+topics = [ "orders/paid" ]
+uri = "/api/webhooks/shopify/orders-paid"
+
+[[webhooks.subscriptions]]
+topics = [ "refunds/create", "orders/cancelled" ]
+uri = "/api/webhooks/shopify/refunds"

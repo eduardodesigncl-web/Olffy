@@ -25,6 +25,9 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
       initialData?.variants?.edges?.[0]?.node?.inventoryQuantity || 0,
     tags: initialData?.tags?.join(", ") || "",
     imageUrl: initialData?.images?.edges?.[0]?.node?.url || "",
+    excludeFromPoints:
+      initialData?.excludeFromPoints?.jsonValue === true ||
+      initialData?.excludeFromPoints?.value === "true",
   });
 
   const handleChange = (
@@ -52,9 +55,10 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
           .filter(Boolean),
       };
       const payload = isEdit
-        ? input
+        ? { ...input, excludeFromPoints: formData.excludeFromPoints }
         : {
             product: input,
+            excludeFromPoints: formData.excludeFromPoints,
             initialVariant: formData.price
               ? {
                   price: formData.price,
@@ -214,6 +218,35 @@ export function ProductForm({ initialData, isEdit }: ProductFormProps) {
                 className="block w-full max-w-lg rounded-md border-gray-300 shadow-sm focus:border-olffy-purple focus:ring-olffy-purple sm:max-w-xs sm:text-sm p-2 border"
               />
             </div>
+          </div>
+
+          <div className="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:pt-5">
+            <div className="text-sm font-medium text-gray-700 sm:pt-2">
+              OLFFY Puntos
+            </div>
+            <label className="mt-1 flex max-w-lg items-start gap-3 sm:col-span-2 sm:mt-0">
+              <input
+                type="checkbox"
+                name="excludeFromPoints"
+                checked={formData.excludeFromPoints}
+                onChange={(event) =>
+                  setFormData((previous) => ({
+                    ...previous,
+                    excludeFromPoints: event.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-olffy-purple focus:ring-olffy-purple"
+              />
+              <span>
+                <span className="block text-sm font-medium text-gray-900">
+                  Excluir este producto del sistema de puntos
+                </span>
+                <span className="mt-1 block text-xs text-gray-500">
+                  Se guarda en Shopify como el metafield booleano
+                  olffy.exclude_from_points.
+                </span>
+              </span>
+            </label>
           </div>
         </div>
       </div>

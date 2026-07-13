@@ -2,7 +2,6 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import {
-  calculatePointsForAmount,
   getActiveLoyaltyRule,
   getLoyaltyCustomer,
   type LoyaltyCustomer,
@@ -12,7 +11,10 @@ import {
   finalizePhysicalSalePos,
   markRewardRedemptionUsed,
 } from "lib/loyalty/service";
-import { isExcludedFromLoyalty } from "lib/loyalty/eligibility";
+import {
+  calculateLoyaltySnapshot,
+  type LoyaltyRuleSnapshot,
+} from "lib/loyalty/calculation";
 import {
   createOrFindPaidPhysicalOrder,
   getAdminProductVariantsByIds,
@@ -32,7 +34,17 @@ export type PhysicalSalePosRequest = {
 
 export type PreparedPhysicalSale = {
   customer?: LoyaltyCustomer;
-  items: Array<PhysicalSaleItemInput & { excludedFromLoyalty?: boolean }>;
+  items: Array<
+    PhysicalSaleItemInput & {
+      excludedFromLoyalty: boolean;
+      grossTotal: number;
+      allocatedDiscount: number;
+      paidTotal: number;
+      eligible: boolean;
+      eligibleAmount: number;
+      exclusionReason: string | null;
+    }
+  >;
   benefitType: PhysicalSalePosBenefit;
   pointsSpent: number;
   pointsEarned: number;
@@ -46,6 +58,9 @@ export type PreparedPhysicalSale = {
   total: number;
   /** Monto elegible efectivamente pagado: base de acumulación de puntos. */
   eligibleTotal: number;
+  excludedTotal: number;
+  rule: LoyaltyRuleSnapshot;
+  calculationVersion: string;
   fingerprint: string;
 };
 
@@ -155,7 +170,7 @@ export async function preparePhysicalSale(
       variantTitle: variant.title,
       quantity,
       unitPrice,
-      excludedFromLoyalty: isExcludedFromLoyalty(variant.product.tags),
+      excludedFromLoyalty: variant.product.excludeFromPoints,
     };
   });
   const subtotal = items.reduce(
@@ -270,21 +285,43 @@ export async function preparePhysicalSale(
   }
 
   const total = subtotal - discount;
-  // Base de acumulación: monto elegible pagado. El descuento se atribuye al
-  // subtotal elegible (los beneficios de puntos solo aplican ahí y es la
-  // lectura conservadora para códigos/descuentos manuales).
-  const eligibleTotal = Math.max(
-    Math.min(eligibleSubtotal - discount, total),
-    0,
-  );
-  const pointsEarned = customer
-    ? calculatePointsForAmount(eligibleTotal, rule)
-    : 0;
+  const ruleSnapshot: LoyaltyRuleSnapshot = {
+    id: rule.id,
+    name: rule.name,
+    spendingUnitClp: rule.spending_unit_clp,
+    pointsPerUnit: rule.points_per_unit,
+  };
+  const calculation = calculateLoyaltySnapshot({
+    lines: items.map((item) => ({
+      grossTotal: item.quantity * item.unitPrice,
+      eligible: !item.excludedFromLoyalty,
+      exclusionReason: item.excludedFromLoyalty
+        ? "product_metafield_excluded"
+        : undefined,
+    })),
+    discount,
+    rule: ruleSnapshot,
+    discountEligibleOnly: benefitType === "points",
+  });
+  const calculatedItems = items.map((item, index) => {
+    const line = calculation.lines[index]!;
+    return {
+      ...item,
+      grossTotal: line.grossTotal,
+      allocatedDiscount: line.allocatedDiscount,
+      paidTotal: line.paidTotal,
+      eligible: line.eligible,
+      eligibleAmount: line.eligibleAmount,
+      exclusionReason: line.exclusionReason,
+    };
+  });
+  const eligibleTotal = calculation.eligibleTotal;
+  const pointsEarned = customer ? calculation.pointsEarned : 0;
   const fingerprint = createHash("sha256")
     .update(
       JSON.stringify({
         customerId: customer?.id ?? null,
-        items: items.map((item) => ({
+        items: calculatedItems.map((item) => ({
           variantId: item.shopifyVariantId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -296,6 +333,10 @@ export async function preparePhysicalSale(
         manualDiscountReason: manualDiscountReason ?? null,
         subtotal,
         eligibleSubtotal,
+        eligibleTotal,
+        excludedTotal: calculation.excludedTotal,
+        rule: ruleSnapshot,
+        calculationVersion: calculation.calculationVersion,
         total,
       }),
     )
@@ -303,7 +344,7 @@ export async function preparePhysicalSale(
 
   return {
     customer,
-    items,
+    items: calculatedItems,
     benefitType,
     pointsSpent,
     pointsEarned,
@@ -315,6 +356,9 @@ export async function preparePhysicalSale(
     discount,
     total,
     eligibleTotal,
+    excludedTotal: calculation.excludedTotal,
+    rule: ruleSnapshot,
+    calculationVersion: calculation.calculationVersion,
     fingerprint,
   };
 }
@@ -338,6 +382,40 @@ export async function finalizePreparedPhysicalSale(input: {
   transactionPipelineWarning?: string;
 }> {
   const { prepared } = input;
+  const revalidatedVariants = await getAdminProductVariantsByIds(
+    prepared.items.map((item) => item.shopifyVariantId!),
+  );
+  const revalidatedById = new Map(
+    revalidatedVariants.map((variant) => [variant.id, variant]),
+  );
+
+  for (const item of prepared.items) {
+    const current = revalidatedById.get(item.shopifyVariantId!);
+    if (
+      !current ||
+      current.product.status !== "ACTIVE" ||
+      current.product.id !== item.shopifyProductId ||
+      Number(current.price) !== item.unitPrice ||
+      current.inventoryQuantity < item.quantity ||
+      current.product.excludeFromPoints === item.eligible
+    ) {
+      throw new Error(
+        `La venta pagada requiere revisión: ${item.productTitle} cambió en Shopify después de iniciar el cobro`,
+      );
+    }
+  }
+
+  const finalRule = await getActiveLoyaltyRule();
+  prepared.rule = {
+    id: finalRule.id,
+    name: finalRule.name,
+    spendingUnitClp: finalRule.spending_unit_clp,
+    pointsPerUnit: finalRule.points_per_unit,
+  };
+  prepared.pointsEarned = prepared.customer
+    ? Math.floor(prepared.eligibleTotal / prepared.rule.spendingUnitClp) *
+      prepared.rule.pointsPerUnit
+    : 0;
   const paymentReference = input.paymentReference.trim();
   const olffyReference = input.olffyReference?.trim() || paymentReference;
   const shopifyOrder = await createOrFindPaidPhysicalOrder({
@@ -411,8 +489,60 @@ export async function finalizePreparedPhysicalSale(input: {
           : "manual_pos",
       provider_transaction_id: input.providerTransactionId,
       provider_payload: input.providerPayload,
+      eligible_total: prepared.eligibleTotal,
+      excluded_total: prepared.excludedTotal,
+      rule: prepared.rule,
+      calculation_version: prepared.calculationVersion,
+      items: prepared.items,
     },
   });
+
+  const { error: snapshotError } = await getSupabaseAdmin()
+    .from("physical_sales")
+    .update({
+      eligible_total: prepared.eligibleTotal,
+      excluded_total: prepared.excludedTotal,
+      rule_id: prepared.rule.id,
+      spending_unit_clp: prepared.rule.spendingUnitClp,
+      points_per_unit: prepared.rule.pointsPerUnit,
+      calculation_version: prepared.calculationVersion,
+      loyalty_snapshot: {
+        items: prepared.items,
+        eligibleTotal: prepared.eligibleTotal,
+        excludedTotal: prepared.excludedTotal,
+        rule: prepared.rule,
+        pointsEarned: prepared.pointsEarned,
+        calculationVersion: prepared.calculationVersion,
+      },
+    })
+    .eq("id", result.physicalSaleId);
+
+  if (snapshotError) {
+    throw new Error(
+      `La venta fue creada, pero no se pudo guardar su snapshot de puntos: ${snapshotError.message}`,
+    );
+  }
+
+  for (const item of prepared.items) {
+    const { error: itemSnapshotError } = await getSupabaseAdmin()
+      .from("physical_sale_items")
+      .update({
+        gross_total: item.grossTotal,
+        allocated_discount: item.allocatedDiscount,
+        paid_total: item.paidTotal,
+        eligible: item.eligible,
+        eligible_amount: item.eligibleAmount,
+        exclusion_reason: item.exclusionReason,
+      })
+      .eq("physical_sale_id", result.physicalSaleId)
+      .eq("shopify_variant_id", item.shopifyVariantId!);
+
+    if (itemSnapshotError) {
+      throw new Error(
+        `La venta fue creada, pero falló el snapshot de una línea: ${itemSnapshotError.message}`,
+      );
+    }
+  }
   let transactionPipelineWarning: string | undefined;
 
   try {
@@ -433,8 +563,12 @@ export async function finalizePreparedPhysicalSale(input: {
         subtotal: prepared.subtotal,
         discount: prepared.discount,
         total: prepared.total,
+        eligibleTotal: prepared.eligibleTotal,
+        excludedTotal: prepared.excludedTotal,
         currency: "CLP",
         pointsEarned: prepared.pointsEarned,
+        rule: prepared.rule,
+        calculationVersion: prepared.calculationVersion,
         customer: prepared.customer
           ? {
               loyaltyCustomerId: prepared.customer.id,

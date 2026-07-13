@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckoutStepper,
   CheckoutReview,
@@ -14,6 +14,12 @@ interface CheckoutPageProps {
   // Inicia el pago real: crea la intención TUU (o redirige al checkout de
   // Shopify) y navega a la pasarela. El email permite acumular OLFFY Puntos.
   onPay: (info: { email: string }) => Promise<void>;
+  onEstimate: (email?: string) => Promise<{
+    points: number;
+    eligibleTotal: number;
+    excludedTotal: number;
+    rule: { spendingUnitClp: number; pointsPerUnit: number };
+  }>;
   // Email del cliente logueado (si existe) para pre-llenar el formulario.
   customerEmail?: string;
 }
@@ -39,6 +45,7 @@ const STEP_TITLES: Record<Exclude<CheckoutStep, "success">, string> = {
 export function CheckoutPage({
   onGoToTienda,
   onPay,
+  onEstimate,
   customerEmail,
 }: CheckoutPageProps) {
   const { formattedCartSubtotal } = useCart();
@@ -50,6 +57,27 @@ export function CheckoutPage({
   });
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [pointsEstimate, setPointsEstimate] = useState<{
+    points: number;
+    eligibleTotal: number;
+    excludedTotal: number;
+    rule: { spendingUnitClp: number; pointsPerUnit: number };
+  } | null>(null);
+
+  useEffect(() => {
+    if (checkoutStep !== "payment") return;
+    let active = true;
+    void onEstimate(shippingForm.email)
+      .then((estimate) => {
+        if (active) setPointsEstimate(estimate);
+      })
+      .catch(() => {
+        if (active) setPointsEstimate(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [checkoutStep, onEstimate, shippingForm.email]);
 
   const handleShippingChange = (field: keyof ShippingForm, value: string) => {
     setShippingForm((prev) => ({ ...prev, [field]: value }));
@@ -111,6 +139,7 @@ export function CheckoutPage({
           formattedTotal={formattedCartSubtotal}
           paying={paying}
           error={payError}
+          pointsEstimate={pointsEstimate}
           onFinish={() => {
             void handleFinish();
           }}

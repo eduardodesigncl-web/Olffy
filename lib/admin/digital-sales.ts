@@ -3,15 +3,15 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   addPointsTransaction,
-  calculatePointsForAmount,
   getActiveLoyaltyRule,
   type LoyaltyCustomer,
 } from "lib/loyalty/service";
+import { getProductPointEligibility } from "lib/loyalty/eligibility";
 import {
-  getExcludedProductIds,
-  isExcludedFromLoyalty,
-  proportionalEligibleAmount,
-} from "lib/loyalty/eligibility";
+  calculateLoyaltySnapshot,
+  type LoyaltyCalculation,
+  type LoyaltyRuleSnapshot,
+} from "lib/loyalty/calculation";
 import { createGuestPendingClaim } from "lib/loyalty/guest-claims";
 import { adminFetch } from "lib/shopify/admin";
 import { getSupabaseAdmin } from "lib/supabase/admin";
@@ -61,11 +61,17 @@ type ShopifyPaidOrder = {
     acceptsMarketing?: boolean | null;
   };
   lineItemsCount?: number;
-  /** Líneas para carrito mixto: monto bruto por producto y tags si vienen. */
+  /** Líneas confiables de Shopify; el metafield siempre pertenece al producto. */
   lineItems?: Array<{
     productId: string | null;
-    amount: number;
-    tags?: string[];
+    variantId: string | null;
+    sku?: string | null;
+    productTitle: string;
+    variantTitle: string;
+    quantity: number;
+    unitPrice: number;
+    grossTotal: number;
+    excludeFromPoints?: boolean;
   }>;
 };
 
@@ -90,7 +96,7 @@ function toEmail(value: unknown): string | null {
 }
 
 function gid(
-  resource: "Order" | "Customer" | "Product",
+  resource: "Order" | "Customer" | "Product" | "ProductVariant",
   value: unknown,
 ): string | null {
   const text = toText(value);
@@ -278,59 +284,108 @@ function normalizeWebhookOrder(
       ? payload.line_items.map((raw) => {
           const item = (raw ?? {}) as Record<string, unknown>;
           const quantity = Math.max(toInt(item.quantity), 1);
+          const unitPrice = toInt(item.price);
           return {
             productId: gid("Product", item.product_id),
-            amount: toInt(item.price) * quantity,
+            variantId: gid("ProductVariant", item.variant_id),
+            sku: toText(item.sku),
+            productTitle: toText(item.title) ?? "Producto Shopify",
+            variantTitle: toText(item.variant_title) ?? "Default Title",
+            quantity,
+            unitPrice,
+            grossTotal: unitPrice * quantity,
           };
         })
       : undefined,
   };
 }
 
-// Carrito mixto (propuesta v2): base de puntos = monto elegible pagado
-// (después de descuentos, sin envío y sin productos "Sin puntos"). Los
-// descuentos se atribuyen proporcionalmente entre líneas.
-async function computeEligiblePaidBase(order: ShopifyPaidOrder): Promise<{
-  eligibleTotal: number;
-  excludedAmount: number;
-}> {
-  const paidBase = order.subtotal > 0 ? order.subtotal : order.total;
+type DigitalEligibility = {
+  calculation: LoyaltyCalculation;
+  items: PaidSaleSnapshot["items"];
+};
+
+async function computeDigitalEligibility(
+  order: ShopifyPaidOrder,
+  rule: LoyaltyRuleSnapshot,
+): Promise<DigitalEligibility> {
+  if (order.currency.toUpperCase() !== "CLP") {
+    throw new Error(
+      `La orden pagada usa ${order.currency}; OLFFY Puntos solo calcula montos CLP`,
+    );
+  }
+
   const lineItems = order.lineItems ?? [];
 
   if (lineItems.length === 0) {
-    return { eligibleTotal: paidBase, excludedAmount: 0 };
+    throw new Error(
+      "Shopify no entregó las líneas de la orden; los puntos quedan pendientes de conciliación",
+    );
   }
 
-  const withoutTags = lineItems.filter(
-    (item) => item.productId && item.tags === undefined,
+  const withoutEligibility = lineItems.filter(
+    (item) => item.productId && item.excludeFromPoints === undefined,
   );
-  const excludedIds =
-    withoutTags.length > 0
-      ? await getExcludedProductIds(
-          withoutTags.map((item) => item.productId as string),
+  if (lineItems.some((item) => !item.productId)) {
+    throw new Error(
+      "Una línea pagada no tiene producto Shopify para validar elegibilidad",
+    );
+  }
+  const fetchedEligibility =
+    withoutEligibility.length > 0
+      ? await getProductPointEligibility(
+          withoutEligibility.map((item) => item.productId as string),
         )
-      : new Set<string>();
+      : new Map<string, boolean>();
 
-  const totalLineAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const eligibleLineAmount = lineItems.reduce((sum, item) => {
-    const excluded =
-      item.tags !== undefined
-        ? isExcludedFromLoyalty(item.tags)
-        : item.productId
-          ? excludedIds.has(item.productId)
-          : false;
-    return excluded ? sum : sum + item.amount;
-  }, 0);
-
-  const eligibleTotal = proportionalEligibleAmount({
-    paidBase,
-    eligibleLineAmount,
-    totalLineAmount,
+  if (
+    withoutEligibility.some(
+      (item) => !fetchedEligibility.has(item.productId as string),
+    )
+  ) {
+    throw new Error(
+      "Uno o más productos de la orden ya no existen en Shopify; se requiere revisión",
+    );
+  }
+  const grossTotal = lineItems.reduce((sum, item) => sum + item.grossTotal, 0);
+  if (order.subtotal < 0 || order.subtotal > grossTotal) {
+    throw new Error(
+      "El subtotal pagado no coincide con el snapshot de líneas Shopify",
+    );
+  }
+  const paidProductsTotal = order.subtotal;
+  const calculation = calculateLoyaltySnapshot({
+    lines: lineItems.map((item) => {
+      const excluded =
+        item.excludeFromPoints === true ||
+        (item.productId && fetchedEligibility.get(item.productId) === false);
+      return {
+        grossTotal: item.grossTotal,
+        eligible: !excluded,
+        exclusionReason: excluded ? "product_metafield_excluded" : undefined,
+      };
+    }),
+    discount: grossTotal - paidProductsTotal,
+    rule,
   });
 
   return {
-    eligibleTotal,
-    excludedAmount: Math.max(paidBase - eligibleTotal, 0),
+    calculation,
+    items: lineItems.map((item, index) => ({
+      shopifyProductId: item.productId ?? "",
+      shopifyVariantId: item.variantId ?? "",
+      sku: item.sku ?? undefined,
+      productTitle: item.productTitle,
+      variantTitle: item.variantTitle,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      grossTotal: calculation.lines[index]!.grossTotal,
+      allocatedDiscount: calculation.lines[index]!.allocatedDiscount,
+      paidTotal: calculation.lines[index]!.paidTotal,
+      eligible: calculation.lines[index]!.eligible,
+      eligibleAmount: calculation.lines[index]!.eligibleAmount,
+      exclusionReason: calculation.lines[index]!.exclusionReason,
+    })),
   };
 }
 
@@ -371,6 +426,7 @@ async function processDigitalPoints(input: {
   orderRef: OrderReference;
   customerId?: number;
   points: number;
+  ruleId: number;
 }) {
   if (
     !input.customerId ||
@@ -403,6 +459,7 @@ async function processDigitalPoints(input: {
     description: "Puntos por compra online OLFFY",
     createdBy: "system:shopify_orders_paid",
     metadata: { order_ref_id: input.orderRef.id },
+    ruleId: input.ruleId,
   });
 
   return { status: "processed" as const, transactionId: transaction.id };
@@ -411,8 +468,7 @@ async function processDigitalPoints(input: {
 async function upsertDigitalOrderReference(input: {
   order: ShopifyPaidOrder;
   loyaltyCustomer: LoyaltyCustomer | null;
-  pointsEarned: number;
-  eligibility?: { eligibleTotal: number; excludedAmount: number } | null;
+  snapshot: PaidSaleSnapshot;
   source: "webhook" | "cron";
   webhookId?: string;
 }) {
@@ -465,15 +521,25 @@ async function upsertDigitalOrderReference(input: {
         payment_status: "confirmed",
         total: input.order.total,
         currency: input.order.currency,
-        points_earned: input.pointsEarned,
+        points_earned: input.snapshot.pointsEarned,
+        eligible_total: input.snapshot.eligibleTotal,
+        excluded_total: input.snapshot.excludedTotal,
+        rule_id: input.snapshot.rule.id,
+        spending_unit_clp: input.snapshot.rule.spendingUnitClp,
+        points_per_unit: input.snapshot.rule.pointsPerUnit,
+        calculation_version: input.snapshot.calculationVersion,
+        loyalty_snapshot: input.snapshot,
         metadata: {
           source: input.source,
           webhook_id: input.webhookId ?? null,
           idempotency_key: idempotencyKey,
           subtotal: input.order.subtotal,
           discount: input.order.discount,
-          eligible_total: input.eligibility?.eligibleTotal ?? null,
-          excluded_amount: input.eligibility?.excludedAmount ?? null,
+          eligible_total: input.snapshot.eligibleTotal,
+          excluded_amount: input.snapshot.excludedTotal,
+          rule: input.snapshot.rule,
+          calculation_version: input.snapshot.calculationVersion,
+          items: input.snapshot.items,
           payment_method_label: paymentLabel,
           payment_gateway_names: input.order.paymentGatewayNames,
           customer_name: customerName || null,
@@ -495,6 +561,55 @@ async function upsertDigitalOrderReference(input: {
   return data as OrderReference;
 }
 
+async function recordDigitalProcessingFailure(input: {
+  order: ShopifyPaidOrder;
+  source: "webhook" | "cron";
+  webhookId?: string;
+  message: string;
+}) {
+  const idempotencyKey = `shopify_orders_paid:${input.order.id}`;
+  const { data, error } = await getSupabaseAdmin()
+    .from("olffy_order_refs")
+    .upsert(
+      {
+        idempotency_key: idempotencyKey,
+        olffy_reference:
+          input.order.name ?? `SHOPIFY-${input.order.id.split("/").pop()}`,
+        channel: "online",
+        sale_channel_detail: "online_shopify",
+        shopify_order_id: input.order.id,
+        shopify_order_name: input.order.name ?? null,
+        shopify_customer_id: input.order.customer?.id ?? null,
+        customer_email: toEmail(
+          firstPresent(input.order.customer?.email, input.order.email),
+        ),
+        payment_provider: paymentProviderFromGateways(
+          input.order.paymentGatewayNames,
+        ),
+        payment_reference: input.order.name ?? input.order.id,
+        payment_status: "confirmed",
+        loyalty_status: "failed",
+        total: input.order.total,
+        currency: input.order.currency,
+        points_earned: 0,
+        metadata: {
+          source: input.source,
+          webhook_id: input.webhookId ?? null,
+          idempotency_key: idempotencyKey,
+          payment_gateway_names: input.order.paymentGatewayNames,
+          calculation_error: input.message,
+        },
+        last_error: input.message.slice(0, 2000),
+      },
+      { onConflict: "shopify_order_id" },
+    )
+    .select("id")
+    .single();
+
+  if (error) fail("No se pudo dejar visible la venta con error", error);
+  return data as { id: string };
+}
+
 async function processNormalizedShopifyPaidOrder(input: {
   order: ShopifyPaidOrder;
   source: "webhook" | "cron";
@@ -505,7 +620,7 @@ async function processNormalizedShopifyPaidOrder(input: {
   const { data: existingOrderRef, error: existingOrderRefError } =
     await getSupabaseAdmin()
       .from("olffy_order_refs")
-      .select("id, channel")
+      .select("*")
       .eq("shopify_order_id", input.order.id)
       .maybeSingle();
 
@@ -516,10 +631,24 @@ async function processNormalizedShopifyPaidOrder(input: {
     );
   }
 
-  if (existingOrderRef && existingOrderRef.channel !== "online") {
+  if (
+    existingOrderRef?.channel !== undefined &&
+    existingOrderRef.channel !== "online"
+  ) {
     return {
       ignored: true,
       reason: "existing_non_online_order_ref",
+      orderRefId: existingOrderRef.id,
+    };
+  }
+
+  if (
+    existingOrderRef?.payment_status === "confirmed" &&
+    ["processed", "skipped"].includes(existingOrderRef.loyalty_status)
+  ) {
+    return {
+      ignored: true,
+      reason: "already_processed",
       orderRefId: existingOrderRef.id,
     };
   }
@@ -528,49 +657,90 @@ async function processNormalizedShopifyPaidOrder(input: {
   const guestEmail = !loyaltyCustomer
     ? toEmail(firstPresent(input.order.customer?.email, input.order.email))
     : null;
-  let pointsEarned = 0;
   let guestClaimPoints = 0;
-  let eligibility: { eligibleTotal: number; excludedAmount: number } | null =
-    null;
-  let pointsPreparationError: string | null = null;
+  let snapshot = existingOrderRef?.loyalty_snapshot as
+    | PaidSaleSnapshot
+    | null
+    | undefined;
 
-  if (loyaltyCustomer?.status === "active" || guestEmail) {
+  if (!snapshot?.rule || !Array.isArray(snapshot.items)) {
     try {
       const rule = await getActiveLoyaltyRule();
-      eligibility = await computeEligiblePaidBase(input.order);
-      const eligiblePoints = calculatePointsForAmount(
-        eligibility.eligibleTotal,
-        rule,
+      const ruleSnapshot: LoyaltyRuleSnapshot = {
+        id: rule.id,
+        name: rule.name,
+        spendingUnitClp: rule.spending_unit_clp,
+        pointsPerUnit: rule.points_per_unit,
+      };
+      const eligibility = await computeDigitalEligibility(
+        input.order,
+        ruleSnapshot,
       );
+      const customerEmail = toEmail(
+        firstPresent(input.order.customer?.email, input.order.email),
+      );
+      const deliveredPoints =
+        loyaltyCustomer?.status === "active"
+          ? eligibility.calculation.pointsEarned
+          : 0;
 
-      if (loyaltyCustomer?.status === "active") {
-        pointsEarned = eligiblePoints;
-      } else {
-        // Compra invitada: los puntos quedan como reclamación pendiente
-        // (15 días) ligada a order_id + correo; no se acreditan todavía.
-        guestClaimPoints = eligiblePoints;
+      if (!loyaltyCustomer && guestEmail) {
+        guestClaimPoints = eligibility.calculation.pointsEarned;
       }
+
+      snapshot = {
+        channel: "online",
+        saleChannelDetail: "online_shopify",
+        items: eligibility.items,
+        subtotal: input.order.subtotal,
+        discount: eligibility.calculation.discountTotal,
+        total: input.order.total,
+        eligibleTotal: eligibility.calculation.eligibleTotal,
+        excludedTotal: eligibility.calculation.excludedTotal,
+        currency: "CLP",
+        pointsEarned: deliveredPoints,
+        rule: ruleSnapshot,
+        calculationVersion: eligibility.calculation.calculationVersion,
+        customer: customerEmail
+          ? {
+              loyaltyCustomerId: loyaltyCustomer?.id,
+              shopifyCustomerId: input.order.customer?.id ?? undefined,
+              email: customerEmail,
+              marketingConsent:
+                loyaltyCustomer?.metadata?.marketing_consent === true ||
+                input.order.customer?.acceptsMarketing === true,
+            }
+          : undefined,
+      };
     } catch (cause) {
-      pointsPreparationError =
+      const message =
         cause instanceof Error ? cause.message : "Error calculando puntos";
+      const failed = await recordDigitalProcessingFailure({
+        ...input,
+        message,
+      });
+      return { ignored: false, orderRefId: failed.id, warning: message };
     }
+  } else if (!loyaltyCustomer && guestEmail) {
+    guestClaimPoints =
+      Math.floor(snapshot.eligibleTotal / snapshot.rule.spendingUnitClp) *
+      snapshot.rule.pointsPerUnit;
   }
 
   const orderRef = await upsertDigitalOrderReference({
     ...input,
     loyaltyCustomer,
-    pointsEarned,
-    eligibility,
+    snapshot,
   });
 
-  if (guestEmail && guestClaimPoints > 0 && !pointsPreparationError) {
+  if (guestEmail && guestClaimPoints > 0) {
     try {
       await createGuestPendingClaim({
         shopifyOrderId: input.order.id,
         orderRefId: orderRef.id,
         email: guestEmail,
         points: guestClaimPoints,
-        eligibleTotal: eligibility?.eligibleTotal ?? null,
+        eligibleTotal: snapshot.eligibleTotal,
         purchasedAt:
           input.order.processedAt ??
           input.order.createdAt ??
@@ -581,26 +751,14 @@ async function processNormalizedShopifyPaidOrder(input: {
     }
   }
 
-  if (pointsPreparationError) {
-    await updateOrderReference(orderRef.id, {
-      loyalty_status: "failed",
-      last_error: pointsPreparationError.slice(0, 2000),
-    });
-
-    return {
-      ignored: false,
-      orderRefId: orderRef.id,
-      warning: pointsPreparationError,
-    };
-  }
-
   let loyalty: { status: "processed" | "skipped"; transactionId?: number };
 
   try {
     loyalty = await processDigitalPoints({
       orderRef,
       customerId: loyaltyCustomer?.id,
-      points: pointsEarned,
+      points: snapshot.pointsEarned,
+      ruleId: snapshot.rule.id,
     });
     await updateOrderReference(orderRef.id, {
       loyalty_status: loyalty.status,
@@ -617,35 +775,11 @@ async function processNormalizedShopifyPaidOrder(input: {
     return { ignored: false, orderRefId: orderRef.id, warning: message };
   }
 
-  const customerEmail = toEmail(
-    firstPresent(input.order.customer?.email, input.order.email),
-  );
-  const snapshot: PaidSaleSnapshot = {
-    channel: "online",
-    saleChannelDetail: "online_shopify",
-    items: [],
-    subtotal: input.order.subtotal,
-    discount: input.order.discount,
-    total: input.order.total,
-    currency: "CLP",
-    pointsEarned,
-    customer: customerEmail
-      ? {
-          loyaltyCustomerId: loyaltyCustomer?.id,
-          shopifyCustomerId: input.order.customer?.id ?? undefined,
-          email: customerEmail,
-          marketingConsent:
-            loyaltyCustomer?.metadata?.marketing_consent === true ||
-            input.order.customer?.acceptsMarketing === true,
-        }
-      : undefined,
-  };
-
   try {
     await enqueueOrderMarketingEvents({
       orderRef,
       snapshot,
-      pointsEarned,
+      pointsEarned: snapshot.pointsEarned,
       loyaltyTransactionId: loyalty.transactionId,
     });
   } catch (cause) {
@@ -738,6 +872,10 @@ const recentPaidOrdersQuery = /* GraphQL */ `
           nodes {
             id
             quantity
+            name
+            title
+            variantTitle
+            sku
             originalTotalSet {
               shopMoney {
                 amount
@@ -745,7 +883,16 @@ const recentPaidOrdersQuery = /* GraphQL */ `
             }
             product {
               id
-              tags
+              excludeFromPoints: metafield(
+                namespace: "olffy"
+                key: "exclude_from_points"
+              ) {
+                value
+                jsonValue
+              }
+            }
+            variant {
+              id
             }
           }
         }
@@ -769,10 +916,21 @@ type RecentPaidOrderNode = {
     nodes: Array<{
       id: string;
       quantity?: number | null;
+      name?: string | null;
+      title?: string | null;
+      variantTitle?: string | null;
+      sku?: string | null;
       originalTotalSet?: {
         shopMoney?: { amount?: string | null } | null;
       } | null;
-      product?: { id?: string | null; tags?: string[] | null } | null;
+      product?: {
+        id?: string | null;
+        excludeFromPoints?: {
+          value?: string | null;
+          jsonValue?: boolean | null;
+        } | null;
+      } | null;
+      variant?: { id?: string | null } | null;
     }>;
   } | null;
 };
@@ -799,8 +957,19 @@ function normalizeGraphqlOrder(node: RecentPaidOrderNode): ShopifyPaidOrder {
     lineItemsCount: node.lineItems?.nodes.length,
     lineItems: node.lineItems?.nodes.map((line) => ({
       productId: line.product?.id ?? null,
-      amount: toInt(line.originalTotalSet?.shopMoney?.amount),
-      tags: line.product?.tags ?? [],
+      variantId: line.variant?.id ?? null,
+      sku: line.sku ?? null,
+      productTitle: line.title ?? line.name ?? "Producto Shopify",
+      variantTitle: line.variantTitle ?? "Default Title",
+      quantity: Math.max(Number(line.quantity ?? 1), 1),
+      unitPrice: Math.round(
+        toInt(line.originalTotalSet?.shopMoney?.amount) /
+          Math.max(Number(line.quantity ?? 1), 1),
+      ),
+      grossTotal: toInt(line.originalTotalSet?.shopMoney?.amount),
+      excludeFromPoints:
+        line.product?.excludeFromPoints?.jsonValue === true ||
+        line.product?.excludeFromPoints?.value === "true",
     })),
   };
 }

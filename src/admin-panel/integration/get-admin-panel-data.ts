@@ -5,7 +5,6 @@ import { listOrderReferences } from "lib/transactions/repository";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getActiveLoyaltyRule, listRewards } from "lib/loyalty/service";
 import { getAbandonedCheckoutsSummary } from "lib/shopify/abandoned-checkouts";
-import { isExcludedFromLoyalty } from "lib/loyalty/eligibility";
 import type { OrderReference } from "lib/transactions/types";
 import type { AdminPanelData, UnifiedSale } from "./types";
 
@@ -128,7 +127,16 @@ function toUnifiedSale(order: OrderReference): UnifiedSale {
       variantTitle?: string;
       quantity?: number;
       unitPrice?: number;
+      paidTotal?: number;
+      eligible?: boolean;
     }> | null;
+    eligible_total?: number;
+    excluded_amount?: number;
+    rule?: {
+      name?: string;
+      spendingUnitClp?: number;
+      pointsPerUnit?: number;
+    };
   };
   const customerName =
     typeof metadata.customer_name === "string" && metadata.customer_name.trim()
@@ -165,8 +173,26 @@ function toUnifiedSale(order: OrderReference): UnifiedSale {
             .join(" · "),
           qty: Number(item.quantity ?? 0),
           precio: clp(Number(item.unitPrice ?? 0)),
+          pagado: clp(
+            Number(
+              item.paidTotal ??
+                Number(item.unitPrice ?? 0) * Number(item.quantity ?? 0),
+            ),
+          ),
+          elegible: item.eligible !== false,
         }))
       : [],
+    montoElegible: clp(
+      Number(order.eligible_total ?? metadata.eligible_total ?? 0),
+    ),
+    montoExcluido: clp(
+      Number(order.excluded_total ?? metadata.excluded_amount ?? 0),
+    ),
+    reglaAplicada:
+      metadata.rule?.name ||
+      (order.spending_unit_clp && order.points_per_unit
+        ? `${order.points_per_unit} punto(s) cada ${clp(order.spending_unit_clp)}`
+        : "Sin snapshot de regla"),
   };
 }
 
@@ -308,7 +334,7 @@ export async function getAdminPanelData(options?: {
       shopifyId: product.id,
       variantId: product.variantId ?? variant?.id,
       variants: product.variants ?? [],
-      sinPuntos: isExcludedFromLoyalty(product.tags),
+      sinPuntos: product.excludeFromPoints === true,
       status: product.status?.toUpperCase?.() ?? "ACTIVE",
       stock,
     };
@@ -447,6 +473,8 @@ export async function getAdminPanelData(options?: {
     sales,
     loyaltyRule: loyaltyRuleResult
       ? {
+          id: loyaltyRuleResult.id,
+          name: loyaltyRuleResult.name,
           spendingUnitClp: loyaltyRuleResult.spending_unit_clp,
           pointsPerUnit: loyaltyRuleResult.points_per_unit,
           pointRedemptionValueClp: loyaltyRuleResult.point_redemption_value_clp,

@@ -7,6 +7,7 @@ import type {
   PosProductVariant,
 } from "../../integration/types";
 import styles from "./AdminPos.module.css";
+import { calculateLoyaltySnapshot } from "lib/loyalty/calculation";
 
 type PosProduct = AdminPanelData["products"][number];
 
@@ -159,14 +160,20 @@ export function AdminPos() {
         ? 0
         : amount(benefitAmount);
   const total = Math.max(subtotal - discount, 0);
-  const eligibleTotal = Math.max(
-    Math.min(eligibleSubtotal - discount, total),
-    0,
-  );
-  const pointsEarned =
-    customer && rule
-      ? Math.floor(eligibleTotal / rule.spendingUnitClp) * rule.pointsPerUnit
-      : 0;
+  const loyaltyEstimate =
+    rule && discount <= (benefitType === "points" ? eligibleSubtotal : subtotal)
+      ? calculateLoyaltySnapshot({
+          lines: cart.map((line) => ({
+            grossTotal: line.unitPrice * line.qty,
+            eligible: !line.excluded,
+          })),
+          discount,
+          discountEligibleOnly: benefitType === "points",
+          rule,
+        })
+      : null;
+  const eligibleTotal = loyaltyEstimate?.eligibleTotal ?? 0;
+  const pointsEarned = customer ? (loyaltyEstimate?.pointsEarned ?? 0) : 0;
   const maxPointsForSale =
     customer && rule
       ? Math.max(

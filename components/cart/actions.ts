@@ -10,7 +10,7 @@ import {
   removeFromCart,
   updateCart,
 } from "lib/shopify";
-import { startOnlinePayment } from "lib/transactions/online";
+import { prepareOnlineSale, startOnlinePayment } from "lib/transactions/online";
 import { isTuuOnlineEnabled } from "lib/tuu/config";
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
@@ -154,18 +154,20 @@ export async function redirectToCheckoutWithEmail(guestEmail?: string) {
     throw new Error("No se pudo cargar el carrito");
   }
 
+  const account = await getCustomerAccountState();
+  const normalizedGuestEmail = guestEmail?.trim().toLowerCase();
+  const customerEmail =
+    account.status === "ready"
+      ? account.customer.email
+      : normalizedGuestEmail || undefined;
+
   if (isTuuOnlineEnabled()) {
     const cookieStore = await cookies();
     const requestId =
       cookieStore.get("tuu_payment_request_id")?.value ?? randomUUID();
-    const account = await getCustomerAccountState();
-    const normalizedGuestEmail = guestEmail?.trim().toLowerCase();
     const payment = await startOnlinePayment({
       requestId,
-      customerEmail:
-        account.status === "ready"
-          ? account.customer.email
-          : normalizedGuestEmail || undefined,
+      customerEmail,
       items: cart.lines.map((line) => ({
         variantId: line.merchandise.id,
         quantity: line.quantity,
@@ -181,6 +183,17 @@ export async function redirectToCheckoutWithEmail(guestEmail?: string) {
     });
     redirect(payment.paymentUrl);
   }
+
+  // El checkout alojado de Shopify es el flujo online activo cuando TUU está
+  // deshabilitado. Esta estimación valida variantes, precios, stock, metafield
+  // y regla en backend; orders/paid vuelve a calcular el resultado definitivo.
+  await prepareOnlineSale({
+    customerEmail,
+    items: cart.lines.map((line) => ({
+      variantId: line.merchandise.id,
+      quantity: line.quantity,
+    })),
+  });
 
   redirect(cart!.checkoutUrl);
 }

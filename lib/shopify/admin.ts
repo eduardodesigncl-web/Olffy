@@ -277,6 +277,13 @@ const getProductsQuery = /* GraphQL */ `
           updatedAt
           descriptionHtml
           tags
+          excludeFromPoints: metafield(
+            namespace: "olffy"
+            key: "exclude_from_points"
+          ) {
+            value
+            jsonValue
+          }
           images(first: 1) {
             edges {
               node {
@@ -314,6 +321,13 @@ const getProductQuery = /* GraphQL */ `
       updatedAt
       descriptionHtml
       tags
+      excludeFromPoints: metafield(
+        namespace: "olffy"
+        key: "exclude_from_points"
+      ) {
+        value
+        jsonValue
+      }
       images(first: 5) {
         edges {
           node {
@@ -449,6 +463,146 @@ const productDeleteMutation = /* GraphQL */ `
   }
 `;
 
+const loyaltyMetafieldDefinitionsQuery = /* GraphQL */ `
+  query olffyLoyaltyMetafieldDefinition {
+    metafieldDefinitions(
+      first: 1
+      ownerType: PRODUCT
+      query: "namespace:olffy key:exclude_from_points"
+    ) {
+      nodes {
+        id
+        namespace
+        key
+        type {
+          name
+        }
+      }
+    }
+  }
+`;
+
+const loyaltyMetafieldDefinitionCreateMutation = /* GraphQL */ `
+  mutation createOlffyLoyaltyMetafieldDefinition(
+    $definition: MetafieldDefinitionInput!
+  ) {
+    metafieldDefinitionCreate(definition: $definition) {
+      createdDefinition {
+        id
+        namespace
+        key
+      }
+      userErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+const setProductMetafieldMutation = /* GraphQL */ `
+  mutation setOlffyProductPointEligibility(
+    $metafields: [MetafieldsSetInput!]!
+  ) {
+    metafieldsSet(metafields: $metafields) {
+      metafields {
+        id
+        namespace
+        key
+        value
+      }
+      userErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+let loyaltyMetafieldDefinitionReady = false;
+
+export async function ensureLoyaltyMetafieldDefinition(): Promise<void> {
+  if (loyaltyMetafieldDefinitionReady) return;
+
+  const existing = await adminFetch<any>({
+    query: loyaltyMetafieldDefinitionsQuery,
+  });
+  const definition = existing.body.data.metafieldDefinitions.nodes[0];
+
+  if (definition) {
+    if (definition.type?.name !== "boolean") {
+      throw new Error(
+        "El metafield olffy.exclude_from_points existe con un tipo distinto de boolean",
+      );
+    }
+    loyaltyMetafieldDefinitionReady = true;
+    return;
+  }
+
+  const created = await adminFetch<any>({
+    query: loyaltyMetafieldDefinitionCreateMutation,
+    variables: {
+      definition: {
+        name: "Excluir del sistema de puntos",
+        namespace: "olffy",
+        key: "exclude_from_points",
+        description:
+          "Cuando es true, el producto no genera puntos OLFFY. False o ausente sí genera.",
+        type: "boolean",
+        ownerType: "PRODUCT",
+      },
+    },
+  });
+  const errors = created.body.data.metafieldDefinitionCreate.userErrors ?? [];
+
+  if (
+    errors.length > 0 &&
+    !errors.every((error: { code?: string }) =>
+      ["TAKEN", "ALREADY_EXISTS"].includes(error.code ?? ""),
+    )
+  ) {
+    throw new Error(
+      `Shopify no pudo crear la definición del metafield: ${errors
+        .map((error: { message: string }) => error.message)
+        .join("; ")}`,
+    );
+  }
+
+  loyaltyMetafieldDefinitionReady = true;
+}
+
+export async function setProductExcludeFromPoints(
+  productId: string,
+  excluded: boolean,
+): Promise<void> {
+  await ensureLoyaltyMetafieldDefinition();
+  const response = await adminFetch<any>({
+    query: setProductMetafieldMutation,
+    variables: {
+      metafields: [
+        {
+          ownerId: normalizeShopifyGid("Product", productId),
+          namespace: "olffy",
+          key: "exclude_from_points",
+          type: "boolean",
+          value: excluded ? "true" : "false",
+        },
+      ],
+    },
+  });
+  const errors = response.body.data.metafieldsSet.userErrors ?? [];
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Shopify no pudo guardar la elegibilidad de puntos: ${errors
+        .map((error: { message: string }) => error.message)
+        .join("; ")}`,
+    );
+  }
+}
+
 const getCollectionQuery = /* GraphQL */ `
   query getAdminCollection($id: ID!) {
     collection(id: $id) {
@@ -483,6 +637,13 @@ const searchProductVariantsQuery = /* GraphQL */ `
         title
         status
         tags
+        excludeFromPoints: metafield(
+          namespace: "olffy"
+          key: "exclude_from_points"
+        ) {
+          value
+          jsonValue
+        }
         variants(first: $variantsFirst) {
           nodes {
             id
@@ -502,6 +663,10 @@ type AdminPosProductSearchNode = {
   title: string;
   status: "ACTIVE" | "ARCHIVED" | "DRAFT";
   tags: string[];
+  excludeFromPoints: {
+    value: string;
+    jsonValue?: boolean | null;
+  } | null;
   variants: {
     nodes: Array<{
       id: string;
@@ -527,6 +692,13 @@ const getProductVariantsByIdsQuery = /* GraphQL */ `
           title
           status
           tags
+          excludeFromPoints: metafield(
+            namespace: "olffy"
+            key: "exclude_from_points"
+          ) {
+            value
+            jsonValue
+          }
         }
       }
     }
@@ -601,8 +773,24 @@ export type AdminPosVariant = {
     title: string;
     status: "ACTIVE" | "ARCHIVED" | "DRAFT";
     tags: string[];
+    excludeFromPoints: boolean;
   };
 };
+
+type RawAdminPosVariant = Omit<AdminPosVariant, "product"> & {
+  product: Omit<AdminPosVariant["product"], "excludeFromPoints"> & {
+    excludeFromPoints: {
+      value: string;
+      jsonValue?: boolean | null;
+    } | null;
+  };
+};
+
+function metafieldBoolean(
+  metafield: { value?: string; jsonValue?: boolean | null } | null | undefined,
+): boolean {
+  return metafield?.jsonValue === true || metafield?.value === "true";
+}
 
 export type AdminPhysicalOrder = {
   id: string;
@@ -727,6 +915,7 @@ export async function searchAdminProductVariants(
           title: product.title,
           status: product.status,
           tags: product.tags ?? [],
+          excludeFromPoints: metafieldBoolean(product.excludeFromPoints),
         },
       })),
     )
@@ -741,16 +930,22 @@ export async function getAdminProductVariantsByIds(
   }
 
   const res = await adminFetch<{
-    data: { nodes: Array<AdminPosVariant | null> };
+    data: { nodes: Array<RawAdminPosVariant | null> };
     variables: { ids: string[] };
   }>({
     query: getProductVariantsByIdsQuery,
     variables: { ids },
   });
 
-  return res.body.data.nodes.filter(
-    (node): node is AdminPosVariant => node !== null,
-  );
+  return res.body.data.nodes
+    .filter((node): node is RawAdminPosVariant => node !== null)
+    .map((node) => ({
+      ...node,
+      product: {
+        ...node.product,
+        excludeFromPoints: metafieldBoolean(node.product.excludeFromPoints),
+      },
+    }));
 }
 
 export async function createOrFindPaidPhysicalOrder(
@@ -1078,6 +1273,7 @@ export async function getAdminProduct(
 export async function createAdminProduct(
   input: any,
   initialVariant?: { price?: string | number },
+  excludeFromPoints = false,
 ): Promise<any> {
   const res = await adminFetch<any>({
     query: productCreateMutation,
@@ -1095,6 +1291,9 @@ export async function createAdminProduct(
     !createdProduct?.id ||
     !initialVariantId
   ) {
+    if (createdProduct?.id && productCreate.userErrors?.length === 0) {
+      await setProductExcludeFromPoints(createdProduct.id, excludeFromPoints);
+    }
     return productCreate;
   }
 
@@ -1112,6 +1311,10 @@ export async function createAdminProduct(
   });
   const variantPayload = variantUpdate.body.data.productVariantsBulkUpdate;
 
+  if ((variantPayload.userErrors ?? []).length === 0) {
+    await setProductExcludeFromPoints(createdProduct.id, excludeFromPoints);
+  }
+
   return {
     ...productCreate,
     userErrors: [
@@ -1121,7 +1324,10 @@ export async function createAdminProduct(
   };
 }
 
-export async function updateAdminProduct(input: any): Promise<any> {
+export async function updateAdminProduct(
+  input: any,
+  excludeFromPoints?: boolean,
+): Promise<any> {
   const res = await adminFetch<any>({
     query: productUpdateMutation,
     variables: {
@@ -1131,7 +1337,13 @@ export async function updateAdminProduct(input: any): Promise<any> {
       },
     },
   });
-  return res.body.data.productUpdate;
+  const result = res.body.data.productUpdate;
+
+  if (result.userErrors?.length === 0 && excludeFromPoints !== undefined) {
+    await setProductExcludeFromPoints(input.id, excludeFromPoints);
+  }
+
+  return result;
 }
 
 export async function deleteAdminProduct(id: string): Promise<any> {

@@ -65,6 +65,12 @@ export default async function AdminProductsPage() {
                     </th>
                     <th
                       scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      OLFFY Puntos
+                    </th>
+                    <th
+                      scope="col"
                       className="relative py-3.5 pl-3 pr-4 sm:pr-6"
                     >
                       <span className="sr-only">Acciones</span>
@@ -134,6 +140,21 @@ export default async function AdminProductsPage() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           ${parseFloat(price).toLocaleString("es-CL")}
                         </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                          <span
+                            className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                              product.excludeFromPoints?.jsonValue === true ||
+                              product.excludeFromPoints?.value === "true"
+                                ? "bg-orange-50 text-orange-800 ring-orange-600/20"
+                                : "bg-green-50 text-green-700 ring-green-600/20"
+                            }`}
+                          >
+                            {product.excludeFromPoints?.jsonValue === true ||
+                            product.excludeFromPoints?.value === "true"
+                              ? "No acumula puntos"
+                              : "Acumula puntos"}
+                          </span>
+                        </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                           <Link
                             href={`/admin/productos/${encodeURIComponent(product.id)}`}
@@ -149,7 +170,7 @@ export default async function AdminProductsPage() {
                   {products.length === 0 && (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="py-8 text-center text-sm text-gray-500"
                       >
                         No hay productos en el inventario.

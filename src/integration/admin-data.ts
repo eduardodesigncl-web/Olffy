@@ -90,6 +90,9 @@ function toProduct(product: AdminProduct): Product & {
     })),
     status: product.status.toLowerCase(),
     stock,
+    excludeFromPoints:
+      product.excludeFromPoints?.jsonValue === true ||
+      product.excludeFromPoints?.value === "true",
   };
 }
 

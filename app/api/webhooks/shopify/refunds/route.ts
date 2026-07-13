@@ -10,6 +10,35 @@ function toGid(resource: "Order", value: unknown): string | null {
   return /^\d+$/.test(text) ? `gid://shopify/${resource}/${text}` : null;
 }
 
+function resourceGid(
+  resource: "Product" | "ProductVariant",
+  value: unknown,
+): string | undefined {
+  const text = String(value ?? "").trim();
+  if (!text) return undefined;
+  return text.startsWith("gid://shopify/")
+    ? text
+    : /^\d+$/.test(text)
+      ? `gid://shopify/${resource}/${text}`
+      : undefined;
+}
+
+function returnedLinesFromPayload(payload: Record<string, unknown>) {
+  const lines = Array.isArray(payload.refund_line_items)
+    ? (payload.refund_line_items as Array<Record<string, unknown>>)
+    : [];
+
+  return lines.map((line) => {
+    const original = (line.line_item ?? {}) as Record<string, unknown>;
+    return {
+      productId: resourceGid("Product", original.product_id),
+      variantId: resourceGid("ProductVariant", original.variant_id),
+      quantity: Math.max(toAmount(line.quantity), 1),
+      refundedAmount: toAmount(line.subtotal),
+    };
+  });
+}
+
 function toAmount(value: unknown): number {
   const amount = Number(value);
   return Number.isFinite(amount) ? Math.max(Math.round(amount), 0) : 0;
@@ -98,6 +127,7 @@ export async function POST(request: Request) {
       refundedAmount: refundedAmountFromPayload(payload),
       fullCancellation: false,
       reason: String(payload.note ?? "") || undefined,
+      returnedLines: returnedLinesFromPayload(payload),
     });
 
     return NextResponse.json({ received: true, topic, ...result });

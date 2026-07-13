@@ -15,6 +15,10 @@ export type AdminProduct = {
   updatedAt: string;
   descriptionHtml: string;
   tags: string[];
+  excludeFromPoints: {
+    value: string;
+    jsonValue?: boolean | null;
+  } | null;
   images: AdminConnection<AdminImage>;
   variants: AdminConnection<AdminVariant>;
 };

@@ -40,10 +40,17 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const product = await updateAdminProduct({
-      ...body,
-      id: normalizeShopifyGid("Product", id),
-    });
+    const { excludeFromPoints, ...productInput } = body as Record<
+      string,
+      unknown
+    >;
+    const product = await updateAdminProduct(
+      {
+        ...productInput,
+        id: normalizeShopifyGid("Product", id),
+      },
+      excludeFromPoints === true,
+    );
 
     if (product?.userErrors?.length > 0) {
       return NextResponse.json({ errors: product.userErrors }, { status: 400 });

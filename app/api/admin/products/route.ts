@@ -29,11 +29,16 @@ export async function POST(request: Request) {
         ? (body as {
             product: Record<string, unknown>;
             initialVariant?: { price?: string | number };
+            excludeFromPoints?: boolean;
           })
-        : { product: body as Record<string, unknown> };
+        : {
+            product: body as Record<string, unknown>,
+            excludeFromPoints: false,
+          };
     const product = await createAdminProduct(
       payload.product,
       payload.initialVariant,
+      payload.excludeFromPoints === true,
     );
 
     if (product?.userErrors?.length > 0) {

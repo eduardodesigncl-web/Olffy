@@ -14,6 +14,7 @@ export interface Product {
   variantId: string;
   variants?: ProductVariant[];
   options?: ProductOption[];
+  excludeFromPoints?: boolean;
 }
 
 export interface ProductVariant {

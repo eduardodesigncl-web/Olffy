@@ -6,6 +6,12 @@ export type ValidatedSaleItem = {
   variantTitle: string;
   quantity: number;
   unitPrice: number;
+  grossTotal: number;
+  allocatedDiscount: number;
+  paidTotal: number;
+  eligible: boolean;
+  eligibleAmount: number;
+  exclusionReason: string | null;
 };
 
 export type PaidSaleSnapshot = {
@@ -15,8 +21,17 @@ export type PaidSaleSnapshot = {
   subtotal: number;
   discount: number;
   total: number;
+  eligibleTotal: number;
+  excludedTotal: number;
   currency: "CLP";
   pointsEarned: number;
+  rule: {
+    id: number;
+    name: string;
+    spendingUnitClp: number;
+    pointsPerUnit: number;
+  };
+  calculationVersion: string;
   customer?: {
     loyaltyCustomerId?: number;
     shopifyCustomerId?: string;
@@ -45,6 +60,13 @@ export type OrderReference = {
   total: number;
   currency: "CLP";
   points_earned: number;
+  eligible_total?: number;
+  excluded_total?: number;
+  rule_id?: number | null;
+  spending_unit_clp?: number | null;
+  points_per_unit?: number | null;
+  calculation_version?: string | null;
+  loyalty_snapshot?: PaidSaleSnapshot | null;
   metadata: Record<string, unknown>;
   last_error: string | null;
   created_at: string;

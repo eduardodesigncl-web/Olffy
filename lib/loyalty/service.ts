@@ -66,6 +66,12 @@ export type PhysicalSaleItemInput = {
   variantTitle?: string;
   quantity: number;
   unitPrice: number;
+  grossTotal?: number;
+  allocatedDiscount?: number;
+  paidTotal?: number;
+  eligible?: boolean;
+  eligibleAmount?: number;
+  exclusionReason?: string | null;
 };
 
 export type RegisterPhysicalSaleInput = {
@@ -93,6 +99,7 @@ export type AddPointsTransactionInput = {
   description?: string;
   createdBy?: string;
   metadata?: Record<string, unknown>;
+  ruleId?: number;
 };
 
 export type LoyaltyRule = {
@@ -805,6 +812,7 @@ export async function addPointsTransaction(
       description: input.description?.trim() || null,
       created_by: input.createdBy?.trim() || null,
       metadata: input.metadata ?? {},
+      rule_id: input.ruleId ?? null,
     })
     .select("*")
     .single();
