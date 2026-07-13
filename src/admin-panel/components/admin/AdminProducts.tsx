@@ -88,11 +88,13 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     () =>
       PRODUCTS.map((p) => ({
         id: p.id,
+        shopifyId: p.shopifyId,
         nombre: p.name,
         handle: p.handle ?? slugify(p.name),
         estado: p.status ?? "ACTIVE",
         stock: p.stock ?? 0,
         precio: p.price,
+        excludeFromPoints: p.sinPuntos === true,
       })),
     [],
   );
@@ -120,9 +122,9 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         : "$0",
     [],
   );
-  // Catálogo mock (solo lectura desde la UI). En producción se sincroniza desde
-  // Shopify; aquí no hay edición local que muta esta lista.
-  const [products] = useState<AdminProductRow[]>(productRows);
+  // Catálogo hidratado desde Shopify. Solo la elegibilidad de OLFFY Puntos se
+  // edita aquí; los demás datos comerciales siguen administrándose en Shopify.
+  const [products, setProducts] = useState<AdminProductRow[]>(productRows);
   const [searchTerm, setSearchTerm] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [preview, setPreview] = useState<AdminProductRow | null>(null);
@@ -131,6 +133,8 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     null,
   );
   const [syncingId, setSyncingId] = useState<number | null>(null);
+  const [pointsUpdatingId, setPointsUpdatingId] = useState<number | null>(null);
+  const [pointsError, setPointsError] = useState<string | null>(null);
   const [syncedIds, setSyncedIds] = useState<Set<number>>(new Set());
   const [featuredIds, setFeaturedIds] = useState<Set<number>>(loadFeaturedIds);
 
@@ -165,6 +169,10 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
   useEffect(() => {
     setVisibleCount(GALLERY_BATCH_SIZE);
   }, [searchTerm, activeFilter, view]);
+
+  useEffect(() => {
+    setPointsError(null);
+  }, [detailId]);
 
   const cards: ProductFilterCardDef[] = useMemo(
     () => [
@@ -277,6 +285,57 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         ? `"${product.nombre}" quitado de destacados (marca local del panel).`
         : `"${product.nombre}" marcado como destacado (marca local del panel).`,
     );
+  };
+
+  const handleTogglePoints = async (
+    product: AdminProductRow,
+    excluded: boolean,
+  ) => {
+    if (!product.shopifyId || pointsUpdatingId !== null) return;
+
+    setPointsUpdatingId(product.id);
+    setPointsError(null);
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/products/${encodeURIComponent(product.shopifyId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ excludeFromPoints: excluded }),
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Shopify rechazó el cambio");
+      }
+
+      setProducts((current) =>
+        current.map((item) =>
+          item.id === product.id
+            ? { ...item, excludeFromPoints: excluded }
+            : item,
+        ),
+      );
+      setNotice(
+        excluded
+          ? `"${product.nombre}" ya no acumula puntos.`
+          : `"${product.nombre}" vuelve a acumular puntos.`,
+      );
+      router.refresh();
+    } catch (error) {
+      setPointsError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el cambio en Shopify",
+      );
+    } finally {
+      setPointsUpdatingId(null);
+    }
   };
 
   const handleOpenShopify = () => {
@@ -440,11 +499,14 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         meta={detailProduct ? productMeta.get(detailProduct.id) : undefined}
         featured={detailProduct ? featuredIds.has(detailProduct.id) : false}
         syncState={detailProduct ? syncStateOf(detailProduct.id) : "none"}
+        pointsUpdating={detailProduct?.id === pointsUpdatingId}
+        pointsError={pointsError}
         onClose={() => setDetailId(null)}
         onEdit={handleEditInShopify}
         onSync={handleSync}
         onView={setPreview}
         onToggleFeatured={handleToggleFeatured}
+        onTogglePoints={handleTogglePoints}
         onOpenShopify={handleOpenShopify}
       />
 

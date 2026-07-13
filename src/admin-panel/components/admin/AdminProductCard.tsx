@@ -80,6 +80,9 @@ export function AdminProductCard({
         <span className={`${styles.estadoTag} ${estado.cls}`}>
           {estado.label}
         </span>
+        {product.excludeFromPoints && (
+          <span className={styles.pointsTag}>No acumula puntos</span>
+        )}
         <span
           className={`${styles.syncDot} ${styles[syncState]}`}
           title={SYNC_TITLE[syncState]}

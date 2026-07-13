@@ -26,6 +26,8 @@ export interface Product {
   name: string;
   handle?: string;
   shopifyId?: string;
+  /** Metafield Shopify olffy.exclude_from_points. */
+  sinPuntos?: boolean;
   variantId?: string;
   status?: string;
   stock?: number;

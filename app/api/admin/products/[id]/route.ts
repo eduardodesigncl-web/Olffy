@@ -1,6 +1,7 @@
 import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import {
   getAdminProduct,
+  setProductExcludeFromPoints,
   updateAdminProduct,
   deleteAdminProduct,
 } from "lib/shopify/admin";
@@ -25,6 +26,45 @@ export async function GET(
     console.error("Error fetching admin product:", error);
     return NextResponse.json(
       { error: "Error fetching product" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const unauthorized = await getAdminApiUnauthorizedResponse();
+  if (unauthorized) return unauthorized;
+
+  try {
+    const { id } = await params;
+    const body = (await request.json()) as { excludeFromPoints?: unknown };
+
+    if (typeof body.excludeFromPoints !== "boolean") {
+      return NextResponse.json(
+        { error: "excludeFromPoints debe ser boolean" },
+        { status: 400 },
+      );
+    }
+
+    const productId = normalizeShopifyGid("Product", id);
+    await setProductExcludeFromPoints(productId, body.excludeFromPoints);
+
+    return NextResponse.json({
+      productId,
+      excludeFromPoints: body.excludeFromPoints,
+    });
+  } catch (error) {
+    console.error("Error updating product points eligibility:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudo actualizar OLFFY Puntos",
+      },
       { status: 500 },
     );
   }

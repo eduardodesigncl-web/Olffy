@@ -19,11 +19,14 @@ interface AdminProductDetailDrawerProps {
   meta?: ProductDetailMeta;
   featured: boolean;
   syncState: SyncState;
+  pointsUpdating: boolean;
+  pointsError: string | null;
   onClose: () => void;
   onEdit: (product: AdminProductRow) => void;
   onSync: (product: AdminProductRow) => void;
   onView: (product: AdminProductRow) => void;
   onToggleFeatured: (product: AdminProductRow) => void;
+  onTogglePoints: (product: AdminProductRow, excluded: boolean) => void;
   onOpenShopify: () => void;
 }
 
@@ -35,18 +38,21 @@ const SYNC_LABEL: Record<SyncState, string> = {
   none: "Sin sincronizar",
 };
 
-// Detalle de producto en drawer lateral derecho (mock/local). Reúne info +
-// acciones; no modifica PRODUCTS real.
+// Detalle de producto en drawer lateral derecho. Los datos comerciales se
+// administran en Shopify; el switch de OLFFY Puntos guarda su metafield real.
 export function AdminProductDetailDrawer({
   product,
   meta,
   featured,
   syncState,
+  pointsUpdating,
+  pointsError,
   onClose,
   onEdit,
   onSync,
   onView,
   onToggleFeatured,
+  onTogglePoints,
   onOpenShopify,
 }: AdminProductDetailDrawerProps) {
   return (
@@ -129,6 +135,61 @@ export function AdminProductDetailDrawer({
                   {featured ? "Sí" : "No"}
                 </span>
               </div>
+            </div>
+
+            <div className={styles.loyaltyControl}>
+              <div className={styles.loyaltyHeader}>
+                <div>
+                  <div className={styles.loyaltyTitle}>OLFFY Puntos</div>
+                  <div className={styles.loyaltyCopy}>
+                    Controla si este producto participa en la acumulación de
+                    puntos.
+                  </div>
+                </div>
+                <span
+                  className={`${styles.loyaltyStatus} ${
+                    product.excludeFromPoints
+                      ? styles.loyaltyStatusExcluded
+                      : styles.loyaltyStatusEligible
+                  }`}
+                >
+                  {product.excludeFromPoints
+                    ? "No acumula puntos"
+                    : "Acumula puntos"}
+                </span>
+              </div>
+              <div className={styles.loyaltyAction}>
+                <div>
+                  <div className={styles.loyaltyActionLabel}>
+                    Excluir del sistema de puntos
+                  </div>
+                  <div className={styles.loyaltyActionHint}>
+                    {pointsUpdating
+                      ? "Guardando en Shopify…"
+                      : "El cambio se guarda directamente en Shopify."}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={product.excludeFromPoints}
+                  aria-label="Excluir este producto del sistema de puntos"
+                  className={`${styles.loyaltySwitch} ${
+                    product.excludeFromPoints ? styles.loyaltySwitchOn : ""
+                  }`}
+                  disabled={pointsUpdating || !product.shopifyId}
+                  onClick={() =>
+                    onTogglePoints(product, !product.excludeFromPoints)
+                  }
+                >
+                  <span className={styles.loyaltySwitchThumb} />
+                </button>
+              </div>
+              {pointsError && (
+                <p className={styles.loyaltyError} role="alert">
+                  {pointsError}
+                </p>
+              )}
             </div>
 
             {meta?.desc && (

@@ -5,11 +5,13 @@ import styles from "./AdminProductTable.module.css";
 
 export interface AdminProductRow {
   id: number;
+  shopifyId?: string;
   nombre: string;
   handle: string;
   estado: string;
   stock: number;
   precio: string;
+  excludeFromPoints: boolean;
 }
 
 interface AdminProductTableProps {
@@ -49,6 +51,7 @@ export function AdminProductTable({
             <th className={styles.th}>Estado</th>
             <th className={styles.th}>Stock</th>
             <th className={styles.th}>Precio</th>
+            <th className={styles.th}>OLFFY Puntos</th>
             <th className={styles.th}>Sincronización</th>
             <th className={styles.th} aria-label="Acciones" />
           </tr>
@@ -69,6 +72,9 @@ export function AdminProductTable({
                 <td className={styles.td}>{p.stock} en stock</td>
                 <td className={styles.td}>
                   <span className={styles.precio}>{p.precio}</span>
+                </td>
+                <td className={styles.td}>
+                  {p.excludeFromPoints ? "No acumula" : "Acumula"}
                 </td>
                 <td className={styles.td}>
                   <span className={styles.syncWrap}>
