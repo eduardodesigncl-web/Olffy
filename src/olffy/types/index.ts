@@ -103,6 +103,32 @@ export interface Reward {
   disponible: boolean;
 }
 
+export interface CheckoutLoyaltyReward {
+  id: number;
+  name: string;
+  description: string | null;
+  pointsCost: number;
+  discountAmountClp: number;
+  minimumPurchaseClp: number;
+}
+
+export interface CheckoutLoyaltyData {
+  signedIn: boolean;
+  customerName?: string;
+  pointsBalance: number;
+  rewards: CheckoutLoyaltyReward[];
+}
+
+export interface AppliedCheckoutReward {
+  rewardId: number;
+  name: string;
+  code: string;
+  pointsSpent: number;
+  pointsBalance: number;
+  discountAmountClp: number;
+  total: number;
+}
+
 export interface AdminMetric {
   label: string;
   value: string | number;

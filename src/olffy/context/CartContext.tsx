@@ -46,17 +46,15 @@ function formatClp(n: number): string {
 // se identifican con este prefijo hasta que llegue la reconciliación.
 const PENDING_PREFIX = "pending:";
 
-// Caché en memoria del carrito: sobrevive a las navegaciones cliente para
-// que el badge no parpadee en 0 entre páginas. Se revalida en background.
-let cartCache: CartItem[] | null = null;
-
 // Estado global de carrito respaldado por el carrito real de Shopify.
 // El carrito se carga DESPUÉS del primer pintado (getCartItemsAction), así
 // ninguna página bloquea su render esperando a Shopify. Las mutaciones se
 // aplican optimistas en local y se reconcilian con el server al terminar.
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cartItems, setCartItems] = useState<CartItem[]>(cartCache ?? []);
-  const [cartReady, setCartReady] = useState(cartCache !== null);
+  // El primer render debe ser idéntico en servidor y navegador; Shopify se
+  // sincroniza después de hidratar y luego las mutaciones quedan optimistas.
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartReady, setCartReady] = useState(false);
   const [pendingOps, setPendingOps] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
   const pendingOpsRef = useRef(0);
@@ -67,7 +65,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Si hay mutaciones en vuelo, esta respuesta ya está desactualizada:
       // la reconciliación final la hará la última operación pendiente.
       if (pendingOpsRef.current > 0) return;
-      cartCache = items;
       setCartItems(items);
     } catch (error) {
       console.error("No se pudo sincronizar el carrito", error);
@@ -95,7 +92,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
           try {
             const items = await getCartItemsAction();
             if (pendingOpsRef.current === 0) {
-              cartCache = items;
               setCartItems(items);
             }
           } catch (error) {
@@ -110,11 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeCart = useCallback(() => setCartOpen(false), []);
 
   const applyLocal = useCallback((update: (prev: CartItem[]) => CartItem[]) => {
-    setCartItems((prev) => {
-      const next = update(prev);
-      cartCache = next;
-      return next;
-    });
+    setCartItems((prev) => update(prev));
   }, []);
 
   const addToCart = useCallback(

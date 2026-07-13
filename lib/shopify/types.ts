@@ -99,6 +99,10 @@ export type SEO = {
 export type ShopifyCart = {
   id: string | undefined;
   checkoutUrl: string;
+  discountCodes: {
+    code: string;
+    applicable: boolean;
+  }[];
   cost: {
     subtotalAmount: Money;
     totalAmount: Money;
@@ -189,6 +193,42 @@ export type ShopifyUpdateCartOperation = {
       merchandiseId: string;
       quantity: number;
     }[];
+  };
+};
+
+export type ShopifyUpdateCartDiscountCodesOperation = {
+  data: {
+    cartDiscountCodesUpdate: {
+      cart: ShopifyCart;
+      userErrors: {
+        field: string[] | null;
+        message: string;
+        code: string | null;
+      }[];
+    };
+  };
+  variables: {
+    cartId: string;
+    discountCodes: string[];
+  };
+};
+
+export type ShopifyUpdateCartBuyerIdentityOperation = {
+  data: {
+    cartBuyerIdentityUpdate: {
+      cart: ShopifyCart;
+      userErrors: {
+        field: string[] | null;
+        message: string;
+        code: string | null;
+      }[];
+    };
+  };
+  variables: {
+    cartId: string;
+    buyerIdentity: {
+      email: string;
+    };
   };
 };
 

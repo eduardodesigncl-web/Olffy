@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button, EmptyState, IconPlaceholder } from "../ui";
 import { CartLineItem } from "../cart";
 import { useCart } from "../../context/CartContext";
@@ -15,6 +16,7 @@ export function CheckoutReview({
   onContinue,
   onGoToTienda,
 }: CheckoutReviewProps) {
+  const [hydrated, setHydrated] = useState(false);
   const {
     cartItems,
     cartReady,
@@ -24,7 +26,11 @@ export function CheckoutReview({
     formattedCartSubtotal,
   } = useCart();
 
-  if (!cartReady && cartItems.length === 0) {
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  if (!hydrated || (!cartReady && cartItems.length === 0)) {
     return <p>Cargando tu carrito…</p>;
   }
 

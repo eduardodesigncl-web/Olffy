@@ -7,6 +7,7 @@ import {
 } from "../../components/checkout";
 import type { CheckoutStep, ShippingForm } from "../../components/checkout";
 import { useCart } from "../../context/CartContext";
+import type { AppliedCheckoutReward, CheckoutLoyaltyData } from "../../types";
 import styles from "./CheckoutPage.module.css";
 
 interface CheckoutPageProps {
@@ -20,6 +21,8 @@ interface CheckoutPageProps {
     excludedTotal: number;
     rule: { spendingUnitClp: number; pointsPerUnit: number };
   }>;
+  onApplyReward: (rewardId: number) => Promise<AppliedCheckoutReward>;
+  loyalty: CheckoutLoyaltyData;
   // Email del cliente logueado (si existe) para pre-llenar el formulario.
   customerEmail?: string;
 }
@@ -46,6 +49,8 @@ export function CheckoutPage({
   onGoToTienda,
   onPay,
   onEstimate,
+  onApplyReward,
+  loyalty: initialLoyalty,
   customerEmail,
 }: CheckoutPageProps) {
   const { formattedCartSubtotal } = useCart();
@@ -63,6 +68,11 @@ export function CheckoutPage({
     excludedTotal: number;
     rule: { spendingUnitClp: number; pointsPerUnit: number };
   } | null>(null);
+  const [loyalty, setLoyalty] = useState(initialLoyalty);
+  const [applyingRewardId, setApplyingRewardId] = useState<number | null>(null);
+  const [appliedReward, setAppliedReward] =
+    useState<AppliedCheckoutReward | null>(null);
+  const [rewardError, setRewardError] = useState<string | null>(null);
 
   useEffect(() => {
     if (checkoutStep !== "payment") return;
@@ -106,6 +116,31 @@ export function CheckoutPage({
     }
   };
 
+  const handleApplyReward = async (rewardId: number) => {
+    if (applyingRewardId !== null || appliedReward) return;
+    setApplyingRewardId(rewardId);
+    setRewardError(null);
+
+    try {
+      const applied = await onApplyReward(rewardId);
+      setAppliedReward(applied);
+      setLoyalty((current) => ({
+        ...current,
+        pointsBalance: applied.pointsBalance,
+      }));
+      const refreshedEstimate = await onEstimate(shippingForm.email);
+      setPointsEstimate(refreshedEstimate);
+    } catch (error) {
+      setRewardError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo aplicar la recompensa",
+      );
+    } finally {
+      setApplyingRewardId(null);
+    }
+  };
+
   return (
     <div className={styles.wrap}>
       <button type="button" className={styles.backLink} onClick={onGoToTienda}>
@@ -140,6 +175,13 @@ export function CheckoutPage({
           paying={paying}
           error={payError}
           pointsEstimate={pointsEstimate}
+          loyalty={loyalty}
+          applyingRewardId={applyingRewardId}
+          appliedReward={appliedReward}
+          rewardError={rewardError}
+          onApplyReward={(rewardId) => {
+            void handleApplyReward(rewardId);
+          }}
           onFinish={() => {
             void handleFinish();
           }}

@@ -13,6 +13,8 @@ import {
   createCartMutation,
   editCartItemsMutation,
   removeFromCartMutation,
+  updateCartBuyerIdentityMutation,
+  updateCartDiscountCodesMutation,
 } from "./mutations/cart";
 import { getCartQuery } from "./queries/cart";
 import {
@@ -51,7 +53,9 @@ import {
   ShopifyProductRecommendationsOperation,
   ShopifyProductsOperation,
   ShopifyRemoveFromCartOperation,
+  ShopifyUpdateCartBuyerIdentityOperation,
   ShopifyUpdateCartOperation,
+  ShopifyUpdateCartDiscountCodesOperation,
 } from "./types";
 
 const OLFFY_SHOPIFY_STORE_DOMAIN = "olffy.cl";
@@ -309,6 +313,56 @@ export async function updateCart(
   });
 
   return reshapeCart(res.body.data.cartLinesUpdate.cart);
+}
+
+export async function updateCartDiscountCodes(
+  discountCodes: string[],
+): Promise<Cart> {
+  const cartId = (await cookies()).get("cartId")?.value;
+
+  if (!cartId) {
+    throw new Error("No se pudo cargar el carrito de Shopify");
+  }
+
+  const res = await shopifyFetch<ShopifyUpdateCartDiscountCodesOperation>({
+    query: updateCartDiscountCodesMutation,
+    variables: {
+      cartId,
+      discountCodes: [...new Set(discountCodes.map((code) => code.trim()))]
+        .filter(Boolean)
+        .slice(0, 250),
+    },
+  });
+  const result = res.body.data.cartDiscountCodesUpdate;
+
+  if (result.userErrors.length > 0) {
+    throw new Error(result.userErrors.map((error) => error.message).join(". "));
+  }
+
+  return reshapeCart(result.cart);
+}
+
+export async function updateCartBuyerEmail(email: string): Promise<Cart> {
+  const cartId = (await cookies()).get("cartId")?.value;
+
+  if (!cartId) {
+    throw new Error("No se pudo cargar el carrito de Shopify");
+  }
+
+  const res = await shopifyFetch<ShopifyUpdateCartBuyerIdentityOperation>({
+    query: updateCartBuyerIdentityMutation,
+    variables: {
+      cartId,
+      buyerIdentity: { email: email.trim().toLowerCase() },
+    },
+  });
+  const result = res.body.data.cartBuyerIdentityUpdate;
+
+  if (result.userErrors.length > 0) {
+    throw new Error(result.userErrors.map((error) => error.message).join(". "));
+  }
+
+  return reshapeCart(result.cart);
 }
 
 export async function getCart(): Promise<Cart | undefined> {

@@ -35,6 +35,7 @@ async function findLoyaltyCustomerByEmail(email?: string) {
 export async function prepareOnlineSale(input: {
   items: Array<{ variantId: string; quantity: number }>;
   customerEmail?: string;
+  discount?: number;
 }): Promise<PaidSaleSnapshot> {
   const quantityByVariant = new Map<string, number>();
 
@@ -100,6 +101,11 @@ export async function prepareOnlineSale(input: {
     (sum, item) => sum + item.unitPrice * item.quantity,
     0,
   );
+  const discount = Math.round(Number(input.discount ?? 0));
+  if (!Number.isFinite(discount) || discount < 0 || discount >= total) {
+    throw new Error("El descuento del carrito online no es válido");
+  }
+
   const customer = await findLoyaltyCustomerByEmail(input.customerEmail);
   const rule = await getActiveLoyaltyRule();
   const ruleSnapshot = {
@@ -118,7 +124,7 @@ export async function prepareOnlineSale(input: {
         ? "product_metafield_excluded"
         : undefined,
     })),
-    discount: 0,
+    discount,
     rule: ruleSnapshot,
   });
   const calculatedItems = items.map((item, index) => ({
@@ -138,8 +144,8 @@ export async function prepareOnlineSale(input: {
     saleChannelDetail: "online_tuu",
     items: calculatedItems,
     subtotal: total,
-    discount: 0,
-    total,
+    discount,
+    total: total - discount,
     eligibleTotal: calculation.eligibleTotal,
     excludedTotal: calculation.excludedTotal,
     currency: "CLP",

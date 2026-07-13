@@ -43,3 +43,38 @@ export const removeFromCartMutation = /* GraphQL */ `
   }
   ${cartFragment}
 `;
+
+export const updateCartDiscountCodesMutation = /* GraphQL */ `
+  mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]!) {
+    cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
+      cart {
+        ...cart
+      }
+      userErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+  ${cartFragment}
+`;
+
+export const updateCartBuyerIdentityMutation = /* GraphQL */ `
+  mutation cartBuyerIdentityUpdate(
+    $cartId: ID!
+    $buyerIdentity: CartBuyerIdentityInput!
+  ) {
+    cartBuyerIdentityUpdate(cartId: $cartId, buyerIdentity: $buyerIdentity) {
+      cart {
+        ...cart
+      }
+      userErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+  ${cartFragment}
+`;

@@ -5,6 +5,129 @@
   margin-bottom: 20px;
 }
 
+.loyalty {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 22px;
+  padding: 16px;
+  border: 1.5px solid rgba(91, 85, 181, 0.22);
+  border-radius: var(--radius-md);
+  background: #f5f3ff;
+  color: var(--olffy-cafe);
+}
+
+.loyaltyHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.loyaltyHeader h2 {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.loyaltyHeader > strong {
+  color: #5b55b5;
+  white-space: nowrap;
+}
+
+.loyaltyEyebrow {
+  color: #5b55b5;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.loyaltyEmpty,
+.rewardError {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.loyaltyEmpty a {
+  color: #5b55b5;
+  font-weight: 700;
+}
+
+.rewardList {
+  display: grid;
+  gap: 8px;
+}
+
+.reward {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid rgba(91, 85, 181, 0.16);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.reward > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.reward small {
+  color: var(--olffy-cafe-55);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.reward button {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b55b5;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reward button:disabled {
+  background: rgba(91, 85, 181, 0.22);
+  color: #68638e;
+  cursor: not-allowed;
+}
+
+.appliedReward {
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #e7f6e9;
+  color: #26753a;
+  font-size: 12px;
+}
+
+.rewardError {
+  color: var(--olffy-naranjo);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .loyaltyHeader,
+  .reward {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reward button {
+    width: 100%;
+  }
+}
+
 .method {
   display: flex;
   align-items: center;

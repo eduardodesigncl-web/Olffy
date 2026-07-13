@@ -637,7 +637,9 @@ export function AdminPos() {
                 <circle cx="7.5" cy="7.5" r="1" />
               </svg>
             </span>
-            {benefitType === "none" ? "Aplicar descuento" : "Editar descuento"}
+            {benefitType === "none"
+              ? "Puntos y descuentos"
+              : "Editar beneficio"}
           </button>
 
           {filteredProducts.map((product, index) => {
@@ -863,6 +865,22 @@ export function AdminPos() {
                   El carrito y los descuentos se validan ahora. El cobro se
                   habilitará al configurar la API y el webhook de TUU.
                 </div>
+              ) : null}
+              {!customer ? (
+                <button
+                  type="button"
+                  className={styles.loyaltyPrompt}
+                  onClick={() => setOverlay({ kind: "customer" })}
+                >
+                  <span>
+                    <strong>OLFFY Puntos y canjes</strong>
+                    <small>
+                      Asocia una clienta para ver su saldo, usar puntos o
+                      aplicar una recompensa.
+                    </small>
+                  </span>
+                  <b>Seleccionar cliente →</b>
+                </button>
               ) : null}
               {customer ? (
                 <div className={styles.loyaltyNotice} role="status">
