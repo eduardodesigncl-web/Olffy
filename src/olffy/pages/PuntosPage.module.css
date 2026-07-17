@@ -4,6 +4,28 @@
   padding: clamp(28px, 4vw, 48px) clamp(14px, 4vw, 48px) clamp(64px, 8vw, 100px);
 }
 
+/* Volver a la tienda desde el acceso/panel del Club OLFFY. */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 9px 16px;
+  border: 1px solid var(--olffy-cafe-12, rgba(42, 28, 16, 0.12));
+  border-radius: 12px;
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe);
+  font: 600 13px var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.backLink:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(42, 28, 16, 0.1);
+}
+
 /* ── Encabezado del dashboard (cliente logueado) ── */
 .greeting {
   display: flex;
