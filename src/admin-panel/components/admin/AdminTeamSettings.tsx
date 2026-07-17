@@ -8,6 +8,7 @@ import {
   type AdminPermission as Permission,
   type AdminRole as Role,
 } from "lib/admin/permissions";
+import { PasswordInput } from "src/shared/PasswordInput";
 
 interface TeamMember {
   id: string;
@@ -231,19 +232,22 @@ export function AdminTeamSettings({
           </label>
         </div>
         <div className={sectionStyles.fieldRow}>
-          <label className={sectionStyles.field}>
-            <span className={sectionStyles.label}>
+          <div className={sectionStyles.field}>
+            <label
+              className={sectionStyles.label}
+              htmlFor="admin-team-password"
+            >
               Contraseña {editing ? "(vacía para conservarla)" : ""}
-            </span>
-            <input
+            </label>
+            <PasswordInput
+              id="admin-team-password"
               className={sectionStyles.input}
-              type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               minLength={8}
               required={!editing}
             />
-          </label>
+          </div>
           <label className={sectionStyles.field}>
             <span className={sectionStyles.label}>Rol</span>
             <select

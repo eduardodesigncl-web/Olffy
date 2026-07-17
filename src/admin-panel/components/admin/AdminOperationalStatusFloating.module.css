@@ -34,6 +34,30 @@
   box-shadow: 0 10px 26px rgba(42, 28, 16, 0.24);
 }
 
+.supportButton {
+  position: relative;
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado);
+  color: white;
+}
+
+.supportBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--olffy-naranjo);
+  color: white;
+  font-size: 9px;
+  font-weight: 850;
+}
+
 /* Color por prioridad de estado. */
 .conectado {
   border-color: #2f9d6a;

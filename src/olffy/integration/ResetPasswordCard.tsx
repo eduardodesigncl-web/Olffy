@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { updateCustomerPasswordAction } from "app/cuenta/actions";
 import { Button } from "../components/ui";
+import { PasswordInput } from "src/shared/PasswordInput";
 import styles from "../components/puntos/PuntosLoginMock.module.css";
 
 export function ResetPasswordCard() {
@@ -56,12 +57,18 @@ export function ResetPasswordCard() {
         Crea una contraseña nueva. Usa al menos 8 caracteres y evita reutilizar
         contraseñas.
       </p>
-      <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
-        <label className={styles.field}>
-          <span className={styles.label}>Contraseña nueva</span>
-          <input
+      <form
+        className={styles.form}
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+      >
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="customer-reset-password">
+            Contraseña nueva
+          </label>
+          <PasswordInput
+            id="customer-reset-password"
             className={styles.input}
-            type="password"
             value={password}
             minLength={8}
             maxLength={128}
@@ -71,12 +78,17 @@ export function ResetPasswordCard() {
             }}
             autoComplete="new-password"
           />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>Repite la contraseña nueva</span>
-          <input
+        </div>
+        <div className={styles.field}>
+          <label
+            className={styles.label}
+            htmlFor="customer-reset-password-confirmation"
+          >
+            Repite la contraseña nueva
+          </label>
+          <PasswordInput
+            id="customer-reset-password-confirmation"
             className={styles.input}
-            type="password"
             value={passwordConfirmation}
             minLength={8}
             maxLength={128}
@@ -86,9 +98,14 @@ export function ResetPasswordCard() {
             }}
             autoComplete="new-password"
           />
-        </label>
+        </div>
         {error && <span className={styles.error}>{error}</span>}
-        <Button type="submit" variant="primary" className={styles.submitBtn} disabled={loading}>
+        <Button
+          type="submit"
+          variant="primary"
+          className={styles.submitBtn}
+          disabled={loading}
+        >
           {loading ? "Actualizando…" : "Guardar contraseña"}
         </Button>
       </form>

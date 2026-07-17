@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { PasswordInput } from "src/shared/PasswordInput";
 import styles from "./AccountSettings.module.css";
 
 export type AccountSettingsResult =
@@ -286,10 +287,9 @@ export function AccountSettings({
               <label className={styles.label} htmlFor="cur-pass">
                 Contraseña actual
               </label>
-              <input
+              <PasswordInput
                 id="cur-pass"
                 className={styles.input}
-                type="password"
                 value={curPass}
                 onChange={(e) => {
                   setCurPass(e.target.value);
@@ -303,10 +303,9 @@ export function AccountSettings({
               <label className={styles.label} htmlFor="new-pass">
                 Nueva contraseña
               </label>
-              <input
+              <PasswordInput
                 id="new-pass"
                 className={styles.input}
-                type="password"
                 value={newPass}
                 onChange={(e) => {
                   setNewPass(e.target.value);
@@ -320,10 +319,9 @@ export function AccountSettings({
               <label className={styles.label} htmlFor="confirm-pass">
                 Confirmar nueva contraseña
               </label>
-              <input
+              <PasswordInput
                 id="confirm-pass"
                 className={styles.input}
-                type="password"
                 value={confirmPass}
                 onChange={(e) => {
                   setConfirmPass(e.target.value);

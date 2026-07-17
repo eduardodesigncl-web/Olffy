@@ -12,13 +12,17 @@ import styles from "./AdminDashboard.module.css";
 
 interface AdminDashboardProps {
   onNavigate: AdminNavigate;
+  canAccessSupport?: boolean;
 }
 
 type DashView = "main" | "clientes-activos";
 
 // Dashboard del panel admin — KPIs accionables, actividad, abandono de carrito
 // y clientes recientes, alimentados con los datos hidratados del servidor.
-export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
+export function AdminDashboard({
+  onNavigate,
+  canAccessSupport = false,
+}: AdminDashboardProps) {
   const [view, setView] = useState<DashView>("main");
   const runtime = adminPanelRuntime.data;
   const metrics: AdminMetricCardData[] = [
@@ -164,7 +168,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         <AdminRecentCustomers />
       </div>
 
-      <AdminOperationalStatusFloating />
+      <AdminOperationalStatusFloating
+        onSupport={canAccessSupport ? () => onNavigate("soporte") : undefined}
+      />
     </div>
   );
 }

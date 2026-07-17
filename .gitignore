@@ -46,3 +46,6 @@ panel-olffy/
 
 # supabase CLI
 supabase/.temp/
+
+# local AI tool permissions
+.claude/settings.local.json

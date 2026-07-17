@@ -19,7 +19,12 @@ export default async function AdminVentasPage() {
     <AdminPanelClient
       data={data}
       initialTab="ventas"
-      allowedTabs={actor.permissions}
+      allowedTabs={[
+        ...actor.permissions,
+        ...(actor.permissions.includes("clientes")
+          ? (["soporte"] as const)
+          : []),
+      ]}
     />
   );
 }

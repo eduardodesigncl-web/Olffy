@@ -258,6 +258,128 @@ export type ShopifyShopSummary = {
   currencyCode: string;
 };
 
+export type ShopifySupportOrder = {
+  id: string;
+  name: string;
+  createdAt: string;
+  financialStatus: string;
+  fulfillmentStatus: string;
+  active: boolean;
+  trackingCompany: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  deliveryStatus: string | null;
+  estimatedDeliveryAt: string | null;
+  shopifyAdminUrl: string;
+};
+
+export function getShopifyAdminBaseUrl(): string {
+  const configured = env("SHOPIFY_ADMIN_URL");
+  if (configured) return configured.replace(/\/$/, "");
+
+  const store = shopifyAdminDomain.replace(/\.myshopify\.com$/i, "");
+  return `https://admin.shopify.com/store/${store}`;
+}
+
+const getCustomerSupportOrdersQuery = /* GraphQL */ `
+  query getCustomerSupportOrders($query: String!) {
+    orders(first: 10, query: $query, sortKey: CREATED_AT, reverse: true) {
+      nodes {
+        id
+        name
+        createdAt
+        displayFinancialStatus
+        displayFulfillmentStatus
+        cancelledAt
+        fulfillments(first: 10) {
+          status
+          displayStatus
+          deliveredAt
+          estimatedDeliveryAt
+          trackingInfo(first: 10) {
+            company
+            number
+            url
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getCustomerSupportOrders(
+  customerEmail: string,
+): Promise<ShopifySupportOrder[]> {
+  type RawFulfillment = {
+    status: string;
+    displayStatus: string | null;
+    deliveredAt: string | null;
+    estimatedDeliveryAt: string | null;
+    trackingInfo: Array<{
+      company: string | null;
+      number: string | null;
+      url: string | null;
+    }>;
+  };
+  type RawOrder = {
+    id: string;
+    name: string;
+    createdAt: string;
+    displayFinancialStatus: string | null;
+    displayFulfillmentStatus: string | null;
+    cancelledAt: string | null;
+    fulfillments: RawFulfillment[];
+  };
+
+  const normalizedEmail = customerEmail.trim().toLowerCase();
+  if (!normalizedEmail) return [];
+
+  const { body } = await adminFetch<{
+    data: { orders: { nodes: RawOrder[] } };
+    variables: { query: string };
+  }>({
+    query: getCustomerSupportOrdersQuery,
+    variables: { query: `email:${normalizedEmail}` },
+  });
+  const adminBaseUrl = getShopifyAdminBaseUrl();
+
+  return body.data.orders.nodes.map((order) => {
+    const fulfillments = order.fulfillments ?? [];
+    const fulfillmentWithTracking = [...fulfillments]
+      .reverse()
+      .find((fulfillment) => fulfillment.trackingInfo?.length > 0);
+    const latestFulfillment = fulfillmentWithTracking ?? fulfillments.at(-1);
+    const tracking = latestFulfillment?.trackingInfo?.at(-1);
+    const allDelivered =
+      fulfillments.length > 0 &&
+      fulfillments.every(
+        (fulfillment) =>
+          Boolean(fulfillment.deliveredAt) ||
+          fulfillment.displayStatus === "DELIVERED",
+      );
+    const inactiveFinancialStatuses = new Set(["VOIDED", "REFUNDED"]);
+    const numericId = order.id.split("/").at(-1) ?? order.id;
+
+    return {
+      id: order.id,
+      name: order.name,
+      createdAt: order.createdAt,
+      financialStatus: order.displayFinancialStatus ?? "UNKNOWN",
+      fulfillmentStatus: order.displayFulfillmentStatus ?? "UNFULFILLED",
+      active:
+        !order.cancelledAt &&
+        !inactiveFinancialStatuses.has(order.displayFinancialStatus ?? "") &&
+        !allDelivered,
+      trackingCompany: tracking?.company ?? null,
+      trackingNumber: tracking?.number ?? null,
+      trackingUrl: tracking?.url ?? null,
+      deliveryStatus: latestFulfillment?.displayStatus ?? null,
+      estimatedDeliveryAt: latestFulfillment?.estimatedDeliveryAt ?? null,
+      shopifyAdminUrl: `${adminBaseUrl}/orders/${numericId}`,
+    };
+  });
+}
+
 export async function getShopifyShopSummary(): Promise<ShopifyShopSummary> {
   const query = /* GraphQL */ `
     query ShopSummary {

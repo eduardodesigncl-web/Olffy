@@ -43,7 +43,10 @@
   padding: 9px 12px;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .tabActive {
@@ -87,7 +90,9 @@
   font-family: var(--font-body);
   color: var(--olffy-cafe);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .input::placeholder {
@@ -110,34 +115,6 @@
 .passwordInput {
   width: 100%;
   padding-right: 46px;
-}
-
-.passwordToggle {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--olffy-cafe-55);
-  cursor: pointer;
-  transform: translateY(-50%);
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.passwordToggle:hover {
-  background: var(--olffy-morado-suave);
-  color: var(--olffy-morado);
-}
-
-.passwordToggle:focus-visible {
-  outline: 2px solid var(--olffy-morado);
-  outline-offset: 1px;
 }
 
 .error {

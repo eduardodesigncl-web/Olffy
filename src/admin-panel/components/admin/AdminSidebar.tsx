@@ -4,6 +4,7 @@ import styles from "./AdminSidebar.module.css";
 export type AdminTab =
   | "dashboard"
   | "clientes"
+  | "soporte"
   | "ventas"
   | "pos"
   | "puntos"
@@ -26,6 +27,7 @@ const NAV: { id: AdminTab; label: string }[] = [
   { id: "ventas", label: "Ventas" },
   { id: "pos", label: "Tienda POS" },
   { id: "clientes", label: "Clientes" },
+  { id: "soporte", label: "Centro de soporte" },
   { id: "puntos", label: "Puntos" },
   { id: "recompensas", label: "Recompensas" },
   { id: "productos", label: "Productos" },
@@ -61,6 +63,15 @@ function AdminIcon({ tab }: { tab: AdminTab }) {
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
           <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "soporte":
+      return (
+        <svg {...c}>
+          <path d="M4 13v-2a8 8 0 0 1 16 0v2" />
+          <path d="M4 13H2v5h4v-7H4M20 13h2v5h-4v-7h2" />
+          <path d="M18 19c0 1.1-.9 2-2 2h-3" />
+          <circle cx="11" cy="21" r="1" fill="currentColor" stroke="none" />
         </svg>
       );
     case "ventas":

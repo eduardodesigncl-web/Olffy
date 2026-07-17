@@ -10,6 +10,7 @@ import {
   AdminSales,
   AdminPos,
   AdminSettings,
+  AdminSupportInbox,
   type AdminTab,
   type AdminNavContext,
 } from "../../components/admin";
@@ -71,8 +72,14 @@ export function AdminPage({
       onExit={onExit}
       allowedTabs={allowedTabs}
     >
-      {activeTab === "dashboard" && <AdminDashboard onNavigate={navigate} />}
+      {activeTab === "dashboard" && (
+        <AdminDashboard
+          onNavigate={navigate}
+          canAccessSupport={allowedTabs.includes("soporte")}
+        />
+      )}
       {activeTab === "clientes" && <AdminCustomers navContext={navContext} />}
+      {activeTab === "soporte" && <AdminSupportInbox />}
       {activeTab === "puntos" && <AdminPoints />}
       {activeTab === "recompensas" && <AdminRewards />}
       {activeTab === "productos" && <AdminProducts navContext={navContext} />}

@@ -61,7 +61,7 @@
   width: min(380px, calc(100vw - 28px));
   height: min(560px, calc(100vh - 135px));
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto auto 1fr auto auto;
   overflow: hidden;
   border: 1px solid rgba(47, 33, 25, 0.12);
   border-radius: 28px;
@@ -107,6 +107,20 @@
 .header strong,
 .header span {
   display: block;
+}
+
+.headerCopy {
+  min-width: 0;
+}
+
+.conversationMeta {
+  display: grid;
+  gap: 3px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(47, 33, 25, 0.08);
+  background: #fff;
+  color: rgba(47, 33, 25, 0.66);
+  font-size: 10px;
 }
 
 .header strong {
@@ -170,6 +184,44 @@
   display: block;
 }
 
+.messageAuthor {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  opacity: 0.72;
+}
+
+.startedSeparator {
+  margin: 3px 0 15px;
+  color: rgba(47, 33, 25, 0.5);
+  font-size: 9px;
+  text-align: center;
+}
+
+.systemEvent {
+  display: grid;
+  gap: 3px;
+  max-width: 92%;
+  margin: 12px auto;
+  padding: 9px 12px;
+  border-radius: 14px;
+  background: rgba(93, 88, 189, 0.08);
+  color: rgba(47, 33, 25, 0.72);
+  font-size: 10px;
+  text-align: center;
+}
+
+.systemEvent strong {
+  color: var(--olffy-morado);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.systemEvent time {
+  font-size: 8px;
+  opacity: 0.62;
+}
+
 .bubble time {
   margin-top: 5px;
   font-size: 9px;
@@ -196,9 +248,71 @@
   text-align: center;
 }
 
+.diagnostic {
+  display: grid;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.diagnosticQuestion {
+  margin: 0;
+  color: #2f2119;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.diagnosticOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.diagnosticOptions button,
+.categoryBack {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(93, 88, 189, 0.2);
+  border-radius: 13px;
+  background: white;
+  color: #3d377e;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.diagnosticOptions button:hover,
+.diagnosticOptions button:focus-visible,
+.diagnosticOptionActive {
+  border-color: var(--olffy-morado) !important;
+  background: rgba(93, 88, 189, 0.1) !important;
+  outline: none;
+}
+
+.categoryBack {
+  width: fit-content;
+  min-height: 30px;
+  padding: 5px 9px;
+  border-color: transparent;
+  background: rgba(93, 88, 189, 0.08);
+}
+
+.detailPrompt {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(255, 184, 0, 0.12);
+  color: rgba(47, 33, 25, 0.75);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .composer {
   display: grid;
   grid-template-columns: 1fr 42px;
+  align-items: center;
   gap: 9px;
   padding: 12px;
   border-top: 1px solid rgba(47, 33, 25, 0.08);

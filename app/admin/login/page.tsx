@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "src/shared/PasswordInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -46,7 +47,17 @@ export default function LoginPage() {
         href="/"
         className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-xl border border-olffy-ink/10 bg-white px-4 py-2.5 text-[13px] font-semibold text-olffy-ink/70 shadow-[0_2px_10px_rgba(0,0,0,.06)] transition hover:text-olffy-ink"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M19 12H5M11 6l-6 6 6 6" />
         </svg>
         Volver a la web
@@ -87,10 +98,9 @@ export default function LoginPage() {
               Contraseña
             </label>
             <div>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={password}

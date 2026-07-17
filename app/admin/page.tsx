@@ -8,6 +8,7 @@ import type { AdminTab } from "src/admin-panel/components/admin";
 const VALID_TABS: AdminTab[] = [
   "dashboard",
   "clientes",
+  "soporte",
   "ventas",
   "pos",
   "puntos",
@@ -27,7 +28,9 @@ export default async function AdminDashboardPage({
 
   const { tab } = await searchParams;
   const allowedTabs = VALID_TABS.filter((item) =>
-    actor.permissions.includes(item),
+    item === "soporte"
+      ? actor.permissions.includes("clientes")
+      : actor.permissions.includes(item),
   );
   const initialTab =
     VALID_TABS.includes(tab as AdminTab) &&

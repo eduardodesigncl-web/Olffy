@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw, X } from "lucide-react";
 import {
   AdminOperationalStatus,
@@ -42,12 +42,40 @@ function formatCheckedAt(value: string | null) {
   }).format(new Date(value));
 }
 
-export function AdminOperationalStatusFloating() {
+export function AdminOperationalStatusFloating({
+  onSupport,
+}: {
+  onSupport?: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [supportUnread, setSupportUnread] = useState(0);
   const { diagnostics, checkedAt, loading, error, refresh } =
     useAdminDiagnostics(open);
   const priority = highestPriority(diagnostics);
   const checkedAtLabel = formatCheckedAt(checkedAt);
+
+  useEffect(() => {
+    if (!onSupport) return;
+    let active = true;
+    const loadUnread = async () => {
+      try {
+        const response = await fetch("/api/admin/support?summary=1", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as { unread?: number };
+        if (active && response.ok)
+          setSupportUnread(Number(payload.unread ?? 0));
+      } catch {
+        // El acceso rápido no debe interrumpir el dashboard si soporte falla.
+      }
+    };
+    void loadUnread();
+    const interval = window.setInterval(() => void loadUnread(), 15000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [onSupport]);
 
   return (
     <div className={styles.floating}>
@@ -75,6 +103,37 @@ export function AdminOperationalStatusFloating() {
           <path d="M12 14v4a3 3 0 0 0 3 3h2" />
         </svg>
       </button>
+
+      {onSupport && (
+        <button
+          type="button"
+          className={`${styles.button} ${styles.supportButton}`}
+          onClick={onSupport}
+          aria-label="Abrir centro de soporte"
+          title="Centro de soporte"
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 13v-2a8 8 0 0 1 16 0v2" />
+            <path d="M4 13H2v5h4v-7H4M20 13h2v5h-4v-7h2" />
+            <path d="M18 19c0 1.1-.9 2-2 2h-3" />
+          </svg>
+          {supportUnread > 0 && (
+            <span className={styles.supportBadge}>
+              {Math.min(supportUnread, 99)}
+            </span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div

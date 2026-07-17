@@ -19,7 +19,12 @@ export default async function AdminPosPage() {
       data={data}
       initialTab="pos"
       navigationMode="routes"
-      allowedTabs={actor.permissions}
+      allowedTabs={[
+        ...actor.permissions,
+        ...(actor.permissions.includes("clientes")
+          ? (["soporte"] as const)
+          : []),
+      ]}
     />
   );
 }
