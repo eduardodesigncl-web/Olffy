@@ -5,6 +5,7 @@ import { listOrderReferences } from "lib/transactions/repository";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { getActiveLoyaltyRule, listRewards } from "lib/loyalty/service";
 import { getAbandonedCheckoutsSummary } from "lib/shopify/abandoned-checkouts";
+import { getShopifyShopSummary } from "lib/shopify/admin";
 import type { OrderReference } from "lib/transactions/types";
 import type { AdminPanelData, UnifiedSale } from "./types";
 
@@ -265,6 +266,7 @@ export async function getAdminPanelData(options?: {
     pointMovements,
     loyaltyRuleResult,
     abandonedCheckouts,
+    storeInfo,
   ] = await Promise.all([
     getFrontendAdminData(),
     posOnly
@@ -292,6 +294,15 @@ export async function getAdminPanelData(options?: {
           checkouts: [],
         })
       : getAbandonedCheckoutsSummary(),
+    posOnly
+      ? Promise.resolve(null)
+      : getShopifyShopSummary().catch((error) => {
+          console.error(
+            "No se pudo cargar la información de la tienda:",
+            error,
+          );
+          return null;
+        }),
   ]);
 
   const customers = frontend.customers.map((customer, index) => ({
@@ -511,6 +522,7 @@ export async function getAdminPanelData(options?: {
       minimumPurchaseClp: Number(reward.minimum_purchase_clp ?? 0),
       validityDays: Number(reward.validity_days ?? 30),
     })),
+    storeInfo,
     shopifyAdminUrl: await getShopifyAdminUrl(),
   };
 }

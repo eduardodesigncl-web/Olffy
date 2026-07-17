@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState, type ReactNode } from "react";
 import { AdminSidebar, type AdminTab } from "./AdminSidebar";
+import { AdminSupportInbox } from "./AdminSupportInbox";
 import styles from "./AdminLayout.module.css";
 
 interface AdminLayoutProps {
@@ -58,6 +59,7 @@ export function AdminLayout({
           {children}
         </div>
       </div>
+      {allowedTabs.includes("clientes") && <AdminSupportInbox />}
     </div>
   );
 }

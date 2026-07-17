@@ -54,6 +54,7 @@ export { AdminSaleDetailDrawer } from "./AdminSaleDetailDrawer";
 export { AdminPos } from "./AdminPos";
 export type { AdminNavContext, AdminNavigate } from "./adminNav";
 export { AdminSettings } from "./AdminSettings";
+export { AdminSupportInbox } from "./AdminSupportInbox";
 export { AdminSettingsTabs } from "./AdminSettingsTabs";
 export type { SettingsTab } from "./AdminSettingsTabs";
 export { AdminSettingsSection } from "./AdminSettingsSection";

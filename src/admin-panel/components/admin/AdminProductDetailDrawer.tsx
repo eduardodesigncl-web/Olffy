@@ -27,7 +27,7 @@ interface AdminProductDetailDrawerProps {
   onView: (product: AdminProductRow) => void;
   onToggleFeatured: (product: AdminProductRow) => void;
   onTogglePoints: (product: AdminProductRow, excluded: boolean) => void;
-  onOpenShopify: () => void;
+  onOpenShopify: (product: AdminProductRow) => void;
 }
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -252,7 +252,7 @@ export function AdminProductDetailDrawer({
               <button
                 type="button"
                 className={styles.secondaryBtn}
-                onClick={onOpenShopify}
+                onClick={() => onOpenShopify(product)}
               >
                 Abrir en Shopify
               </button>

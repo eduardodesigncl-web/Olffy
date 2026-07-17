@@ -3,7 +3,7 @@ import { createTuuRemotePayment } from "lib/tuu/remote-payment";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("pos");
   if (unauthorized) return unauthorized;
 
   try {

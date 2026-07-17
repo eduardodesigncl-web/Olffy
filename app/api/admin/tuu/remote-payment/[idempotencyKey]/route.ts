@@ -6,7 +6,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ idempotencyKey: string }> },
 ) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("pos");
   if (unauthorized) return unauthorized;
 
   try {

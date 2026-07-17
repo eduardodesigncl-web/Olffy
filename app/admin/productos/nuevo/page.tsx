@@ -1,8 +1,8 @@
 import { ProductForm } from "components/admin/product-form";
-import { requireAdminPageSession } from "lib/admin/auth";
+import { requireAdminPagePermission } from "lib/admin/auth";
 
 export default async function NuevoProductoPage() {
-  await requireAdminPageSession();
+  await requireAdminPagePermission("productos");
 
   return (
     <div className="space-y-6">

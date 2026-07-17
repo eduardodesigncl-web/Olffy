@@ -9,7 +9,10 @@ function message(error: unknown) {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse([
+    "clientes",
+    "pos",
+  ]);
   if (unauthorized) return unauthorized;
 
   try {

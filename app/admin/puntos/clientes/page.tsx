@@ -2,6 +2,7 @@ import Link from "next/link";
 import { searchLoyaltyCustomers } from "lib/loyalty/service";
 import { createCustomerAction } from "../actions";
 import { connection } from "next/server";
+import { requireAdminPagePermission } from "lib/admin/auth";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
 
@@ -10,6 +11,7 @@ export default async function LoyaltyCustomersPage({
 }: {
   searchParams: Promise<{ q?: string; error?: string }>;
 }) {
+  await requireAdminPagePermission("clientes");
   await connection();
   const params = await searchParams;
   const query = params.q?.trim() ?? "";

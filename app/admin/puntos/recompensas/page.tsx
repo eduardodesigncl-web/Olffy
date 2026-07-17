@@ -1,6 +1,7 @@
 import { listRewards } from "lib/loyalty/service";
 import { createRewardAction } from "../actions";
 import { connection } from "next/server";
+import { requireAdminPagePermission } from "lib/admin/auth";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
 const currencyFormatter = new Intl.NumberFormat("es-CL", {
@@ -14,6 +15,7 @@ export default async function RewardsPage({
 }: {
   searchParams: Promise<{ created?: string; error?: string }>;
 }) {
+  await requireAdminPagePermission("recompensas");
   await connection();
   const params = await searchParams;
   const rewards = await listRewards();

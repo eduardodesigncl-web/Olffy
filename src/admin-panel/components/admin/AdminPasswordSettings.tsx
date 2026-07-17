@@ -18,10 +18,6 @@ export function AdminPasswordSettings(_props: AdminPasswordSettingsProps) {
           roles y pestañas permitidas se crean y editan desde la sección{" "}
           <strong>Equipo</strong>.
         </p>
-        <p style={{ margin: 0 }}>
-          El acceso principal mediante <strong>ADMIN_PASSWORD</strong> sigue
-          disponible como respaldo operativo y conserva permisos de propietaria.
-        </p>
       </div>
     </AdminSettingsSection>
   );

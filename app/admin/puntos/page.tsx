@@ -1,6 +1,7 @@
 import { getLoyaltyStats, type LoyaltyStats } from "lib/loyalty/service";
 import { connection } from "next/server";
 import Link from "next/link";
+import { requireAdminPagePermission } from "lib/admin/auth";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
 const currencyFormatter = new Intl.NumberFormat("es-CL", {
@@ -32,6 +33,7 @@ function SummaryCard({
 }
 
 export default async function AdminPointsPage() {
+  await requireAdminPagePermission("puntos");
   await connection();
 
   let stats: LoyaltyStats | null = null;

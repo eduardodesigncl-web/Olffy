@@ -29,7 +29,7 @@ type RemoteSaleRequest = {
 };
 
 export async function GET(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("pos");
   if (unauthorized) return unauthorized;
 
   try {
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("pos");
   if (unauthorized) return unauthorized;
 
   let attempt:

@@ -8,7 +8,10 @@ function errorMessage(error: unknown): string {
 
 export async function GET(request: Request) {
   await connection();
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse([
+    "productos",
+    "pos",
+  ]);
   if (unauthorized) return unauthorized;
 
   try {

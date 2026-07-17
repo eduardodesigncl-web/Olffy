@@ -2,6 +2,7 @@ import { requireAdminPageSession } from "lib/admin/auth";
 import { connection } from "next/server";
 import { getAdminPanelData } from "src/admin-panel/integration/get-admin-panel-data";
 import { AdminPanelClient } from "src/admin-panel/integration/AdminPanelClient";
+import { filterAdminPanelData } from "src/admin-panel/integration/filter-admin-panel-data";
 import type { AdminTab } from "src/admin-panel/components/admin";
 
 const VALID_TABS: AdminTab[] = [
@@ -33,7 +34,10 @@ export default async function AdminDashboardPage({
     allowedTabs.includes(tab as AdminTab)
       ? (tab as AdminTab)
       : (allowedTabs[0] ?? "dashboard");
-  const data = await getAdminPanelData();
+  const data = filterAdminPanelData(
+    await getAdminPanelData(),
+    actor.permissions,
+  );
 
   return (
     <AdminPanelClient

@@ -1,21 +1,20 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import {
+  ADMIN_PERMISSIONS,
+  isAdminRole,
+  type AdminPermission,
+  type AdminRole,
+} from "./permissions";
+
+export {
+  ADMIN_PERMISSIONS,
+  ADMIN_ROLE_PERMISSIONS,
+  type AdminPermission,
+  type AdminRole,
+} from "./permissions";
+
 export const ADMIN_SESSION_MAX_AGE = 60 * 60 * 24 * 7;
-
-export const ADMIN_PERMISSIONS = [
-  "dashboard",
-  "ventas",
-  "pos",
-  "clientes",
-  "puntos",
-  "recompensas",
-  "productos",
-  "colecciones",
-  "ajustes",
-] as const;
-
-export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
-export type AdminRole = "owner" | "manager" | "cashier" | "custom";
 
 export type AdminSessionActor = {
   userId: string | null;
@@ -23,6 +22,7 @@ export type AdminSessionActor = {
   name: string;
   role: AdminRole;
   permissions: AdminPermission[];
+  sessionVersion: string | null;
   legacy: boolean;
 };
 
@@ -67,6 +67,7 @@ export function createAdminSessionToken(
     name: "Administración OLFFY",
     role: "owner",
     permissions: [...ADMIN_PERMISSIONS],
+    sessionVersion: null,
   },
 ): string {
   const payload: AdminSessionPayload = {
@@ -99,6 +100,7 @@ export function readAdminSessionToken(
       name: "Administración OLFFY",
       role: "owner",
       permissions: [...ADMIN_PERMISSIONS],
+      sessionVersion: null,
       legacy: true,
     };
   }
@@ -110,11 +112,21 @@ export function readAdminSessionToken(
     if (!Number.isInteger(payload.exp) || payload.exp <= Date.now() / 1000) {
       return null;
     }
+    if (!Array.isArray(payload.permissions) || !isAdminRole(payload.role)) {
+      return null;
+    }
     const permissions = payload.permissions.filter((permission) =>
       ADMIN_PERMISSIONS.includes(permission),
     );
     if (permissions.length === 0) return null;
-    return { ...payload, permissions };
+    return {
+      ...payload,
+      permissions,
+      sessionVersion:
+        typeof payload.sessionVersion === "string"
+          ? payload.sessionVersion
+          : null,
+    };
   } catch {
     return null;
   }

@@ -122,7 +122,29 @@ function invalidInput(cause: unknown): CustomerAuthActionResult {
 }
 
 async function getCustomerAuthOrigin() {
+  const requestHeaders = await headers();
+  const requestOrigin = requestHeaders.get("origin");
+  const forwardedHost =
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const forwardedProtocol =
+    requestHeaders.get("x-forwarded-proto") ??
+    (process.env.NODE_ENV === "production" ? "https" : "http");
+  const currentOrigin = requestOrigin
+    ? new URL(requestOrigin).origin
+    : forwardedHost
+      ? `${forwardedProtocol}://${forwardedHost}`
+      : null;
+
+  if (
+    currentOrigin &&
+    (process.env.NODE_ENV !== "production" ||
+      currentOrigin.startsWith("https://"))
+  ) {
+    return currentOrigin;
+  }
+
   const configuredUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.CUSTOMER_AUTH_SITE_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??
     process.env.VERCEL_URL;
@@ -147,16 +169,7 @@ async function getCustomerAuthOrigin() {
     throw new Error("CUSTOMER_AUTH_SITE_URL no está configurada.");
   }
 
-  const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-
-  if (!host) {
-    throw new Error("No se pudo determinar la URL del sitio.");
-  }
-
-  return `${protocol}://${host}`;
+  throw new Error("No se pudo determinar la URL del sitio.");
 }
 
 function confirmationRedirect(origin: string) {

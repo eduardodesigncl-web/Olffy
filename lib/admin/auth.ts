@@ -7,7 +7,6 @@ import {
   readAdminSessionToken,
   type AdminPermission,
   type AdminSessionActor,
-  verifyAdminSessionToken,
 } from "./session";
 
 export {
@@ -17,8 +16,7 @@ export {
 } from "./session";
 
 export async function hasAdminSession(): Promise<boolean> {
-  const session = (await cookies()).get("admin_session");
-  return verifyAdminSessionToken(session?.value);
+  return Boolean(await getAdminSessionActor());
 }
 
 export async function getAdminSessionActor(): Promise<AdminSessionActor | null> {
@@ -28,10 +26,13 @@ export async function getAdminSessionActor(): Promise<AdminSessionActor | null> 
 
   const { data, error } = await getSupabaseAdmin()
     .from("admin_accounts")
-    .select("email,full_name,role,permissions,status")
+    .select("email,full_name,role,permissions,status,updated_at")
     .eq("auth_user_id", actor.userId)
     .maybeSingle();
   if (error || !data || data.status !== "active") return null;
+  if (!actor.sessionVersion || actor.sessionVersion !== data.updated_at) {
+    return null;
+  }
 
   return {
     ...actor,
@@ -48,9 +49,20 @@ export async function hasAdminPermission(permission: AdminPermission) {
 }
 
 export async function requireAdminSession(): Promise<void> {
-  if (!(await hasAdminSession())) {
+  if (!(await getAdminSessionActor())) {
     throw new Error("Sesion de administracion no valida");
   }
+}
+
+export async function requireAdminPermission(
+  permission: AdminPermission,
+): Promise<AdminSessionActor> {
+  const actor = await getAdminSessionActor();
+  if (!actor) throw new Error("Sesion de administracion no valida");
+  if (!actor.permissions.includes(permission)) {
+    throw new Error("No tienes permiso para realizar esta acción");
+  }
+  return actor;
 }
 
 export async function requireAdminPageSession(): Promise<AdminSessionActor> {

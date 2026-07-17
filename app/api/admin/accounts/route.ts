@@ -1,29 +1,12 @@
 import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import {
-  ADMIN_PERMISSIONS,
-  type AdminPermission,
+  isAdminRole,
+  normalizeAdminPermissions,
   type AdminRole,
-} from "lib/admin/session";
+} from "lib/admin/permissions";
+import { getAdminSessionActor } from "lib/admin/auth";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { NextResponse } from "next/server";
-
-const ROLE_PERMISSIONS: Record<
-  Exclude<AdminRole, "custom">,
-  AdminPermission[]
-> = {
-  owner: [...ADMIN_PERMISSIONS],
-  manager: [
-    "dashboard",
-    "ventas",
-    "pos",
-    "clientes",
-    "puntos",
-    "recompensas",
-    "productos",
-    "colecciones",
-  ],
-  cashier: ["dashboard", "ventas", "pos", "clientes"],
-};
 
 function message(error: unknown) {
   return error instanceof Error
@@ -32,11 +15,7 @@ function message(error: unknown) {
 }
 
 function normalizedPermissions(role: AdminRole, value: unknown) {
-  if (role !== "custom") return ROLE_PERMISSIONS[role];
-  const requested = Array.isArray(value) ? value.map(String) : [];
-  const permissions = ADMIN_PERMISSIONS.filter((permission) =>
-    requested.includes(permission),
-  );
+  const permissions = normalizeAdminPermissions(role, value);
   if (permissions.length === 0) {
     throw new Error("Selecciona al menos una pestaña para la cuenta");
   }
@@ -44,8 +23,8 @@ function normalizedPermissions(role: AdminRole, value: unknown) {
 }
 
 function validRole(value: unknown): AdminRole {
-  const role = String(value ?? "custom") as AdminRole;
-  if (!["owner", "manager", "cashier", "custom"].includes(role)) {
+  const role = String(value ?? "custom");
+  if (!isAdminRole(role)) {
     throw new Error("El rol seleccionado no es válido");
   }
   return role;
@@ -95,7 +74,7 @@ export async function POST(request: Request) {
         email,
         password,
         email_confirm: true,
-        app_metadata: { admin_account: true },
+        app_metadata: { admin_account: true, admin_role: role },
       });
     if (authError || !created.user) {
       throw new Error(authError?.message || "No se pudo crear el acceso");
@@ -132,6 +111,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const unauthorized = await getAdminApiUnauthorizedResponse("ajustes");
   if (unauthorized) return unauthorized;
+  const actor = await getAdminSessionActor();
 
   try {
     const body = (await request.json()) as Record<string, unknown>;
@@ -154,7 +134,7 @@ export async function PATCH(request: Request) {
     if (
       current.role === "owner" &&
       current.status === "active" &&
-      status === "disabled"
+      (status === "disabled" || role !== "owner")
     ) {
       const { count } = await supabase
         .from("admin_accounts")
@@ -162,19 +142,44 @@ export async function PATCH(request: Request) {
         .eq("role", "owner")
         .eq("status", "active");
       if ((count ?? 0) <= 1)
-        throw new Error("No puedes deshabilitar la última cuenta propietaria");
+        throw new Error(
+          "No puedes deshabilitar ni cambiar el rol de la última cuenta propietaria",
+        );
     }
+
+    if (current.auth_user_id === actor?.userId && status === "disabled") {
+      throw new Error("No puedes deshabilitar la cuenta con la sesión actual");
+    }
+
+    const { data: authUser, error: authUserError } =
+      await supabase.auth.admin.getUserById(current.auth_user_id);
+    if (authUserError || !authUser.user) {
+      throw new Error(authUserError?.message || "Acceso de Auth no encontrado");
+    }
+
+    const authUpdate: {
+      password?: string;
+      app_metadata: Record<string, unknown>;
+    } = {
+      app_metadata: {
+        ...authUser.user.app_metadata,
+        admin_account: true,
+        admin_role: role,
+      },
+    };
 
     if (password) {
       if (password.length < 8) {
         throw new Error("La contraseña debe tener al menos 8 caracteres");
       }
-      const { error } = await supabase.auth.admin.updateUserById(
-        current.auth_user_id,
-        { password },
-      );
-      if (error) throw new Error(error.message);
+      authUpdate.password = password;
     }
+
+    const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+      current.auth_user_id,
+      authUpdate,
+    );
+    if (authUpdateError) throw new Error(authUpdateError.message);
 
     const { data, error } = await supabase
       .from("admin_accounts")

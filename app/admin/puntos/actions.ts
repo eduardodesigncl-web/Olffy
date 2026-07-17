@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAdminSession } from "lib/admin/auth";
+import { requireAdminPermission } from "lib/admin/auth";
 import {
   adjustCustomerPoints,
   calculatePointsForAmount,
@@ -44,7 +44,7 @@ function errorMessage(cause: unknown): string {
 }
 
 export async function createCustomerAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("clientes");
   let customerId: number;
 
   try {
@@ -65,7 +65,7 @@ export async function createCustomerAction(formData: FormData) {
 }
 
 export async function adjustPointsAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("puntos");
   const customerId = requiredNumber(formData, "customerId");
 
   try {
@@ -88,7 +88,7 @@ export async function adjustPointsAction(formData: FormData) {
 }
 
 export async function reverseTransactionAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("puntos");
   const customerId = requiredNumber(formData, "customerId");
 
   try {
@@ -109,7 +109,7 @@ export async function reverseTransactionAction(formData: FormData) {
 }
 
 export async function redeemRewardAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("recompensas");
   const customerId = requiredNumber(formData, "customerId");
 
   try {
@@ -130,7 +130,7 @@ export async function redeemRewardAction(formData: FormData) {
 }
 
 export async function updateRedemptionStatusAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("recompensas");
   const customerId = requiredNumber(formData, "customerId");
 
   try {
@@ -164,7 +164,7 @@ export async function updateRedemptionStatusAction(formData: FormData) {
 }
 
 export async function cancelRedemptionAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("recompensas");
   const customerId = requiredNumber(formData, "customerId");
 
   try {
@@ -188,7 +188,7 @@ export async function cancelRedemptionAction(formData: FormData) {
 }
 
 export async function createRewardAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("recompensas");
 
   try {
     await createReward({
@@ -212,7 +212,7 @@ export async function createRewardAction(formData: FormData) {
 }
 
 export async function registerPhysicalSaleAction(formData: FormData) {
-  await requireAdminSession();
+  await requireAdminPermission("pos");
 
   try {
     const total = requiredNumber(formData, "total");

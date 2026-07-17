@@ -4,7 +4,7 @@ import {
   getAdminPassword,
 } from "lib/admin/auth";
 import {
-  adminLoginIpHash,
+  adminLoginKeyHash,
   checkAdminLoginRateLimit,
   recordAdminLoginAttempt,
 } from "lib/admin/rate-limit";
@@ -32,12 +32,16 @@ export async function POST(request: Request) {
 
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
-    const ipHash = adminLoginIpHash(ip);
+    const ipHash = adminLoginKeyHash(ip, normalizedEmail || "legacy-access");
     const rateLimit = await checkAdminLoginRateLimit(ipHash);
 
     if (!rateLimit.allowed) {
+      const retryMinutes = Math.max(1, Math.ceil(rateLimit.retryAfter / 60));
       return NextResponse.json(
-        { error: "Demasiados intentos. Intenta nuevamente mas tarde." },
+        {
+          error: `Demasiados intentos para esta cuenta. Intenta nuevamente en ${retryMinutes} min.`,
+          retryAfter: rateLimit.retryAfter,
+        },
         {
           status: 429,
           headers: { "Retry-After": String(rateLimit.retryAfter) },
@@ -66,7 +70,9 @@ export async function POST(request: Request) {
       if (!authError && authData.user) {
         const { data: account } = await getSupabaseAdmin()
           .from("admin_accounts")
-          .select("auth_user_id,email,full_name,role,permissions,status")
+          .select(
+            "auth_user_id,email,full_name,role,permissions,status,updated_at",
+          )
           .eq("auth_user_id", authData.user.id)
           .maybeSingle();
         if (account?.status === "active") {
@@ -77,6 +83,7 @@ export async function POST(request: Request) {
             name: account.full_name,
             role: account.role,
             permissions: account.permissions,
+            sessionVersion: account.updated_at,
           });
         }
       }
@@ -101,7 +108,10 @@ export async function POST(request: Request) {
         maxAge: ADMIN_SESSION_MAX_AGE,
       });
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json(
+        { success: true },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
     }
 
     return NextResponse.json(
@@ -128,5 +138,8 @@ export async function DELETE() {
     path: "/",
     maxAge: 0,
   });
-  return NextResponse.json({ success: true });
+  return NextResponse.json(
+    { success: true },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

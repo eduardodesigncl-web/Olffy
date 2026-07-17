@@ -10,7 +10,7 @@ import {
   TicketIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
-import { requireAdminPageSession } from "lib/admin/auth";
+import { requireAdminPagePermission } from "lib/admin/auth";
 import {
   getCustomerPortalDashboard,
   type CustomerPortalRedemption,
@@ -34,7 +34,7 @@ function relation<T>(value: T | T[] | null): T | null {
 }
 
 export default async function AdminCustomerAccountPage() {
-  await requireAdminPageSession();
+  await requireAdminPagePermission("clientes");
   await connection();
 
   let dashboard: Awaited<ReturnType<typeof getCustomerPortalDashboard>> | null =

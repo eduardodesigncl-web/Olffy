@@ -3,7 +3,7 @@ import { getAdminCollections, createAdminCollection } from "lib/shopify/admin";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("colecciones");
   if (unauthorized) return unauthorized;
 
   try {
@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("colecciones");
   if (unauthorized) return unauthorized;
 
   try {

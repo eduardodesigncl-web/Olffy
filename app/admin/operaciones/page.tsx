@@ -1,4 +1,4 @@
-import { requireAdminPageSession } from "lib/admin/auth";
+import { requireAdminPagePermission } from "lib/admin/auth";
 import { listOrderReferences } from "lib/transactions/repository";
 import { retryBoletaAction } from "./actions";
 
@@ -13,7 +13,7 @@ const moneyFormatter = new Intl.NumberFormat("es-CL", {
 });
 
 export default async function OperationsPage() {
-  await requireAdminPageSession();
+  await requireAdminPagePermission("ventas");
   const operations = await listOrderReferences();
 
   return (

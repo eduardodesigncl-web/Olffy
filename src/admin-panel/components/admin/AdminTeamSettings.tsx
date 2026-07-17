@@ -2,18 +2,12 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { AdminSettingsSection, sectionStyles } from "./AdminSettingsSection";
 import styles from "./AdminTeamSettings.module.css";
-
-type Permission =
-  | "dashboard"
-  | "ventas"
-  | "pos"
-  | "clientes"
-  | "puntos"
-  | "recompensas"
-  | "productos"
-  | "colecciones"
-  | "ajustes";
-type Role = "owner" | "manager" | "cashier" | "custom";
+import {
+  ADMIN_PERMISSIONS,
+  ADMIN_ROLE_PERMISSIONS,
+  type AdminPermission as Permission,
+  type AdminRole as Role,
+} from "lib/admin/permissions";
 
 interface TeamMember {
   id: string;
@@ -24,25 +18,22 @@ interface TeamMember {
   status: "active" | "disabled";
 }
 
-const PERMISSIONS: Array<{ id: Permission; label: string }> = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "ventas", label: "Ventas" },
-  { id: "pos", label: "Tienda POS" },
-  { id: "clientes", label: "Clientes" },
-  { id: "puntos", label: "Puntos" },
-  { id: "recompensas", label: "Recompensas" },
-  { id: "productos", label: "Productos" },
-  { id: "colecciones", label: "Colecciones" },
-  { id: "ajustes", label: "Ajustes" },
-];
-
-const ROLE_PERMISSIONS: Record<Exclude<Role, "custom">, Permission[]> = {
-  owner: PERMISSIONS.map((item) => item.id),
-  manager: PERMISSIONS.filter((item) => item.id !== "ajustes").map(
-    (item) => item.id,
-  ),
-  cashier: ["dashboard", "ventas", "pos", "clientes"],
+const PERMISSION_LABEL: Record<Permission, string> = {
+  dashboard: "Dashboard",
+  ventas: "Ventas",
+  pos: "Tienda POS",
+  clientes: "Clientes",
+  puntos: "Puntos",
+  recompensas: "Recompensas",
+  productos: "Productos",
+  colecciones: "Colecciones",
+  ajustes: "Ajustes",
 };
+
+const PERMISSIONS = ADMIN_PERMISSIONS.map((id) => ({
+  id,
+  label: PERMISSION_LABEL[id],
+}));
 
 const ROLE_LABEL: Record<Role, string> = {
   owner: "Propietaria",
@@ -63,7 +54,7 @@ export function AdminTeamSettings({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("cashier");
   const [permissions, setPermissions] = useState<Permission[]>(
-    ROLE_PERMISSIONS.cashier,
+    ADMIN_ROLE_PERMISSIONS.cashier,
   );
   const [status, setStatus] = useState<"active" | "disabled">("active");
   const [loading, setLoading] = useState(true);
@@ -102,14 +93,14 @@ export function AdminTeamSettings({
     setEmail("");
     setPassword("");
     setRole("cashier");
-    setPermissions(ROLE_PERMISSIONS.cashier);
+    setPermissions(ADMIN_ROLE_PERMISSIONS.cashier);
     setStatus("active");
     setError(null);
   };
 
   const selectRole = (next: Role) => {
     setRole(next);
-    if (next !== "custom") setPermissions(ROLE_PERMISSIONS[next]);
+    if (next !== "custom") setPermissions(ADMIN_ROLE_PERMISSIONS[next]);
   };
 
   const startEditing = (member: TeamMember) => {

@@ -12,6 +12,7 @@ import {
   updateRedemptionStatusAction,
 } from "../../actions";
 import { connection } from "next/server";
+import { requireAdminPagePermission } from "lib/admin/auth";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
 const dateFormatter = new Intl.DateTimeFormat("es-CL", {
@@ -34,6 +35,7 @@ export default async function LoyaltyCustomerDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  await requireAdminPagePermission("clientes");
   await connection();
   const { id } = await params;
   const messages = await searchParams;

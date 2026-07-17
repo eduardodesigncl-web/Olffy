@@ -12,7 +12,6 @@ import { AdminProductFilters } from "./AdminProductFilters";
 import { AdminProductCard, type SyncState } from "./AdminProductCard";
 import { AdminProductDetailDrawer } from "./AdminProductDetailDrawer";
 import { AdminProductTable, type AdminProductRow } from "./AdminProductTable";
-import { AdminPreviewModal, previewStyles } from "./AdminPreviewModal";
 import { AdminShopifyRedirectModal } from "./AdminShopifyRedirectModal";
 import type { AdminNavContext } from "./adminNav";
 import { PRODUCTS } from "../../data/products.mock";
@@ -35,16 +34,6 @@ const ADD_INTENT: ShopifyIntent = {
   description:
     "Los productos se crean directamente en Shopify para mantener sincronizados precios, stock, variantes, imágenes y checkout. Cuando el producto esté creado en Shopify, podrás volver a OLFFY Admin y sincronizar el catálogo para visualizarlo aquí.",
 };
-
-const EDIT_INTENT: ShopifyIntent = {
-  title: "Editar producto en Shopify",
-  description:
-    "Este producto viene desde Shopify. Para mantener coherencia entre catálogo, stock, precios, imágenes, variantes y checkout, la edición oficial se realiza en Shopify. Después de guardar los cambios allí, vuelve a OLFFY Admin y sincroniza el producto para reflejar la información actualizada.",
-};
-
-// Base pública del storefront para el preview del producto.
-// Reemplazar dominio por el dominio final cuando esté publicado.
-const STOREFRONT_PRODUCT_BASE_URL = "https://olffy.cl/products/";
 
 // "Destacados" es una marca local del panel (persistida en este navegador);
 // no existe campo equivalente en Shopify todavía.
@@ -127,7 +116,6 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
   const [products, setProducts] = useState<AdminProductRow[]>(productRows);
   const [searchTerm, setSearchTerm] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
-  const [preview, setPreview] = useState<AdminProductRow | null>(null);
   // Modal de redirección a Shopify (agregar o editar). null = cerrado.
   const [shopifyIntent, setShopifyIntent] = useState<ShopifyIntent | null>(
     null,
@@ -249,13 +237,25 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
   const syncStateOf = (id: number): SyncState =>
     syncingId === id ? "syncing" : syncedIds.has(id) ? "synced" : "none";
 
-  // Editar oficialmente = ir a Shopify. Cierra el detalle y abre el modal de
-  // redirección (no hay edición local del producto).
-  // Cuando exista productId/store handle real, reemplazar por la URL directa
-  // del producto en Shopify.
-  const handleEditInShopify = (_product: AdminProductRow) => {
-    setDetailId(null);
-    setShopifyIntent(EDIT_INTENT);
+  const shopifyProductUrl = (product: AdminProductRow) => {
+    const numericId = product.shopifyId?.split("/").pop();
+    return numericId
+      ? `${shopifyProductsUrl}/${numericId}`
+      : shopifyProductsUrl;
+  };
+
+  const handleEditInShopify = (product: AdminProductRow) => {
+    window.open(shopifyProductUrl(product), "_blank", "noopener,noreferrer");
+    setNotice("Abriendo el producto para editarlo en Shopify.");
+  };
+
+  const handleViewInStore = (product: AdminProductRow) => {
+    window.open(
+      `${window.location.origin}/tienda/${encodeURIComponent(product.handle)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+    setNotice("Abriendo el producto en la tienda online.");
   };
 
   // Sincronizar = volver a pedir el catálogo real a Shopify (refresh del
@@ -338,9 +338,9 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
     }
   };
 
-  const handleOpenShopify = () => {
-    window.open(shopifyProductsUrl, "_blank", "noopener,noreferrer");
-    setNotice("Abriendo Shopify Admin en una nueva pestaña.");
+  const handleOpenShopify = (product: AdminProductRow) => {
+    window.open(shopifyProductUrl(product), "_blank", "noopener,noreferrer");
+    setNotice("Abriendo el producto en Shopify Admin.");
   };
 
   return (
@@ -504,76 +504,11 @@ export function AdminProducts({ navContext }: AdminProductsProps = {}) {
         onClose={() => setDetailId(null)}
         onEdit={handleEditInShopify}
         onSync={handleSync}
-        onView={setPreview}
+        onView={handleViewInStore}
         onToggleFeatured={handleToggleFeatured}
         onTogglePoints={handleTogglePoints}
         onOpenShopify={handleOpenShopify}
       />
-
-      <AdminPreviewModal
-        isOpen={preview !== null}
-        onClose={() => setPreview(null)}
-        eyebrow="Preview en tienda"
-        title={preview?.nombre ?? ""}
-        footer={
-          <>
-            <button
-              type="button"
-              className={previewStyles.primary}
-              onClick={() => {
-                if (preview) {
-                  window.open(
-                    `${STOREFRONT_PRODUCT_BASE_URL}${preview.handle}`,
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }
-                setPreview(null);
-                setNotice(
-                  "Abriendo preview pública del producto en una nueva pestaña.",
-                );
-              }}
-            >
-              Ir a tienda
-            </button>
-            <button
-              type="button"
-              className={previewStyles.secondary}
-              onClick={() => setPreview(null)}
-            >
-              Cerrar
-            </button>
-          </>
-        }
-      >
-        {preview && (
-          <>
-            <div className={previewStyles.rows}>
-              <div className={previewStyles.row}>
-                <span className={previewStyles.rowLabel}>Precio</span>
-                <span className={previewStyles.rowValue}>{preview.precio}</span>
-              </div>
-              <div className={previewStyles.row}>
-                <span className={previewStyles.rowLabel}>Estado</span>
-                <span className={previewStyles.rowValue}>{preview.estado}</span>
-              </div>
-              <div className={previewStyles.row}>
-                <span className={previewStyles.rowLabel}>Stock</span>
-                <span className={previewStyles.rowValue}>
-                  {preview.stock} en stock
-                </span>
-              </div>
-              <div className={previewStyles.row}>
-                <span className={previewStyles.rowLabel}>Handle</span>
-                <span className={previewStyles.rowValue}>{preview.handle}</span>
-              </div>
-            </div>
-            <p className={previewStyles.note}>
-              Preview demo del producto en tienda.
-            </p>
-          </>
-        )}
-      </AdminPreviewModal>
 
       <AdminShopifyRedirectModal
         isOpen={shopifyIntent !== null}

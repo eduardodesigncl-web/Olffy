@@ -11,7 +11,7 @@ function errorMessage(error: unknown): string {
 
 export async function GET() {
   await connection();
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("puntos");
   if (unauthorized) return unauthorized;
 
   try {
@@ -27,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = await getAdminApiUnauthorizedResponse();
+  const unauthorized = await getAdminApiUnauthorizedResponse("puntos");
   if (unauthorized) return unauthorized;
 
   try {

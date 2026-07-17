@@ -5,10 +5,19 @@ import { getAdminSessionActor } from "./auth";
 import type { AdminPermission } from "./session";
 
 export async function getAdminApiUnauthorizedResponse(
-  permission?: AdminPermission,
+  permission?: AdminPermission | AdminPermission[],
 ) {
   const actor = await getAdminSessionActor();
-  if (actor && (!permission || actor.permissions.includes(permission))) {
+  const required = Array.isArray(permission)
+    ? permission
+    : permission
+      ? [permission]
+      : [];
+  if (
+    actor &&
+    (required.length === 0 ||
+      required.some((item) => actor.permissions.includes(item)))
+  ) {
     return null;
   }
 

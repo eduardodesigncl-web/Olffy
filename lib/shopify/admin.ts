@@ -249,6 +249,80 @@ export async function adminFetch<T>({
   }
 }
 
+export type ShopifyShopSummary = {
+  name: string;
+  contactEmail: string | null;
+  phone: string | null;
+  address: string | null;
+  domain: string | null;
+  currencyCode: string;
+};
+
+export async function getShopifyShopSummary(): Promise<ShopifyShopSummary> {
+  const query = /* GraphQL */ `
+    query ShopSummary {
+      shop {
+        name
+        contactEmail
+        shopAddress {
+          address1
+          address2
+          city
+          provinceCode
+          zip
+          country
+          phone
+        }
+        primaryDomain {
+          url
+          host
+        }
+        currencyCode
+      }
+    }
+  `;
+  const { body } = await adminFetch<{
+    data: {
+      shop: {
+        name: string;
+        contactEmail: string | null;
+        shopAddress: {
+          address1: string | null;
+          address2: string | null;
+          city: string | null;
+          provinceCode: string | null;
+          zip: string | null;
+          country: string | null;
+          phone: string | null;
+        } | null;
+        primaryDomain: { url: string; host: string } | null;
+        currencyCode: string;
+      };
+    };
+  }>({ query });
+  const shop = body.data.shop;
+  const address = shop.shopAddress;
+  const addressParts = address
+    ? [
+        address.address1,
+        address.address2,
+        address.city,
+        address.provinceCode,
+        address.zip,
+        address.country,
+      ].filter((part): part is string => Boolean(part?.trim()))
+    : [];
+
+  return {
+    name: shop.name,
+    contactEmail: shop.contactEmail,
+    phone: address?.phone ?? null,
+    address: addressParts.length ? addressParts.join(", ") : null,
+    domain: shop.primaryDomain?.url ?? shop.primaryDomain?.host ?? null,
+    currencyCode: shop.currencyCode,
+  };
+}
+
 const removeEdgesAndNodes = <T>(array: AdminConnection<T>): T[] => {
   return array.edges.map((edge) => edge?.node);
 };

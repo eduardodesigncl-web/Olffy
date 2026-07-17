@@ -24,9 +24,11 @@ function hasAdminDatabaseConfig() {
   );
 }
 
-export function adminLoginIpHash(ip: string) {
+export function adminLoginKeyHash(ip: string, identifier: string) {
   return createHash("sha256")
-    .update(`${getAdminSessionSecret()}:${ip}`)
+    .update(
+      `${getAdminSessionSecret()}:${ip}:${identifier.trim().toLowerCase()}`,
+    )
     .digest("hex");
 }
 
@@ -56,7 +58,22 @@ export async function checkAdminLoginRateLimit(ipHash: string) {
 
       return {
         allowed: failuresSinceSuccess.length < maxAttempts,
-        retryAfter: windowSeconds,
+        retryAfter:
+          failuresSinceSuccess.length < maxAttempts
+            ? 0
+            : Math.max(
+                1,
+                Math.ceil(
+                  (new Date(
+                    failuresSinceSuccess[
+                      failuresSinceSuccess.length - 1
+                    ]!.attempted_at,
+                  ).getTime() +
+                    windowSeconds * 1000 -
+                    Date.now()) /
+                    1000,
+                ),
+              ),
       };
     } catch (error) {
       console.warn(
@@ -73,7 +90,15 @@ export async function checkAdminLoginRateLimit(ipHash: string) {
 
   return {
     allowed: attempts.length < maxAttempts,
-    retryAfter: windowSeconds,
+    retryAfter:
+      attempts.length < maxAttempts
+        ? 0
+        : Math.max(
+            1,
+            Math.ceil(
+              (attempts[0]! + windowSeconds * 1000 - Date.now()) / 1000,
+            ),
+          ),
   };
 }
 

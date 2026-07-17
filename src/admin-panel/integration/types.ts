@@ -145,5 +145,13 @@ export type AdminPanelData = {
     }>;
     error?: string;
   };
+  storeInfo: {
+    name: string;
+    contactEmail: string | null;
+    phone: string | null;
+    address: string | null;
+    domain: string | null;
+    currencyCode: string;
+  } | null;
   shopifyAdminUrl: string;
 };
