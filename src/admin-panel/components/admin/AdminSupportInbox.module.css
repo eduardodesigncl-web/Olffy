@@ -181,6 +181,7 @@
 }
 
 .panel {
+  position: relative;
   min-height: 610px;
   overflow: hidden;
   border: 1px solid rgba(42, 28, 16, 0.12);
@@ -221,7 +222,7 @@
   font-size: 12px;
 }
 
-.listHead span {
+.listCount {
   min-width: 24px;
   height: 24px;
   display: grid;
@@ -233,17 +234,181 @@
   font-weight: 800;
 }
 
+.selectAllControl {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.selectAllControl input,
+.conversationCheck input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.selectAllControl > span,
+.conversationCheck > span {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1.5px solid rgba(89, 87, 176, 0.42);
+  border-radius: 5px;
+  background: white;
+}
+
+.selectAllControl input:checked + span,
+.conversationCheck input:checked + span {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado);
+}
+
+.selectAllControl input:checked + span::after,
+.conversationCheck input:checked + span::after {
+  content: "✓";
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.selectAllControl input:focus-visible + span,
+.conversationCheck input:focus-visible + span {
+  outline: 3px solid rgba(89, 87, 176, 0.2);
+  outline-offset: 2px;
+}
+
+.selectAllControl input:disabled + span {
+  opacity: 0.38;
+}
+
+.bulkToolbar {
+  position: sticky;
+  top: 55px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(42, 28, 16, 0.08);
+  background: #fff3d3;
+}
+
+.bulkToolbar button {
+  flex: 1 1 auto;
+  padding: 7px 9px;
+  border: 1px solid var(--olffy-morado);
+  border-radius: 999px;
+  background: var(--olffy-morado);
+  color: white;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.bulkToolbar .deleteAllButton {
+  border-color: rgba(180, 35, 24, 0.35);
+  background: white;
+  color: #b42318;
+}
+
+.listItemRow {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  border-bottom: 1px solid rgba(42, 28, 16, 0.08);
+}
+
+.conversationCheck {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
 .listItem {
   width: 100%;
   display: grid;
   gap: 5px;
   padding: 14px 15px;
   border: 0;
-  border-bottom: 1px solid rgba(42, 28, 16, 0.08);
+  border-bottom: 0;
   background: transparent;
   color: var(--olffy-cafe);
   text-align: left;
   cursor: pointer;
+}
+
+.bulkConfirmBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(35, 24, 15, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.bulkConfirm {
+  width: min(440px, 100%);
+  padding: 22px;
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 24px 70px rgba(35, 24, 15, 0.24);
+}
+
+.bulkConfirm > strong {
+  display: block;
+  color: var(--olffy-cafe);
+  font-size: 17px;
+}
+
+.bulkConfirm > p {
+  margin: 8px 0 18px;
+  color: var(--olffy-cafe-68);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.bulkConfirm > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bulkConfirm button {
+  padding: 9px 13px;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: 999px;
+  background: white;
+  color: var(--olffy-cafe);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.bulkConfirm .confirmArchiveButton {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado);
+  color: white;
+}
+
+.bulkConfirm .confirmDeleteButton {
+  border-color: #b42318;
+  background: #b42318;
+  color: white;
+}
+
+.bulkConfirm button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .listItem:hover {

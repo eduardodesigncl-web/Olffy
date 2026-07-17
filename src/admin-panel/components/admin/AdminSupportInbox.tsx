@@ -19,12 +19,14 @@ import styles from "./AdminSupportInbox.module.css";
 type InboxPayload = {
   conversations?: SupportConversation[];
   context?: SupportCustomerContext;
+  affectedCount?: number;
   warning?: string | null;
   error?: string;
 };
 
 type Filter = "all" | SupportStatus;
 type InboxView = "active" | "archived";
+type BulkIntent = "archive" | "delete" | "delete_all";
 
 function compactDate(value: string) {
   return new Intl.DateTimeFormat("es-CL", {
@@ -88,6 +90,10 @@ export function AdminSupportInbox() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [view, setView] = useState<InboxView>("active");
+  const [selectedConversationIds, setSelectedConversationIds] = useState<
+    string[]
+  >([]);
+  const [bulkIntent, setBulkIntent] = useState<BulkIntent | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<
     "all" | SupportIssueCategory
   >("all");
@@ -124,6 +130,11 @@ export function AdminSupportInbox() {
         const payload = (await response.json()) as InboxPayload;
         if (!response.ok) throw new Error(payload.error || "No se pudo cargar");
         setConversations(payload.conversations ?? []);
+        setSelectedConversationIds((current) =>
+          current.filter((id) =>
+            payload.conversations?.some((item) => item.id === id),
+          ),
+        );
         setSelectedId((current) => {
           if (
             current &&
@@ -196,6 +207,11 @@ export function AdminSupportInbox() {
     setResolving(false);
     setArchiveConfirming(false);
   }, [selectedId, view]);
+
+  useEffect(() => {
+    setSelectedConversationIds([]);
+    setBulkIntent(null);
+  }, [categoryFilter, filter, view]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -320,6 +336,68 @@ export function AdminSupportInbox() {
     const message = reply.trim();
     if (!message) return;
     if (await perform(channel, { message })) setReply("");
+  };
+
+  const allFilteredSelected =
+    filtered.length > 0 &&
+    filtered.every((item) => selectedConversationIds.includes(item.id));
+
+  const toggleConversationSelection = (conversationId: string) => {
+    setSelectedConversationIds((current) =>
+      current.includes(conversationId)
+        ? current.filter((id) => id !== conversationId)
+        : [...current, conversationId],
+    );
+  };
+
+  const toggleAllFiltered = () => {
+    const filteredIds = filtered.map((item) => item.id);
+    setSelectedConversationIds((current) =>
+      allFilteredSelected
+        ? current.filter((id) => !filteredIds.includes(id))
+        : [...new Set([...current, ...filteredIds])],
+    );
+  };
+
+  const performBulk = async (intent: BulkIntent) => {
+    if (sending) return;
+    setSending(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const action =
+        intent === "archive"
+          ? "archive_many"
+          : intent === "delete"
+            ? "delete_archived"
+            : "delete_all_archived";
+      const response = await fetch("/api/admin/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          conversationIds:
+            intent === "delete_all" ? undefined : selectedConversationIds,
+        }),
+      });
+      const payload = (await response.json()) as InboxPayload;
+      if (!response.ok) {
+        throw new Error(payload.error || "No se pudo completar la acción");
+      }
+      setConversations(payload.conversations ?? []);
+      setSelectedConversationIds([]);
+      setBulkIntent(null);
+      const total = payload.affectedCount ?? 0;
+      setSuccess(
+        intent === "archive"
+          ? `${total} ${total === 1 ? "conversación archivada" : "conversaciones archivadas"}.`
+          : `${total} ${total === 1 ? "conversación eliminada permanentemente" : "conversaciones eliminadas permanentemente"}.`,
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo completar");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -451,12 +529,96 @@ export function AdminSupportInbox() {
       </nav>
 
       <section className={styles.panel} aria-label="Bandeja de consultas">
+        {bulkIntent && (
+          <div className={styles.bulkConfirmBackdrop}>
+            <div
+              className={styles.bulkConfirm}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="bulk-support-title"
+            >
+              <strong id="bulk-support-title">
+                {bulkIntent === "archive"
+                  ? `¿Archivar ${selectedConversationIds.length} conversaciones?`
+                  : bulkIntent === "delete"
+                    ? `¿Borrar permanentemente ${selectedConversationIds.length} conversaciones?`
+                    : `¿Vaciar las ${conversations.length} conversaciones archivadas?`}
+              </strong>
+              <p>
+                {bulkIntent === "archive"
+                  ? "Se moverán a Archivados y podrás restaurarlas después."
+                  : "Esta acción elimina definitivamente las conversaciones y todos sus mensajes. No se puede deshacer."}
+              </p>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setBulkIntent(null)}
+                  disabled={sending}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className={
+                    bulkIntent === "archive"
+                      ? styles.confirmArchiveButton
+                      : styles.confirmDeleteButton
+                  }
+                  onClick={() => void performBulk(bulkIntent)}
+                  disabled={sending}
+                >
+                  {sending
+                    ? "Procesando…"
+                    : bulkIntent === "archive"
+                      ? "Archivar seleccionadas"
+                      : "Borrar definitivamente"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className={styles.workspace}>
           <aside className={styles.list} aria-label="Conversaciones">
             <div className={styles.listHead}>
-              <strong>Conversaciones</strong>
-              <span>{filtered.length}</span>
+              <label className={styles.selectAllControl}>
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={toggleAllFiltered}
+                  disabled={filtered.length === 0}
+                  aria-label="Seleccionar todas las conversaciones visibles"
+                />
+                <span aria-hidden="true" />
+                <strong>Conversaciones</strong>
+              </label>
+              <span className={styles.listCount}>{filtered.length}</span>
             </div>
+            {(selectedConversationIds.length > 0 ||
+              (view === "archived" && conversations.length > 0)) && (
+              <div className={styles.bulkToolbar}>
+                {selectedConversationIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBulkIntent(view === "active" ? "archive" : "delete")
+                    }
+                  >
+                    {view === "active"
+                      ? `Archivar (${selectedConversationIds.length})`
+                      : `Borrar (${selectedConversationIds.length})`}
+                  </button>
+                )}
+                {view === "archived" && conversations.length > 0 && (
+                  <button
+                    type="button"
+                    className={styles.deleteAllButton}
+                    onClick={() => setBulkIntent("delete_all")}
+                  >
+                    Vaciar archivados
+                  </button>
+                )}
+              </div>
+            )}
             {loading && conversations.length === 0 && (
               <p className={styles.empty}>Cargando consultas…</p>
             )}
@@ -470,45 +632,62 @@ export function AdminSupportInbox() {
                   .find((message) => message.sender !== "system") ??
                 conversation.messages.at(-1);
               return (
-                <button
-                  type="button"
-                  key={conversation.id}
-                  className={`${styles.listItem} ${conversation.id === selectedId ? styles.listItemActive : ""}`}
-                  onClick={() => {
-                    setSelectedId(conversation.id);
-                    setDetailsOpen(true);
-                  }}
-                >
-                  <span className={styles.customerLine}>
-                    <strong>
-                      {conversation.customerName || conversation.customerEmail}
-                    </strong>
-                    {conversation.unreadAdmin > 0 && (
-                      <i>{conversation.unreadAdmin}</i>
-                    )}
-                  </span>
-                  <span className={styles.listMeta}>
-                    <b>{supportStatusLabel(conversation.status)}</b>
-                    <em>{conversation.handledByAdminName || "Sin atender"}</em>
-                  </span>
-                  <span className={styles.categoryTag}>
-                    {supportIssueCategoryLabel(conversation.issueCategory)}
-                    {conversation.issueSubcategory
-                      ? ` · ${conversation.issueSubcategory}`
-                      : ""}
-                  </span>
-                  <span className={styles.preview}>
-                    {last?.body || "Sin mensajes"}
-                  </span>
-                  {conversation.relatedOrderName && (
-                    <span className={styles.orderHint}>
-                      {conversation.relatedOrderName}
+                <div className={styles.listItemRow} key={conversation.id}>
+                  <label className={styles.conversationCheck}>
+                    <input
+                      type="checkbox"
+                      checked={selectedConversationIds.includes(
+                        conversation.id,
+                      )}
+                      onChange={() =>
+                        toggleConversationSelection(conversation.id)
+                      }
+                      aria-label={`Seleccionar conversación de ${conversation.customerName || conversation.customerEmail}`}
+                    />
+                    <span aria-hidden="true" />
+                  </label>
+                  <button
+                    type="button"
+                    className={`${styles.listItem} ${conversation.id === selectedId ? styles.listItemActive : ""}`}
+                    onClick={() => {
+                      setSelectedId(conversation.id);
+                      setDetailsOpen(true);
+                    }}
+                  >
+                    <span className={styles.customerLine}>
+                      <strong>
+                        {conversation.customerName ||
+                          conversation.customerEmail}
+                      </strong>
+                      {conversation.unreadAdmin > 0 && (
+                        <i>{conversation.unreadAdmin}</i>
+                      )}
                     </span>
-                  )}
-                  <time title={formatSupportDate(conversation.lastMessageAt)}>
-                    {formatSupportDate(conversation.lastMessageAt)}
-                  </time>
-                </button>
+                    <span className={styles.listMeta}>
+                      <b>{supportStatusLabel(conversation.status)}</b>
+                      <em>
+                        {conversation.handledByAdminName || "Sin atender"}
+                      </em>
+                    </span>
+                    <span className={styles.categoryTag}>
+                      {supportIssueCategoryLabel(conversation.issueCategory)}
+                      {conversation.issueSubcategory
+                        ? ` · ${conversation.issueSubcategory}`
+                        : ""}
+                    </span>
+                    <span className={styles.preview}>
+                      {last?.body || "Sin mensajes"}
+                    </span>
+                    {conversation.relatedOrderName && (
+                      <span className={styles.orderHint}>
+                        {conversation.relatedOrderName}
+                      </span>
+                    )}
+                    <time title={formatSupportDate(conversation.lastMessageAt)}>
+                      {formatSupportDate(conversation.lastMessageAt)}
+                    </time>
+                  </button>
+                </div>
               );
             })}
           </aside>

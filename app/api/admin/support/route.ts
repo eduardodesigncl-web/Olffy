@@ -439,9 +439,13 @@ export async function POST(request: Request) {
         | "resolve"
         | "reopen"
         | "archive"
+        | "archive_many"
         | "restore"
+        | "delete_archived"
+        | "delete_all_archived"
         | "retry_email";
       conversationId?: string;
+      conversationIds?: string[];
       message?: string;
       messageId?: number;
       requestId?: string;
@@ -452,13 +456,78 @@ export async function POST(request: Request) {
       is_online?: unknown;
     };
     const action = body.action || "reply";
+    const { account, name } = await requireRealAdmin();
+    const now = new Date().toISOString();
+
+    if (
+      action === "archive_many" ||
+      action === "delete_archived" ||
+      action === "delete_all_archived"
+    ) {
+      const conversationIds = [
+        ...new Set(
+          (Array.isArray(body.conversationIds) ? body.conversationIds : [])
+            .map((id) => String(id).trim())
+            .filter(Boolean),
+        ),
+      ].slice(0, 100);
+      const supabase = getSupabaseAdmin();
+
+      if (action === "archive_many") {
+        if (conversationIds.length === 0) {
+          throw new Error("Selecciona al menos una conversación");
+        }
+        const { data: archived, error } = await supabase
+          .from("support_conversations")
+          .update({
+            archived_at: now,
+            archived_by_admin_id: account.id,
+            archived_by_admin_name: name,
+            updated_at: now,
+          })
+          .in("id", conversationIds)
+          .is("archived_at", null)
+          .select("id");
+        if (error) throw new Error(error.message);
+        await Promise.all(
+          (archived ?? []).map((item) =>
+            insertSystemEvent(
+              String(item.id),
+              account,
+              `${name} archivó la conversación mediante selección múltiple.`,
+            ),
+          ),
+        );
+        return NextResponse.json({
+          ok: true,
+          affectedCount: archived?.length ?? 0,
+          conversations: await listConversations(),
+        });
+      }
+
+      if (action === "delete_archived" && conversationIds.length === 0) {
+        throw new Error("Selecciona al menos una conversación archivada");
+      }
+      let deleteQuery = supabase
+        .from("support_conversations")
+        .delete()
+        .not("archived_at", "is", null);
+      if (action === "delete_archived") {
+        deleteQuery = deleteQuery.in("id", conversationIds);
+      }
+      const { data: deleted, error } = await deleteQuery.select("id");
+      if (error) throw new Error(error.message);
+      return NextResponse.json({
+        ok: true,
+        affectedCount: deleted?.length ?? 0,
+        conversations: await listConversations(true),
+      });
+    }
+
     const conversationId = String(body.conversationId ?? "");
     if (!conversationId) throw new Error("Conversación inválida");
-
-    const { account, name } = await requireRealAdmin();
     const conversation = await loadConversationRow(conversationId);
     const currentStatus = normalizeSupportStatus(conversation.status);
-    const now = new Date().toISOString();
     const commonUpdate = {
       ...adminHandlerUpdate({
         accountId: account.id,
