@@ -4,12 +4,12 @@ import { InstagramFeed } from '../components/home';
 import { StoreLocation } from '../components/history';
 import type { PublicPage } from '../components/layout';
 import styles from './HistoriaPage.module.css';
+import { INSTAGRAM_PROFILE_LINK } from '../config/social';
 
 interface HistoriaPageProps {
   onNavigate?: (page: PublicPage) => void;
 }
 
-const IG_URL = 'https://instagram.com/olffy.papeleria';
 const TIKTOK_URL = 'https://tiktok.com/@olffy.papeleria';
 
 // Foto editorial del hero (opcional). Colócala en public/images/ y activa la
@@ -49,7 +49,6 @@ function InstagramGlyph({ size = 18 }: { size?: number }) {
     </svg>
   );
 }
-
 function TiktokGlyph({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -190,7 +189,7 @@ export function HistoriaPage({ onNavigate }: HistoriaPageProps) {
             muchas ideas bonitas.
           </p>
           <div className={styles.communityActions}>
-            <a className={styles.socialBtn} href={IG_URL} target="_blank" rel="noopener noreferrer">
+            <a className={styles.socialBtn} href={INSTAGRAM_PROFILE_LINK} target="_blank" rel="noopener noreferrer me">
               <InstagramGlyph size={18} />
               Instagram
             </a>

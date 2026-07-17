@@ -7,6 +7,7 @@ import "src/olffy/styles/global.css";
 import { baseUrl } from "lib/utils";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { INSTAGRAM_PROFILE_URL } from "src/olffy/config/social";
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -15,6 +16,14 @@ const organizationSchema = {
   url: baseUrl,
   description:
     "Papelería chilena creativa: agendas, libretas, stickers y regalos desde Viña del Mar.",
+  sameAs: [INSTAGRAM_PROFILE_URL],
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "2 Oriente 11-45, Local 3",
+    addressLocality: "Viña del Mar",
+    addressRegion: "Valparaíso",
+    addressCountry: "CL",
+  },
 };
 
 export const metadata = {

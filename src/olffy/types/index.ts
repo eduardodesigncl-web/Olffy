@@ -20,12 +20,12 @@ export interface ProductBundle {
 }
 
 export type ProductTag =
-  | ''
-  | 'Nuevo'
-  | 'NUEVO'
-  | 'Favorito'
-  | 'Especial'
-  | 'Agotado';
+  | ""
+  | "Nuevo"
+  | "NUEVO"
+  | "Favorito"
+  | "Especial"
+  | "Agotado";
 
 export interface Product {
   id: string; // Shopify product GID
@@ -40,7 +40,8 @@ export interface Product {
   specs: ProductSpec[];
   bundle: ProductBundle | null;
   desc: string; // intro corta (bajo el precio en el detalle)
-  fullDesc?: string; // descripción completa (acordeón), con saltos de línea
+  fullDesc?: string; // descripción extendida usada para categorizar el contenido
+  tags?: string[]; // etiquetas Shopify para búsqueda y recomendaciones
   // Imágenes reales opcionales (cuando existan). Sin ellas, las cards y la
   // galería dibujan una composición mock según categoría (portada + interior).
   image?: string; // portada / vista principal (Shopify CDN)
@@ -169,7 +170,7 @@ export interface StorefrontAppliedReward {
 }
 
 export type StorefrontLoyaltyState = {
-  accountStatus: 'signed_out' | 'not_enrolled' | 'blocked' | 'ready';
+  accountStatus: "signed_out" | "not_enrolled" | "blocked" | "ready";
   displayName?: string;
   initial?: string;
   pointsBalance: number;

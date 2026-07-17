@@ -4,7 +4,6 @@
 // PuntosLoginMock): tabs Crear cuenta / Iniciar sesión + recuperación de
 // contraseña, conectados a Supabase Auth vía las acciones de /cuenta.
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import {
   loginCustomerAction,
   registerCustomerAction,
@@ -29,12 +28,12 @@ export function PuntosAuthCard({
   initialNotice?: string;
   returnTo?: string;
 }) {
-  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [notice, setNotice] = useState<string | null>(initialNotice ?? null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -115,8 +114,11 @@ export function PuntosAuthCard({
         setNeedsConfirmation(result.code === "email_not_confirmed");
         return;
       }
-      router.push(returnTo || "/cuenta");
-      router.refresh();
+      // Una navegación completa garantiza que las cookies escritas por la
+      // Server Action viajen en la primera solicitud de la cuenta protegida.
+      // Con router.push() esa solicitud podía adelantarse y volver a mostrar
+      // el login aunque la autenticación ya hubiera terminado correctamente.
+      window.location.assign(returnTo || "/cuenta");
       return;
     } catch {
       setError("No pudimos completar la solicitud. Intenta nuevamente.");
@@ -178,7 +180,17 @@ export function PuntosAuthCard({
       <div className={styles.card}>
         <div className={styles.success}>
           <span className={styles.successBadge}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M4 12.5l5 5 11-11" />
             </svg>
           </span>
@@ -205,7 +217,11 @@ export function PuntosAuthCard({
         <p className={styles.intro}>
           Te enviaremos un enlace para restablecer tu contraseña.
         </p>
-        <form className={styles.form} onSubmit={(event) => void handleForgot(event)} noValidate>
+        <form
+          className={styles.form}
+          onSubmit={(event) => void handleForgot(event)}
+          noValidate
+        >
           <label className={styles.field}>
             <span className={styles.label}>Correo</span>
             <input
@@ -221,12 +237,21 @@ export function PuntosAuthCard({
             />
           </label>
           {error && <span className={styles.error}>{error}</span>}
-          <Button type="submit" variant="primary" className={styles.submitBtn} disabled={pending}>
+          <Button
+            type="submit"
+            variant="primary"
+            className={styles.submitBtn}
+            disabled={pending}
+          >
             {pending ? "Enviando…" : "Enviar enlace"}
           </Button>
         </form>
         <div className={styles.forgotRow}>
-          <button type="button" className={styles.forgotLink} onClick={() => switchMode("login")}>
+          <button
+            type="button"
+            className={styles.forgotLink}
+            onClick={() => switchMode("login")}
+          >
             Volver a iniciar sesión
           </button>
         </div>
@@ -240,7 +265,11 @@ export function PuntosAuthCard({
     <div className={styles.card}>
       <span className={styles.cardBadge}>Es gratis</span>
 
-      <div className={styles.tabs} role="tablist" aria-label="Acceso a OLFFY Puntos">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Acceso a OLFFY Puntos"
+      >
         <button
           type="button"
           role="tab"
@@ -274,40 +303,141 @@ export function PuntosAuthCard({
       )}
 
       {isSignup ? (
-        <form className={styles.form} onSubmit={(event) => void handleSignup(event)} noValidate>
+        <form
+          className={styles.form}
+          onSubmit={(event) => void handleSignup(event)}
+          noValidate
+        >
           <label className={styles.field}>
             <span className={styles.label}>Nombre</span>
-            <input className={styles.input} type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setError(null); }} placeholder="Tu nombre" autoComplete="name" />
+            <input
+              className={styles.input}
+              type="text"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setError(null);
+              }}
+              placeholder="Tu nombre"
+              autoComplete="name"
+            />
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Correo</span>
-            <input className={styles.input} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="tucorreo@ejemplo.cl" autoComplete="email" />
+            <input
+              className={styles.input}
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              placeholder="tucorreo@ejemplo.cl"
+              autoComplete="email"
+            />
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Contraseña</span>
-            <input className={styles.input} type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(null); }} autoComplete="new-password" />
+            <input
+              className={styles.input}
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
+              autoComplete="new-password"
+            />
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Verificar contraseña</span>
-            <input className={styles.input} type="password" value={password2} onChange={(e) => { setPassword2(e.target.value); setError(null); }} autoComplete="new-password" />
+            <input
+              className={styles.input}
+              type="password"
+              value={password2}
+              onChange={(e) => {
+                setPassword2(e.target.value);
+                setError(null);
+              }}
+              autoComplete="new-password"
+            />
           </label>
           {error && <span className={styles.error}>{error}</span>}
-          <Button type="submit" variant="primary" className={styles.submitBtn} disabled={pending}>
+          <Button
+            type="submit"
+            variant="primary"
+            className={styles.submitBtn}
+            disabled={pending}
+          >
             {pending ? "Creando cuenta…" : "Crear cuenta"}
           </Button>
         </form>
       ) : (
-        <form className={styles.form} onSubmit={(event) => void handleLogin(event)} noValidate>
+        <form
+          className={styles.form}
+          onSubmit={(event) => void handleLogin(event)}
+          noValidate
+        >
           <label className={styles.field}>
             <span className={styles.label}>Correo</span>
-            <input className={styles.input} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="tucorreo@ejemplo.cl" autoComplete="email" />
+            <input
+              className={styles.input}
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              placeholder="tucorreo@ejemplo.cl"
+              autoComplete="email"
+            />
           </label>
-          <label className={styles.field}>
-            <span className={styles.label}>Contraseña</span>
-            <input className={styles.input} type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(null); }} autoComplete="current-password" />
-          </label>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="customer-login-password">
+              Contraseña
+            </label>
+            <div className={styles.passwordWrap}>
+              <input
+                id="customer-login-password"
+                className={`${styles.input} ${styles.passwordInput}`}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-pressed={showPassword}
+                aria-controls="customer-login-password"
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 3l18 18" />
+                    <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" />
+                    <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9 6 9 6a16.4 16.4 0 0 1-2.1 2.8" />
+                    <path d="M6.6 6.6C4.4 8.1 3 10 3 10s3.5 6 9 6c1 0 2-.2 2.8-.5" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
           <div className={styles.forgotRow}>
-            <button type="button" className={styles.forgotLink} onClick={() => switchMode("forgot")}>
+            <button
+              type="button"
+              className={styles.forgotLink}
+              onClick={() => switchMode("forgot")}
+            >
               Olvidé mi contraseña
             </button>
           </div>
@@ -322,7 +452,12 @@ export function PuntosAuthCard({
               Reenviar correo de confirmación
             </button>
           )}
-          <Button type="submit" variant="primary" className={styles.submitBtn} disabled={pending}>
+          <Button
+            type="submit"
+            variant="primary"
+            className={styles.submitBtn}
+            disabled={pending}
+          >
             {pending ? "Ingresando…" : "Iniciar sesión"}
           </Button>
         </form>

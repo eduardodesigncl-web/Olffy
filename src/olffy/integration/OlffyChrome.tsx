@@ -27,6 +27,7 @@ import type { Product, StorefrontLoyaltyState } from "../types";
 import { subscribeNewsletterAction } from "./marketing-actions";
 import {
   getStorefrontLoyaltyStateAction,
+  signOutStorefrontAction,
   startCheckoutAction,
 } from "./checkout-actions";
 
@@ -49,9 +50,9 @@ export const PAGE_ROUTES: Record<PublicPage, string> = {
 };
 
 // Apertura del detalle de producto: navega a la página real /tienda/[handle].
-const OpenProductContext = createContext<((product: Product) => void) | undefined>(
-  undefined,
-);
+const OpenProductContext = createContext<
+  ((product: Product) => void) | undefined
+>(undefined);
 
 export function useOpenProduct() {
   const open = useContext(OpenProductContext);
@@ -120,14 +121,35 @@ function ChromeInner({ children }: { children: ReactNode }) {
     [router],
   );
 
+  const account =
+    loyalty?.accountStatus === "ready" && loyalty.displayName && loyalty.initial
+      ? {
+          displayName: loyalty.displayName,
+          initial: loyalty.initial,
+          pointsBalance: loyalty.pointsBalance,
+        }
+      : null;
+
+  const handleSignOut = async () => {
+    await signOutStorefrontAction();
+    // Igual que en el login, la navegación completa evita que una transición
+    // prefetched conserve por un instante la sesión anterior.
+    window.location.assign("/cuenta/login?signedOut=1");
+  };
+
   return (
     <OpenProductContext.Provider value={openProduct}>
       <div className={styles.page}>
         <AnnouncementBar messages={ANNOUNCEMENTS} />
         <Navbar
           cartCount={cartCount}
+          account={account}
+          accountLoading={loyaltyLoading}
           onOpenCart={openCart}
           onOpenMenu={() => setMenuOpen(true)}
+          onOpenAccount={() => router.push("/cuenta")}
+          onOpenRewards={() => router.push("/cuenta?tab=recompensas")}
+          onSignOut={handleSignOut}
           onNavigate={handleNavigate}
         />
 

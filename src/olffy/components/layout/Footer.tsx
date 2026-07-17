@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './Footer.module.css';
 import { NewsletterForm } from './NewsletterForm';
 import type { PublicPage } from './navigation';
+import { INSTAGRAM_PROFILE_LINK } from '../../config/social';
 
 interface FooterProps {
   onNavigate: (page: PublicPage) => void;
@@ -20,7 +21,6 @@ function FooterSparkle() {
     </svg>
   );
 }
-
 // Footer del storefront: marca, columnas de links, newsletter y bottom bar.
 // Acceso temporal/mock al admin: triple-click (o Alt/Option + click) sobre el
 // texto "Hecho por Mouselabs". No hay link visible en el navbar público.
@@ -68,7 +68,14 @@ export function Footer({ onNavigate, onEnterAdmin, onSubscribe }: FooterProps) {
             <span className={styles.logo}>OLFFY®</span>
             <p className={styles.tagline}>Papelería ilustrada para organizar, crear y regalar con magia.</p>
             <div className={styles.social}>
-              <a className={styles.socialLink} href="#" aria-label="Instagram">
+              <a
+                className={styles.socialLink}
+                href={INSTAGRAM_PROFILE_LINK}
+                target="_blank"
+                rel="noopener noreferrer me"
+                aria-label="Instagram de OLFFY (abre en una pestaña nueva)"
+                title="Seguir a @olffy.cl en Instagram"
+              >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="5" />
                   <circle cx="12" cy="12" r="4" />

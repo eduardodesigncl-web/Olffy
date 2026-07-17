@@ -55,10 +55,13 @@ export function PointsSummaryCard({ summary }: PointsSummaryCardProps) {
         <div className={styles.right}>
           <div className={styles.tiersHead}>Tus recompensas</div>
           <div className={styles.tiers}>
-            {tiers.map((tier) => {
+            {tiers.map((tier, index) => {
               const reached = saldo >= tier.puntos;
               return (
-                <div key={tier.puntos} className={`${styles.tier} ${reached ? styles.tierReached : ''}`}>
+                <div
+                  key={`${tier.puntos}-${tier.label}-${index}`}
+                  className={`${styles.tier} ${reached ? styles.tierReached : ''}`}
+                >
                   <div className={styles.tierPts}>{tier.puntos} pts</div>
                   <div className={styles.tierLabel}>{tier.label}</div>
                   <div className={`${styles.tierState} ${reached ? styles.tierStateReached : ''}`}>

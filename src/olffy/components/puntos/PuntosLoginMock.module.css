@@ -103,6 +103,43 @@
   box-shadow: 0 0 0 3px rgba(89, 87, 176, 0.16);
 }
 
+.passwordWrap {
+  position: relative;
+}
+
+.passwordInput {
+  width: 100%;
+  padding-right: 46px;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--olffy-cafe-55);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.passwordToggle:hover {
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+}
+
+.passwordToggle:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 1px;
+}
+
 .error {
   font-size: 12px;
   color: var(--olffy-naranjo);

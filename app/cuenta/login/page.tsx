@@ -1,4 +1,6 @@
+import { getCustomerAccountState } from "lib/customer/auth";
 import { safeCustomerReturnUrl } from "lib/customer/return-url";
+import { redirect } from "next/navigation";
 import { PuntosLanding } from "src/olffy/integration/PuntosLanding";
 import { OlffyStorefront } from "src/olffy/integration/shell";
 
@@ -32,6 +34,11 @@ export default async function CustomerLoginPage({
       : params.error;
 
   const returnTo = safeCustomerReturnUrl(params.next);
+  const account = await getCustomerAccountState();
+
+  if (account.status === "ready") {
+    redirect(returnTo || "/cuenta");
+  }
 
   return (
     <OlffyStorefront>

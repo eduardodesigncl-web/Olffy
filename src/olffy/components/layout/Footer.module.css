@@ -98,6 +98,18 @@
   justify-content: center;
   color: #fff;
   text-decoration: none;
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.socialLink:hover {
+  transform: translateY(-2px);
+  background: var(--olffy-naranjo);
+  box-shadow: 0 8px 18px rgba(42, 28, 16, 0.14);
+}
+
+.socialLink:focus-visible {
+  outline: 2px solid var(--olffy-naranjo);
+  outline-offset: 3px;
 }
 
 .colTitle {

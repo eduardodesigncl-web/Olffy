@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { Modal } from '../ui';
 import { GiftIcon, type GiftIconName } from '../storefront';
 import styles from './InstagramFeed.module.css';
+import { INSTAGRAM_HANDLE, INSTAGRAM_PROFILE_LINK } from '../../config/social';
 
 // Feed de Instagram simulado (sin API real). Los posts son piezas visuales
 // internas; al abrir uno se muestra un modal editorial inspirado en IG.
-const IG_HANDLE = 'olffy.papeleria';
-const IG_URL = 'https://instagram.com/olffy.papeleria';
-
 interface IgPost {
   id: number;
   grad: [string, string];
@@ -84,7 +82,6 @@ function InstagramGlyph({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
-
 function HeartGlyph({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -136,9 +133,9 @@ export function InstagramFeed() {
           <p className={styles.subtitle}>
             Ideas creativas, novedades y el detrás de escena de OLFFY, todos los días.
           </p>
-          <a className={styles.handleBtn} href={IG_URL} target="_blank" rel="noopener noreferrer">
+          <a className={styles.handleBtn} href={INSTAGRAM_PROFILE_LINK} target="_blank" rel="noopener noreferrer me">
             <InstagramGlyph size={17} />
-            @{IG_HANDLE}
+            @{INSTAGRAM_HANDLE}
           </a>
           <p className={styles.note}>Etiquétanos con #mundoOLFFY y aparece en nuestro feed.</p>
         </div>
@@ -155,7 +152,7 @@ export function InstagramFeed() {
               <div className={styles.modalAccount}>
                 <span className={styles.modalAvatar}>O</span>
                 <div>
-                  <div className={styles.modalHandle}>@{IG_HANDLE}</div>
+                  <div className={styles.modalHandle}>@{INSTAGRAM_HANDLE}</div>
                   <div className={styles.modalMeta}>Papelería ilustrada · Viña del Mar</div>
                 </div>
               </div>
@@ -170,7 +167,7 @@ export function InstagramFeed() {
                 <span className={styles.modalDate}>{active.date}</span>
               </div>
 
-              <a className={styles.modalCta} href={IG_URL} target="_blank" rel="noopener noreferrer">
+              <a className={styles.modalCta} href={INSTAGRAM_PROFILE_LINK} target="_blank" rel="noopener noreferrer me">
                 <InstagramGlyph size={16} />
                 Ver en Instagram
               </a>

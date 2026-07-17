@@ -4,6 +4,7 @@ import { Flower, Sparkle } from '../components/home/HomeDecor';
 import { Accordion } from '../components/ui';
 import { FAQ } from '../data/faq.mock';
 import styles from './ContactoPage.module.css';
+import { INSTAGRAM_HANDLE, INSTAGRAM_PROFILE_LINK } from '../config/social';
 
 // Dirección real de la tienda (misma que en "Nuestra historia").
 const STORE_ADDRESS = '2 Oriente 11-45, Local 3, Viña del Mar, Valparaíso, Chile';
@@ -12,8 +13,6 @@ const MAPS_QUERY = encodeURIComponent(STORE_ADDRESS);
 // Google Maps embebido (sin API key) + enlace "Cómo llegar" con el pin real.
 const MAP_SRC = `https://www.google.com/maps?q=${MAPS_QUERY}&output=embed`;
 const DIRECTIONS_URL = `https://www.google.com/maps/search/?api=1&query=${MAPS_QUERY}`;
-
-const IG_URL = 'https://instagram.com/olffy.papeleria';
 
 // Canales de contacto — cada uno con ícono, título, texto y (opcional) enlace.
 type Channel = {
@@ -46,8 +45,8 @@ const CHANNELS: Channel[] = [
     accent: 'var(--olffy-naranjo)',
     bg: 'var(--olffy-naranjo-suave)',
     title: 'Instagram',
-    text: '@olffy.papeleria',
-    href: IG_URL,
+    text: `@${INSTAGRAM_HANDLE}`,
+    href: INSTAGRAM_PROFILE_LINK,
   },
   {
     icon: 'mail',
@@ -79,7 +78,6 @@ function InstagramGlyph({ size = 18 }: { size?: number }) {
     </svg>
   );
 }
-
 interface ContactoPageProps {
   // Envío real del mensaje (tabla contact_messages en Supabase). Sin él,
   // el formulario solo valida localmente.

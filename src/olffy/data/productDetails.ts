@@ -173,14 +173,7 @@ function byCategory(
 }
 
 export function detailSectionsFor(product: Product): DetailSection[] {
-  const fullDesc = product.fullDesc?.trim() || product.desc;
-
   return [
-    {
-      id: 'desc',
-      question: 'Descripción completa',
-      answer: `${fullDesc}\n\nCada pieza OLFFY nace de una ilustración original hecha a mano y se produce en tiradas pequeñas para cuidar cada detalle.`,
-    },
     {
       id: 'incluye',
       question: 'Qué incluye',

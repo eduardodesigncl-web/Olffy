@@ -147,11 +147,17 @@
 .mainFlower {
   width: clamp(56px, 6vw, 66px);
   filter: drop-shadow(0 6px 12px rgba(233, 67, 0, 0.16));
+  transform-origin: 50% 50%;
+  animation: flowerFloatRotate 13s ease-in-out infinite;
+  will-change: transform;
 }
 
 .rewardFlower {
   width: clamp(48px, 5vw, 56px);
   filter: drop-shadow(0 6px 12px rgba(233, 67, 0, 0.14));
+  transform-origin: 50% 50%;
+  animation: flowerFloatRotateReverse 15s ease-in-out -2.5s infinite;
+  will-change: transform;
 }
 
 /* ── Estrellas decorativas ── */
@@ -166,6 +172,7 @@
   top: 20px;
   right: 24px;
   color: #5e5ac7;
+  animation: sparkleDrift 3.2s ease-in-out infinite;
 }
 
 .sparkleYellow {
@@ -174,6 +181,7 @@
   width: 14px;
   height: 14px;
   color: #fdbd00;
+  animation: sparkleDrift 2.7s ease-in-out -0.9s infinite reverse;
 }
 
 .sparkleOrangeTop {
@@ -182,6 +190,7 @@
   width: 13px;
   height: 13px;
   color: #f47b50;
+  animation: sparkleDrift 3s ease-in-out -1.4s infinite;
 }
 
 .sparkleOrangeBottom {
@@ -190,6 +199,50 @@
   width: 12px;
   height: 12px;
   color: #f47b50;
+  animation: sparkleDrift 3.5s ease-in-out -0.4s infinite reverse;
+}
+
+@keyframes flowerFloatRotate {
+  0%,
+  100% {
+    transform: translate3d(0, 2px, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0) rotate(180deg);
+  }
+}
+
+@keyframes flowerFloatRotateReverse {
+  0%,
+  100% {
+    transform: translate3d(0, 1px, 0) rotate(360deg);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0) rotate(180deg);
+  }
+}
+
+@keyframes sparkleDrift {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translate3d(0, 2px, 0) rotate(-8deg) scale(0.88);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(3px, -4px, 0) rotate(15deg) scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mainFlower,
+  .rewardFlower,
+  .sparklePurple,
+  .sparkleYellow,
+  .sparkleOrangeTop,
+  .sparkleOrangeBottom {
+    animation: none;
+  }
 }
 
 /* ── Tablet ── */

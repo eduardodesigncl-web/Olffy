@@ -33,6 +33,56 @@
   backdrop-filter: blur(2px);
 }
 
+.navButton {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(42, 28, 16, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--olffy-cafe);
+  box-shadow: 0 6px 18px rgba(42, 28, 16, 0.13);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.navButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.navButton:hover {
+  background: var(--olffy-blanco);
+  color: var(--olffy-morado);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 8px 22px rgba(42, 28, 16, 0.18);
+}
+
+.navButton:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 3px;
+}
+
+.navPrevious {
+  left: 14px;
+}
+
+.navNext {
+  right: 14px;
+}
+
 /* Vista dibujada (mock) — ocupa todo el contenedor. */
 .art {
   position: relative;
@@ -127,4 +177,25 @@
 
 .thumbActive {
   border-color: var(--olffy-morado);
+}
+
+@media (max-width: 560px) {
+  .navButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .navPrevious {
+    left: 10px;
+  }
+
+  .navNext {
+    right: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navButton,
+  .thumb {
+    transition: none;
+  }
 }

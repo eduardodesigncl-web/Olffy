@@ -1,5 +1,6 @@
 import { getAdminApiUnauthorizedResponse } from "lib/admin/api-auth";
 import { listLoyaltyRuleVersions, publishLoyaltyRule } from "lib/loyalty/rules";
+import { revalidatePath } from "next/cache";
 import { connection, NextResponse } from "next/server";
 
 function errorMessage(error: unknown): string {
@@ -51,6 +52,10 @@ export async function POST(request: Request) {
       createdBy: String(body.createdBy ?? "").trim(),
       notes: body.notes,
     });
+
+    // La cuenta del cliente siempre debe volver a leer la versión activa que
+    // acaba de publicarse en el panel administrador.
+    revalidatePath("/cuenta", "page");
 
     const versions = await listLoyaltyRuleVersions();
 

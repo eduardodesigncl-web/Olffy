@@ -51,7 +51,6 @@ function ViewArt({ view, product, large }: { view: GalleryView; product: Product
     </div>
   );
 }
-
 export function ProductGallery({ product }: ProductGalleryProps) {
   const views = useMemo(() => viewsForProduct(product), [product]);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -62,11 +61,44 @@ export function ProductGallery({ product }: ProductGalleryProps) {
   }, [product.id]);
 
   const active = views[Math.min(activeIdx, views.length - 1)] ?? GALLERY_VIEWS[0]!;
+  const canNavigate = views.length > 1;
+
+  const showPrevious = () => {
+    setActiveIdx((current) => (current - 1 + views.length) % views.length);
+  };
+
+  const showNext = () => {
+    setActiveIdx((current) => (current + 1) % views.length);
+  };
 
   return (
     <div className={styles.gallery}>
       <div className={styles.main}>
         <ViewArt view={active} product={product} large />
+        {canNavigate && (
+          <>
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navPrevious}`}
+              onClick={showPrevious}
+              aria-label={`Ver foto anterior de ${product.name}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m14.5 6-6 6 6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={`${styles.navButton} ${styles.navNext}`}
+              onClick={showNext}
+              aria-label={`Ver foto siguiente de ${product.name}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9.5 6 6 6-6 6" />
+              </svg>
+            </button>
+          </>
+        )}
         {product.tag && (
           <div className={styles.badgeSlot}>
             <Badge label={product.tag} />

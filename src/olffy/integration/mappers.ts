@@ -101,8 +101,11 @@ function badgeFor(
 
   // La colección "Novedades!" marca los productos nuevos de la tienda.
   if (
-    product.collections.some((c) => isMarkerCollection(c.handle, c.title) &&
-      c.title.toLowerCase().startsWith("novedades"))
+    product.collections.some(
+      (c) =>
+        isMarkerCollection(c.handle, c.title) &&
+        c.title.toLowerCase().startsWith("novedades"),
+    )
   ) {
     return "Nuevo";
   }
@@ -131,8 +134,8 @@ function specsFromOptions(product: ShopifyProduct) {
 // ── Parsing de la descripción (Shopify descriptionHtml) ────────────────────
 // Las descripciones OLFFY traen párrafos editoriales y, al final, una lista
 // "Detalles del producto" con líneas "Etiqueta: valor". Se separan en:
-// intro (desc corta bajo el precio), specs (grilla) y texto completo
-// (acordeón "Descripción completa").
+// intro (desc corta bajo el precio), specs (grilla) y texto extendido para
+// enriquecer la categorización y los contenidos relacionados.
 
 const HTML_ENTITIES: Record<string, string> = {
   "&amp;": "&",
@@ -173,7 +176,8 @@ const SPEC_PRIORITY = [
   "uso",
 ];
 
-const SPEC_LABEL_RE = /^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ /()-]{1,24}):\s*(.{2,80})$/;
+const SPEC_LABEL_RE =
+  /^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ /()-]{1,24}):\s*(.{2,80})$/;
 const NON_SPEC_LABELS = new Set([
   "descripción",
   "descripcion",
@@ -216,7 +220,10 @@ export function parseProductDescription(
       if (NON_SPEC_LABELS.has(key)) continue;
     }
     // Encabezados de sección tipo "Detalles del producto:" no van a la prosa.
-    if (/^detalles del producto:?$/i.test(line) || /^descripción$/i.test(line)) {
+    if (
+      /^detalles del producto:?$/i.test(line) ||
+      /^descripción$/i.test(line)
+    ) {
       continue;
     }
     proseLines.push(line);
@@ -279,6 +286,7 @@ export function toOlffyProduct(product: ShopifyProduct): Product {
     bundle: null,
     desc: parsed.intro,
     fullDesc: parsed.full,
+    tags: product.tags,
     variantId: variant?.id ?? "",
     availableForSale: product.availableForSale && quantityAvailable !== 0,
   };

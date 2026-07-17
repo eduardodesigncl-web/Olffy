@@ -3,6 +3,10 @@ import "server-only";
 import { adminFetch } from "lib/shopify/admin";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import type { OrderReference } from "lib/transactions/types";
+import {
+  resolveCustomerOrderStatus,
+  type CustomerOrderStatus,
+} from "./order-status";
 
 // Pedidos del cliente para el panel "Mis pedidos" (/cuenta). La fuente de
 // verdad de la venta es olffy_order_refs (canal online); el estado logístico
@@ -10,12 +14,7 @@ import type { OrderReference } from "lib/transactions/types";
 // desde Shopify Admin. Si Shopify no responde, se degrada a la información
 // local sin bloquear el panel.
 
-export type CustomerOrderStatus =
-  | "recibido"
-  | "preparacion"
-  | "listo_retiro"
-  | "enviado"
-  | "entregado";
+export type { CustomerOrderStatus } from "./order-status";
 
 export type CustomerOrder = {
   id: number;
@@ -24,19 +23,33 @@ export type CustomerOrder = {
   total: string;
   estado: CustomerOrderStatus;
   entrega: "retiro" | "envio";
-  items: { nombre: string; cantidad: number }[];
+  items: {
+    nombre: string;
+    cantidad: number;
+    imagen?: { url: string; alt: string };
+  }[];
   puntos: number;
   tracking?: { codigo: string; transportista: string; url?: string };
   entregadoFecha?: string;
+  sincronizadoEn?: string;
 };
 
 type ShopifyOrderNode = {
   id: string;
   name: string | null;
   createdAt: string | null;
+  updatedAt: string | null;
+  cancelledAt: string | null;
+  displayFinancialStatus: string | null;
   displayFulfillmentStatus: string | null;
   shippingLine: { title: string | null } | null;
-  lineItems: { nodes: { title: string | null; quantity: number | null }[] };
+  lineItems: {
+    nodes: {
+      title: string | null;
+      quantity: number | null;
+      image: { url: string; altText: string | null } | null;
+    }[];
+  };
   fulfillments: {
     deliveredAt: string | null;
     displayStatus: string | null;
@@ -46,6 +59,19 @@ type ShopifyOrderNode = {
       url: string | null;
     }[];
   }[];
+  events: {
+    nodes: {
+      message: string | null;
+      createdAt: string | null;
+    }[];
+  };
+  fulfillmentOrders?: {
+    nodes: {
+      status: string | null;
+      requestStatus: string | null;
+      deliveryMethod: { methodType: string | null } | null;
+    }[];
+  };
 };
 
 const customerOrdersQuery = /* GraphQL */ `
@@ -55,6 +81,9 @@ const customerOrdersQuery = /* GraphQL */ `
         id
         name
         createdAt
+        updatedAt
+        cancelledAt
+        displayFinancialStatus
         displayFulfillmentStatus
         shippingLine {
           title
@@ -63,6 +92,10 @@ const customerOrdersQuery = /* GraphQL */ `
           nodes {
             title
             quantity
+            image {
+              url
+              altText
+            }
           }
         }
         fulfillments(first: 5) {
@@ -72,6 +105,31 @@ const customerOrdersQuery = /* GraphQL */ `
             number
             company
             url
+          }
+        }
+        events(first: 20, sortKey: CREATED_AT, reverse: true) {
+          nodes {
+            message
+            createdAt
+          }
+        }
+      }
+    }
+  }
+`;
+
+const customerFulfillmentOrdersQuery = /* GraphQL */ `
+  query customerFulfillmentOrders($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Order {
+        id
+        fulfillmentOrders(first: 10) {
+          nodes {
+            status
+            requestStatus
+            deliveryMethod {
+              methodType
+            }
           }
         }
       }
@@ -97,36 +155,23 @@ function formatDate(iso: string | null | undefined): string {
   }
 }
 
-function baseStatus(ref: OrderReference): CustomerOrderStatus {
-  return ref.payment_status === "confirmed" ? "preparacion" : "recibido";
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  try {
+    return new Intl.DateTimeFormat("es-CL", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Santiago",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
 }
 
-function enrichedStatus(
-  ref: OrderReference,
-  node: ShopifyOrderNode,
-): { estado: CustomerOrderStatus; entrega: "retiro" | "envio" } {
-  const entrega: "retiro" | "envio" = node.shippingLine ? "envio" : "retiro";
-  const delivered =
-    node.fulfillments.some(
-      (f) => f.deliveredAt || f.displayStatus === "DELIVERED",
-    ) || node.displayFulfillmentStatus === "FULFILLED";
-  const shipped = node.fulfillments.length > 0;
-
-  if (entrega === "envio") {
-    if (delivered && node.fulfillments.some((f) => f.deliveredAt)) {
-      return { estado: "entregado", entrega };
-    }
-    if (shipped) return { estado: "enviado", entrega };
-    return { estado: baseStatus(ref), entrega };
-  }
-
-  // Retiro en tienda: la "entrega" (fulfillment) marca el retiro efectivo;
-  // el estado intermedio es "listo para retiro" cuando la orden ya se preparó.
-  if (delivered) return { estado: "entregado", entrega };
-  if (node.displayFulfillmentStatus === "ON_HOLD" || shipped) {
-    return { estado: "listo_retiro", entrega };
-  }
-  return { estado: baseStatus(ref), entrega };
+function baseStatus(ref: OrderReference): CustomerOrderStatus {
+  return ref.payment_status === "confirmed" ? "preparacion" : "recibido";
 }
 
 async function fetchShopifyOrders(
@@ -150,6 +195,45 @@ async function fetchShopifyOrders(
     console.error(
       "No se pudieron enriquecer los pedidos desde Shopify:",
       cause,
+    );
+  }
+
+  return map;
+}
+
+let fulfillmentOrdersAccessAvailable: boolean | undefined;
+
+async function fetchFulfillmentOrders(
+  ids: string[],
+): Promise<Map<string, NonNullable<ShopifyOrderNode["fulfillmentOrders"]>>> {
+  const map = new Map<
+    string,
+    NonNullable<ShopifyOrderNode["fulfillmentOrders"]>
+  >();
+  if (!ids.length || fulfillmentOrdersAccessAvailable === false) return map;
+
+  try {
+    const response = await adminFetch<{
+      data: {
+        nodes: ({
+          id: string;
+          fulfillmentOrders: NonNullable<ShopifyOrderNode["fulfillmentOrders"]>;
+        } | null)[];
+      };
+    }>({
+      query: customerFulfillmentOrdersQuery,
+      variables: { ids } as never,
+    });
+
+    fulfillmentOrdersAccessAvailable = true;
+    for (const node of response.body.data?.nodes ?? []) {
+      if (node?.id) map.set(node.id, node.fulfillmentOrders);
+    }
+  } catch (cause) {
+    fulfillmentOrdersAccessAvailable = false;
+    console.warn(
+      "Shopify todavía no concedió read_merchant_managed_fulfillment_orders; se usarán los eventos del pedido.",
+      cause instanceof Error ? cause.message : cause,
     );
   }
 
@@ -186,7 +270,10 @@ export async function getCustomerOrders(
       ref.shopify_order_id ? normalizeOrderGid(ref.shopify_order_id) : null,
     )
     .filter((id): id is string => Boolean(id));
-  const shopifyOrders = await fetchShopifyOrders(gids);
+  const [shopifyOrders, fulfillmentOrders] = await Promise.all([
+    fetchShopifyOrders(gids),
+    fetchFulfillmentOrders(gids),
+  ]);
 
   return refs.map((ref, index) => {
     const node = ref.shopify_order_id
@@ -194,11 +281,34 @@ export async function getCustomerOrders(
       : undefined;
 
     const { estado, entrega } = node
-      ? enrichedStatus(ref, node)
+      ? resolveCustomerOrderStatus(baseStatus(ref), {
+          cancelledAt: node.cancelledAt,
+          displayFinancialStatus: node.displayFinancialStatus,
+          displayFulfillmentStatus: node.displayFulfillmentStatus,
+          shippingLineTitle: node.shippingLine?.title ?? null,
+          fulfillments: node.fulfillments.map((fulfillment) => ({
+            deliveredAt: fulfillment.deliveredAt,
+            displayStatus: fulfillment.displayStatus,
+            trackingNumbers: fulfillment.trackingInfo.map(
+              (tracking) => tracking.number,
+            ),
+          })),
+          fulfillmentOrders: (fulfillmentOrders.get(node.id)?.nodes ?? []).map(
+            (fulfillmentOrder) => ({
+              status: fulfillmentOrder.status,
+              requestStatus: fulfillmentOrder.requestStatus,
+              methodType: fulfillmentOrder.deliveryMethod?.methodType ?? null,
+            }),
+          ),
+          events: node.events.nodes.map((event) => ({
+            message: event.message,
+          })),
+        })
       : { estado: baseStatus(ref), entrega: "envio" as const };
 
-    const deliveredAt = node?.fulfillments.find((f) => f.deliveredAt)
-      ?.deliveredAt;
+    const deliveredAt = node?.fulfillments.find(
+      (f) => f.deliveredAt,
+    )?.deliveredAt;
     const trackingInfo = node?.fulfillments
       .flatMap((f) => f.trackingInfo)
       .find((info) => info.number);
@@ -206,9 +316,7 @@ export async function getCustomerOrders(
     return {
       id: index + 1,
       numero:
-        ref.shopify_order_name ??
-        node?.name ??
-        `Pedido ${ref.olffy_reference}`,
+        ref.shopify_order_name ?? node?.name ?? `Pedido ${ref.olffy_reference}`,
       fecha: formatDate(node?.createdAt ?? ref.created_at),
       total: formatClp(ref.total),
       estado,
@@ -216,6 +324,15 @@ export async function getCustomerOrders(
       items: (node?.lineItems.nodes ?? []).map((item) => ({
         nombre: item.title ?? "Producto OLFFY",
         cantidad: Math.max(Number(item.quantity ?? 1), 1),
+        ...(item.image?.url
+          ? {
+              imagen: {
+                url: item.image.url,
+                alt:
+                  item.image.altText?.trim() || item.title || "Producto OLFFY",
+              },
+            }
+          : {}),
       })),
       puntos: ref.points_earned,
       ...(trackingInfo?.number
@@ -228,6 +345,9 @@ export async function getCustomerOrders(
           }
         : {}),
       ...(deliveredAt ? { entregadoFecha: formatDate(deliveredAt) } : {}),
+      ...(node?.updatedAt
+        ? { sincronizadoEn: formatDateTime(node.updatedAt) }
+        : {}),
     };
   });
 }
