@@ -1,0 +1,183 @@
+.card {
+  position: relative;
+  background: var(--olffy-blanco);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 3vw, 32px);
+  box-shadow: 0 18px 44px rgba(42, 28, 16, 0.18);
+}
+
+/* Sello cálido flotante en la esquina de la card. */
+.cardBadge {
+  position: absolute;
+  top: -12px;
+  right: 18px;
+  padding: 5px 13px;
+  border-radius: var(--radius-pill);
+  background: var(--olffy-amarillo);
+  color: var(--olffy-cafe);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 18px rgba(250, 180, 5, 0.32);
+  transform: rotate(-3deg);
+}
+
+/* ── Tabs Crear cuenta / Iniciar sesión ── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--olffy-crema);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  margin-bottom: 14px;
+}
+
+.tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--olffy-cafe-55);
+  padding: 9px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tabActive {
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  box-shadow: 0 6px 14px rgba(89, 87, 176, 0.28);
+}
+
+.intro {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--olffy-cafe-68);
+}
+
+/* ── Formulario ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--olffy-cafe);
+}
+
+.input {
+  padding: 12px 14px;
+  border: 1.5px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  background: var(--olffy-blanco);
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--olffy-cafe);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input::placeholder {
+  color: rgba(42, 28, 16, 0.42);
+}
+
+.input:hover {
+  border-color: rgba(42, 28, 16, 0.25);
+}
+
+.input:focus {
+  border-color: var(--olffy-morado);
+  box-shadow: 0 0 0 3px rgba(89, 87, 176, 0.16);
+}
+
+.error {
+  font-size: 12px;
+  color: var(--olffy-naranjo);
+  font-weight: 600;
+}
+
+.forgotRow {
+  text-align: right;
+  margin-top: -2px;
+}
+
+.forgotLink {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--olffy-morado);
+  padding: 0;
+}
+
+.submitBtn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.note {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--olffy-cafe-55);
+}
+
+/* ── Éxito ── */
+.success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.successBadge {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  display: grid;
+  place-items: center;
+}
+
+.successTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--olffy-cafe);
+  max-width: 300px;
+}
+
+.dashboardBtn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.resetLink {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--olffy-cafe-55);
+  padding: 2px 0;
+}

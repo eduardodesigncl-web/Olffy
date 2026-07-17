@@ -51,7 +51,13 @@
 }
 
 .successIcon {
-  font-size: 32px;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  display: grid;
+  place-items: center;
 }
 
 .successTitle {

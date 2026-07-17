@@ -1,0 +1,74 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 4vw, 44px);
+}
+
+/* Bundle sugerido. */
+.bundle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--olffy-morado-suave);
+  border-radius: var(--radius-lg);
+  padding: clamp(18px, 2.6vw, 26px) clamp(18px, 3vw, 30px);
+}
+
+.bundleInfo {
+  min-width: 0;
+}
+
+.bundleEyebrow {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--olffy-morado);
+  margin-bottom: 4px;
+}
+
+.bundleName {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(17px, 2vw, 21px);
+  color: var(--olffy-cafe);
+}
+
+.bundleDesc {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--olffy-cafe-68);
+}
+
+.bundlePrice {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(19px, 2.2vw, 24px);
+  color: var(--olffy-morado);
+}
+
+/* Relacionados. */
+.relatedTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 2.6vw, 28px);
+  color: var(--olffy-cafe);
+  letter-spacing: -0.01em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 1.6vw, 18px);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

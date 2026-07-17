@@ -1,0 +1,339 @@
+.section {
+  position: relative;
+  overflow: hidden;
+  /* Fondo diferenciado y cálido (scrapbook), no crema plano. */
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgba(222, 221, 242, 0.6), transparent 55%),
+    radial-gradient(90% 80% at 0% 100%, rgba(251, 212, 194, 0.55), transparent 55%),
+    var(--olffy-crema-suave);
+  padding: clamp(48px, 6vw, 88px) clamp(14px, 4vw, 48px);
+}
+
+/* Lienzo tipo hoja de papel: contiene texto (izq) + manifiesto (der). */
+.canvas {
+  position: relative;
+  z-index: 2;
+  max-width: 1160px;
+  margin: 0 auto;
+  background: var(--olffy-blanco);
+  border-radius: clamp(22px, 3vw, 32px);
+  box-shadow: 0 26px 60px rgba(42, 28, 16, 0.12);
+  padding: clamp(32px, 4.5vw, 60px);
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  /* Izquierda: intro (copy) arriba y acciones abajo; derecha: foto ocupando
+     ambas filas. En mobile se reordena a copy → foto → acciones. */
+  grid-template-areas:
+    'copy photo'
+    'actions photo';
+  align-items: start;
+  column-gap: clamp(28px, 5vw, 56px);
+  row-gap: clamp(20px, 3vw, 28px);
+}
+
+/* ── Columna de texto ── */
+.copy {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--olffy-naranjo);
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 0.98;
+  color: var(--olffy-cafe);
+  letter-spacing: -0.03em;
+}
+
+.squiggle {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.text {
+  margin: 0 0 22px;
+  max-width: 420px;
+  font-size: clamp(15px, 1.5vw, 17px);
+  line-height: 1.65;
+  color: var(--olffy-cafe-68);
+}
+
+/* ── Sellos de valores ── */
+.stamps {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  align-self: flex-start;
+  padding: 8px 16px 8px 8px;
+  background: var(--olffy-crema);
+  border: 1px solid rgba(42, 28, 16, 0.08);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 12px rgba(42, 28, 16, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stamp:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(42, 28, 16, 0.1);
+}
+
+.stampIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--olffy-blanco);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.stampText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.stampLabel {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--olffy-cafe);
+}
+
+.stampDetail {
+  font-size: 11.5px;
+  color: var(--olffy-cafe-55);
+}
+
+/* ── Acciones (CTA + frase) ── */
+.actions {
+  grid-area: actions;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 13px 26px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(233, 67, 0, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  background: #d13d00;
+}
+
+.cta:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.cta svg {
+  transition: transform 0.15s ease;
+}
+
+.cta:hover svg {
+  transform: translateX(3px);
+}
+
+/* Frase de marca como detalle secundario bajo el CTA. */
+.frase {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--olffy-cafe-55);
+}
+
+.fraseSparkle {
+  flex-shrink: 0;
+}
+
+/* ── Foto protagonista ── */
+.photoCol {
+  grid-area: photo;
+  position: relative;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.photoFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: clamp(360px, 42vw, 500px);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 22px 48px rgba(42, 28, 16, 0.18);
+  transform: rotate(-1deg);
+  /* Fondo de marca discreto detrás de la imagen (visible si aún no hay foto). */
+  background:
+    radial-gradient(120% 100% at 20% 10%, rgba(255, 233, 168, 0.7), transparent 60%),
+    linear-gradient(150deg, var(--olffy-morado-suave), var(--olffy-naranjo-suave));
+}
+
+.photoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Fallback discreto mientras no exista la foto real. */
+.photoFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.photoFallbackText {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: rgba(42, 28, 16, 0.32);
+}
+
+.photoFlower {
+  position: absolute;
+  top: -26px;
+  right: -18px;
+  z-index: 3;
+}
+
+.photoSparkle {
+  position: absolute;
+  bottom: -12px;
+  left: -10px;
+  z-index: 3;
+}
+
+/* ── Decoración de fondo de la escena ── */
+.bgDeco {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bgSparkleA {
+  top: 10%;
+  left: 6%;
+}
+
+.bgSparkleB {
+  bottom: 12%;
+  right: 8%;
+}
+
+/* ── Animaciones ── */
+@keyframes storyFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.float {
+  animation: storyFloat 4s ease-in-out infinite;
+}
+
+.floatSlow {
+  animation: storyFloat 6.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .floatSlow {
+    animation: none;
+  }
+}
+
+/* ── Tablet / Mobile: una columna, orden copy → foto → acciones ── */
+@media (max-width: 900px) {
+  .canvas {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'copy'
+      'photo'
+      'actions';
+    row-gap: clamp(26px, 5vw, 40px);
+    text-align: center;
+  }
+
+  .text {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .squiggle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .stamps {
+    align-items: center;
+  }
+
+  /* Botón y frase centrados bajo la foto. */
+  .actions {
+    align-items: center;
+  }
+
+  .photoFrame {
+    min-height: clamp(300px, 60vw, 420px);
+    transform: none;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .stamp {
+    align-self: stretch;
+  }
+
+  .photoFrame {
+    min-height: 300px;
+  }
+}

@@ -20,12 +20,12 @@ export interface ProductBundle {
 }
 
 export type ProductTag =
-  | ""
-  | "Nuevo"
-  | "NUEVO"
-  | "Favorito"
-  | "Especial"
-  | "Agotado";
+  | ''
+  | 'Nuevo'
+  | 'NUEVO'
+  | 'Favorito'
+  | 'Especial'
+  | 'Agotado';
 
 export interface Product {
   id: string; // Shopify product GID
@@ -35,12 +35,17 @@ export interface Product {
   price: string; // formateado, ej. "$8.990"
   n: number; // precio numérico en CLP
   tag: ProductTag;
-  bg: string; // color de fondo del placeholder cuando no hay imagen
-  image?: string; // imagen real (Shopify CDN)
+  bg: string; // color de fondo del placeholder de imagen
   colors: ProductColor[];
   specs: ProductSpec[];
   bundle: ProductBundle | null;
-  desc: string;
+  desc: string; // intro corta (bajo el precio en el detalle)
+  fullDesc?: string; // descripción completa (acordeón), con saltos de línea
+  // Imágenes reales opcionales (cuando existan). Sin ellas, las cards y la
+  // galería dibujan una composición mock según categoría (portada + interior).
+  image?: string; // portada / vista principal (Shopify CDN)
+  hoverImage?: string; // vista secundaria (interior/detalle) en hover
+  images?: string[]; // galería completa (detalle de producto)
   variantId: string; // variante por defecto para agregar al carrito
   availableForSale: boolean;
 }
@@ -69,8 +74,10 @@ export interface HeroSlide {
 
 export interface QuizOption {
   label: string;
-  emoji: string;
   value: string;
+  // Nombre de ícono GiftIcon (line icon SVG) — reemplaza el emoji del export
+  // original de Cloud Design.
+  icon?: string;
 }
 
 export interface QuizQuestion {
@@ -102,6 +109,21 @@ export interface Reward {
   puntos: number;
   disponible: boolean;
 }
+
+export interface AdminMetric {
+  label: string;
+  value: string | number;
+  footnote?: string;
+  color?: string;
+}
+
+export interface FaqItem {
+  id: string;
+  q: string;
+  a: string;
+}
+
+// ── Tipos de integración OLFFY Puntos (backend Supabase) ──────────────────
 
 export interface CheckoutLoyaltyReward {
   id: number;
@@ -147,7 +169,7 @@ export interface StorefrontAppliedReward {
 }
 
 export type StorefrontLoyaltyState = {
-  accountStatus: "signed_out" | "not_enrolled" | "blocked" | "ready";
+  accountStatus: 'signed_out' | 'not_enrolled' | 'blocked' | 'ready';
   displayName?: string;
   initial?: string;
   pointsBalance: number;
@@ -161,16 +183,3 @@ export type StorefrontLoyaltyState = {
 export type StorefrontLoyaltyActionResult =
   | { ok: true; state: StorefrontLoyaltyState; message?: string }
   | { ok: false; state?: StorefrontLoyaltyState; message: string };
-
-export interface AdminMetric {
-  label: string;
-  value: string | number;
-  footnote?: string;
-  color?: string;
-}
-
-export interface FaqItem {
-  id: string;
-  q: string;
-  a: string;
-}

@@ -1,0 +1,183 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  background: var(--olffy-blanco);
+}
+
+.cardLocked {
+  background: rgba(42, 28, 16, 0.02);
+}
+
+.iconBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  background: var(--olffy-amarillo-suave);
+  color: var(--olffy-naranjo);
+}
+
+.cardLocked .iconBox {
+  background: var(--olffy-cafe-06);
+  color: var(--olffy-cafe-55);
+}
+
+.pts {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--olffy-morado);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+  margin-top: 2px;
+}
+
+.desc {
+  font-size: 12.5px;
+  color: var(--olffy-cafe-55);
+  margin-top: 6px;
+  flex: 1;
+}
+
+.action {
+  margin-top: 16px;
+}
+
+.requestBtn {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+  box-shadow: 0 3px 0 #b23300;
+}
+
+.lockedBtn {
+  width: 100%;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--olffy-cafe-55);
+  cursor: not-allowed;
+}
+
+.requested {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: center;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Progreso hacia la recompensa (cards bloqueadas) ── */
+.progressWrap {
+  margin-top: 12px;
+}
+
+.progressTrack {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--olffy-cafe-08);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--olffy-amarillo);
+}
+
+.progressText {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--olffy-cafe-55);
+}
+
+/* ── Confirmación de canje ── */
+.confirmBox {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--olffy-morado-suave);
+}
+
+.confirmText {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+}
+
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.confirmBtn {
+  flex: 1;
+  border: none;
+  cursor: pointer;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 800;
+  transition: background 0.15s ease;
+}
+
+.confirmBtn:hover {
+  background: #4a4893;
+}
+
+.confirmBtn:focus-visible,
+.cancelBtn:focus-visible,
+.requestBtn:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 2px;
+}
+
+.cancelBtn {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  cursor: pointer;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--olffy-cafe);
+}

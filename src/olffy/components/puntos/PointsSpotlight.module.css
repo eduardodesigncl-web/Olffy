@@ -1,0 +1,125 @@
+.spotlight {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #5957b0 0%, #4a4893 100%);
+  border-radius: var(--radius-lg);
+  padding: clamp(20px, 3vw, 30px) clamp(22px, 3.5vw, 36px);
+  margin-bottom: clamp(20px, 3vw, 28px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+
+.blob {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: rgba(250, 180, 5, 0.12);
+  top: -110px;
+  right: 12%;
+  pointer-events: none;
+}
+
+.flower {
+  position: absolute;
+  right: -20px;
+  bottom: -34px;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+/* ── Bloque de saldo ── */
+.balanceCol {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1 1 260px;
+}
+
+.balanceFlower {
+  color: var(--olffy-amarillo);
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 12px rgba(250, 180, 5, 0.35));
+}
+
+.balanceLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 2px;
+}
+
+.balanceValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(36px, 5.5vw, 52px);
+  color: var(--olffy-amarillo);
+  line-height: 1;
+}
+
+.balanceUnit {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 6px;
+}
+
+/* ── Bloque de próxima recompensa ── */
+.rewardCol {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 260px;
+  min-width: 220px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+}
+
+.rewardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.rewardLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--olffy-blanco);
+}
+
+.rewardRemaining {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--olffy-amarillo);
+  white-space: nowrap;
+}
+
+.rewardTarget {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--olffy-blanco);
+  margin-bottom: 10px;
+}
+
+.progressTrack {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--olffy-amarillo);
+  transition: width 0.4s ease;
+}

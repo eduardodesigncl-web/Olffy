@@ -1,0 +1,339 @@
+.section {
+  max-width: 1240px;
+  margin: 0 auto;
+  /* Menos aire vertical sobrante. */
+  padding: clamp(36px, 4.2vw, 58px) clamp(14px, 4vw, 48px);
+}
+
+/* Composición editorial: grilla de posts (más protagonista) a la izquierda,
+   texto compacto a la derecha. Izquierda ~62% / derecha ~38%. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+}
+
+/* Grilla 2x3 de posts. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 1.2vw, 14px);
+}
+
+.post {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.post:hover,
+.post:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(42, 28, 16, 0.16);
+}
+
+.postTheme {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--olffy-cafe);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(2px);
+}
+
+.postIcon {
+  display: grid;
+  place-items: center;
+}
+
+.postOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--olffy-blanco);
+  background: rgba(42, 28, 16, 0.34);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.post:hover .postOverlay,
+.post:focus-visible .postOverlay {
+  opacity: 1;
+}
+
+.overlayLikes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.overlayCta {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  padding: 5px 13px;
+  border-radius: var(--radius-pill);
+}
+
+/* ── Columna de texto ── */
+.info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.igIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0 0 10px;
+  max-width: 340px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(25px, 2.9vw, 36px);
+  color: var(--olffy-cafe);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+.subtitle {
+  margin: 0 0 18px;
+  max-width: 320px;
+  font-size: clamp(13.5px, 1.4vw, 15px);
+  line-height: 1.55;
+  color: var(--olffy-cafe-68);
+}
+
+.handleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  border: none;
+  color: var(--olffy-blanco);
+  background: var(--olffy-morado);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 800;
+  padding: 12px 22px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  box-shadow: 0 10px 22px rgba(89, 87, 176, 0.26);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.handleBtn:hover,
+.handleBtn:focus-visible {
+  transform: translateY(-2px);
+  background: #4a4893;
+}
+
+.note {
+  margin: 14px 0 0;
+  max-width: 320px;
+  font-size: 12.5px;
+  color: var(--olffy-cafe-55);
+}
+
+/* Tablet: texto arriba, grilla abajo. */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: clamp(22px, 4vw, 32px);
+  }
+
+  .info {
+    order: -1;
+    text-align: center;
+    align-items: center;
+  }
+
+  .handleBtn {
+    align-self: center;
+  }
+
+  .subtitle {
+    max-width: 460px;
+  }
+}
+
+/* Mobile: 2 columnas de posts. */
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Modal editorial de post (grande, imagen protagonista) ── */
+.modalPanel {
+  --modal-panel-width: min(1000px, 100%);
+}
+
+.modal {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr);
+}
+
+.modalMedia {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  display: grid;
+  place-items: center;
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+.modalTheme {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--olffy-cafe);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 5px 13px;
+  border-radius: var(--radius-pill);
+}
+
+.modalBody {
+  padding: 28px 30px 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalAccount {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Deja aire a la derecha para la X de cierre del modal. */
+  padding: 0 44px 16px 0;
+  border-bottom: 1px solid var(--olffy-cafe-08);
+  margin-bottom: 16px;
+}
+
+.modalAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.modalHandle {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--olffy-cafe);
+}
+
+.modalMeta {
+  font-size: 12px;
+  color: var(--olffy-cafe-55);
+  margin-top: 1px;
+}
+
+.modalCaption {
+  margin: 0 0 18px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--olffy-cafe);
+}
+
+.modalStats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.modalLikes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--olffy-naranjo);
+}
+
+.modalDate {
+  font-size: 12px;
+  color: var(--olffy-cafe-55);
+}
+
+.modalCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: auto;
+  border: none;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.modalCta:hover,
+.modalCta:focus-visible {
+  background: #4a4893;
+}
+
+/* Tablet modal: reduce dominancia de la imagen. */
+@media (max-width: 860px) {
+  .modal {
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 1fr);
+  }
+}
+
+/* Mobile modal: apilado, imagen cuadrada arriba. */
+@media (max-width: 600px) {
+  .modal {
+    grid-template-columns: 1fr;
+  }
+
+  .modalMedia {
+    aspect-ratio: 1 / 1;
+    border-top-right-radius: var(--radius-lg);
+    border-bottom-left-radius: 0;
+  }
+}

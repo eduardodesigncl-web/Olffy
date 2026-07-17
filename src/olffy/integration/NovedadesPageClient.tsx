@@ -1,29 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  NovedadesPage,
-  type NovedadesCollection,
-} from "../pages/NovedadesPage";
+import { NovedadesPage } from "../pages/NovedadesPage";
 import type { Product } from "../types";
-import { useProductModal } from "./OlffyChrome";
+import { subscribeNewsletterAction } from "./marketing-actions";
+import { PAGE_ROUTES, useOpenProduct } from "./OlffyChrome";
 
 export function NovedadesPageClient({
   newProducts,
-  collections,
 }: {
   newProducts: Product[];
-  collections: NovedadesCollection[];
 }) {
   const router = useRouter();
-  const openProduct = useProductModal();
+  const openProduct = useOpenProduct();
 
   return (
     <NovedadesPage
       newProducts={newProducts}
-      collections={collections}
       onProductClick={openProduct}
-      onCollectionClick={(path) => router.push(path)}
+      onNavigate={(page) => router.push(PAGE_ROUTES[page])}
+      onNotify={subscribeNewsletterAction}
     />
   );
 }

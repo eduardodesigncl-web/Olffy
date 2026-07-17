@@ -3,9 +3,7 @@
 
 @font-face {
   font-family: "PiepieW01-Regular";
-  src:
-    url("/fonts/PiepieW01-Regular.woff2") format("woff2"),
-    url("/fonts/PiepieW01-Regular.woff") format("woff");
+  src: url("/fonts/Piepie-W01-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -13,9 +11,7 @@
 
 @font-face {
   font-family: "IvyPresto Text";
-  src:
-    url("/fonts/IvyPresto-Text-Regular.woff2") format("woff2"),
-    url("/fonts/IvyPresto-Text-Regular.woff") format("woff");
+  src: url("/fonts/Ivy-Presto-Text.otf") format("opentype");
   font-weight: 300 400;
   font-style: normal;
   font-display: swap;
@@ -23,11 +19,9 @@
 
 @font-face {
   font-family: "IvyPresto Text";
-  src:
-    url("/fonts/IvyPresto-Text-Italic.woff2") format("woff2"),
-    url("/fonts/IvyPresto-Text-Italic.woff") format("woff");
-  font-weight: 300 400;
-  font-style: italic;
+  src: url("/fonts/Ivy-Presto-Text-Semi-Bold.otf") format("opentype");
+  font-weight: 500 700;
+  font-style: normal;
   font-display: swap;
 }
 

@@ -1,15 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ProductModal } from "../components/product";
+import { ProductDetailPage } from "../pages/ProductDetailPage";
 import type { Product } from "../types";
+import { useOpenProduct } from "./OlffyChrome";
 
-// Página de detalle /tienda/[handle]: reutiliza el ProductModal del frontend
-// oficial abierto sobre la tienda; al cerrar vuelve al catálogo.
-export function ProductDetailClient({ product }: { product: Product }) {
+// Página de detalle /tienda/[handle]: la ProductDetailPage del frontend
+// oficial sobre el router real; los relacionados llegan del servidor.
+export function ProductDetailClient({
+  product,
+  relatedProducts,
+}: {
+  product: Product;
+  relatedProducts: Product[];
+}) {
   const router = useRouter();
+  const openProduct = useOpenProduct();
 
   return (
-    <ProductModal product={product} onClose={() => router.push("/tienda")} />
+    <ProductDetailPage
+      product={product}
+      relatedProducts={relatedProducts}
+      onProductClick={openProduct}
+      onGoToTienda={() => router.push("/tienda")}
+    />
   );
 }

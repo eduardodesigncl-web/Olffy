@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import { IconPlaceholder } from "./IconPlaceholder";
-import styles from "./ProductImage.module.css";
+import type { ReactNode } from 'react';
+import { IconPlaceholder } from './IconPlaceholder';
+import styles from './ProductImage.module.css';
 
-type Shape = "rounded" | "rect" | "circle" | "pill";
+type Shape = 'rounded' | 'rect' | 'circle' | 'pill';
 
 interface ProductImageProps {
   src?: string;
@@ -17,10 +17,10 @@ interface ProductImageProps {
 // bloque de color con el ícono flor OLFFY como placeholder; con src, la imagen real.
 export function ProductImage({
   src,
-  alt = "",
-  bg = "#F2E0CC",
-  shape = "rounded",
-  aspectRatio = "1 / 1",
+  alt = '',
+  bg = '#F2E0CC',
+  shape = 'rounded',
+  aspectRatio = '1 / 1',
   badge,
 }: ProductImageProps) {
   return (
@@ -29,13 +29,7 @@ export function ProductImage({
       style={{ background: src ? undefined : bg, aspectRatio }}
     >
       {src ? (
-        <img
-          className={styles.img}
-          src={src}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-        />
+        <img className={styles.img} src={src} alt={alt} />
       ) : (
         <IconPlaceholder size={44} />
       )}

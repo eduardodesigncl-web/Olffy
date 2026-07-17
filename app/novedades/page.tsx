@@ -1,8 +1,5 @@
-import { getCollections, getProducts } from "lib/shopify";
-import {
-  toOlffyCollections,
-  toOlffyProducts,
-} from "src/olffy/integration/mappers";
+import { getProducts } from "lib/shopify";
+import { toOlffyProducts } from "src/olffy/integration/mappers";
 import { NovedadesPageClient } from "src/olffy/integration/NovedadesPageClient";
 import { OlffyStorefront } from "src/olffy/integration/shell";
 
@@ -13,10 +10,10 @@ export const metadata = {
 };
 
 export default async function NoveltiesPage() {
-  const [shopifyProducts, collections] = await Promise.all([
-    getProducts({ sortKey: "CREATED_AT", reverse: true }),
-    getCollections(),
-  ]);
+  const shopifyProducts = await getProducts({
+    sortKey: "CREATED_AT",
+    reverse: true,
+  });
 
   const products = toOlffyProducts(shopifyProducts);
   const tagged = products.filter((product) => product.tag === "Nuevo");
@@ -25,12 +22,7 @@ export default async function NoveltiesPage() {
 
   return (
     <OlffyStorefront>
-      <NovedadesPageClient
-        newProducts={newProducts}
-        collections={toOlffyCollections(
-          collections.filter((collection) => collection.handle !== ""),
-        )}
-      />
+      <NovedadesPageClient newProducts={newProducts} />
     </OlffyStorefront>
   );
 }

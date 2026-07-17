@@ -164,9 +164,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  transition:
-    width 0.25s ease,
-    background 0.25s ease;
+  transition: width 0.25s ease, background 0.25s ease;
 }
 
 @media (max-width: 640px) {

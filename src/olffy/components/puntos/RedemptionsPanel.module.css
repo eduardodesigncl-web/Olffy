@@ -1,0 +1,136 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  background: var(--olffy-blanco);
+}
+
+.iconBox {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--olffy-amarillo-suave);
+  color: var(--olffy-naranjo);
+}
+
+.info {
+  flex: 1;
+  min-width: 160px;
+}
+
+.reward {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--olffy-cafe);
+}
+
+.fecha {
+  font-size: 12px;
+  color: var(--olffy-cafe-55);
+  margin-top: 2px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--olffy-cafe-68);
+  margin-top: 4px;
+}
+
+.codeRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.codigo {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  color: var(--olffy-morado);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--olffy-morado-suave);
+}
+
+.copyBtn {
+  border: 1.5px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--olffy-cafe);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.copyBtn:hover {
+  border-color: var(--olffy-morado);
+  color: var(--olffy-morado);
+}
+
+.copyBtn:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 2px;
+}
+
+.copied {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #2e7d32;
+}
+
+.status {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.solicitado {
+  background: var(--olffy-crema);
+  color: #c8901a;
+}
+
+.aprobado {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.usado {
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+}
+
+.cancelado {
+  background: rgba(233, 67, 0, 0.1);
+  color: var(--olffy-naranjo);
+}
+
+.empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--olffy-cafe-55);
+  font-size: 14px;
+  border: 1px dashed var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+}

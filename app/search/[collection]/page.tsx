@@ -1,47 +1,20 @@
-import { SiteFooter } from "components/olffy/site-footer";
-import { getOlffyProducts } from "components/olffy/shopify-products";
-import { StoreProductBrowser } from "components/olffy/store-product-browser";
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-const categoryLabels: Record<string, string> = {
-  cuadernos: "Cuadernos",
-  planners: "Planners",
-  stickers: "Stickers",
-  papeleria: "Papelería",
-  escritura: "Escritura",
-  calendarios: "Calendarios",
-  regalos: "Regalos",
-};
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ collection: string }>;
-}): Promise<Metadata> {
-  const { collection } = await params;
-  const category = categoryLabels[collection] ?? "Tienda";
-
-  return {
-    title: category,
-    description: `Explora ${category.toLowerCase()} OLFFY.`,
-  };
-}
-
-export default async function CategoryPage({
+// Ruta legacy de colección (/search/<handle>): redirige al catálogo oficial
+// con la categoría preseleccionada. El handle de la colección es la categoría
+// en kebab-case (tacos-de-notas → "tacos de notas"); la tienda hace el match
+// ignorando mayúsculas y acentos, así que no hace falta consultar Shopify.
+export default async function LegacyCollectionPage({
   params,
 }: {
   params: Promise<{ collection: string }>;
 }) {
   const { collection } = await params;
-  const products = await getOlffyProducts();
+  const categoria = collection.replace(/-/g, " ").trim();
 
-  return (
-    <>
-      <StoreProductBrowser
-        products={products}
-        initialCategory={categoryLabels[collection] ?? "Todos"}
-      />
-      <SiteFooter />
-    </>
+  redirect(
+    categoria
+      ? `/tienda?categoria=${encodeURIComponent(categoria)}`
+      : "/tienda",
   );
 }

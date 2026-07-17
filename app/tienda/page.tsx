@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getProducts } from "lib/shopify";
 import {
   toOlffyCategories,
@@ -20,10 +21,14 @@ export default async function StorePage() {
 
   return (
     <OlffyStorefront>
-      <TiendaPageClient
-        products={products}
-        categories={toOlffyCategories(products)}
-      />
+      {/* useSearchParams (categoría/búsqueda inicial) exige Suspense para
+          mantener la página estática. */}
+      <Suspense fallback={null}>
+        <TiendaPageClient
+          products={products}
+          categories={toOlffyCategories(products)}
+        />
+      </Suspense>
     </OlffyStorefront>
   );
 }

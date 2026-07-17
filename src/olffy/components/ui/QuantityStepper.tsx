@@ -1,4 +1,4 @@
-import styles from "./QuantityStepper.module.css";
+import styles from './QuantityStepper.module.css';
 
 interface QuantityStepperProps {
   value: number;
@@ -7,11 +7,7 @@ interface QuantityStepperProps {
 }
 
 // Control +/- reutilizado en cart line item, modal de producto y POS admin.
-export function QuantityStepper({
-  value,
-  onChange,
-  min = 1,
-}: QuantityStepperProps) {
+export function QuantityStepper({ value, onChange, min = 1 }: QuantityStepperProps) {
   return (
     <div className={styles.stepper}>
       <button

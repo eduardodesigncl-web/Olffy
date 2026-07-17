@@ -1,0 +1,335 @@
+.section {
+  background: var(--olffy-crema-suave);
+  border-radius: var(--radius-lg);
+  padding: clamp(22px, 3vw, 34px);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(19px, 2.2vw, 24px);
+  color: var(--olffy-cafe);
+}
+
+.counter {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--olffy-morado);
+  background: var(--olffy-blanco);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+}
+
+/* ── Visor libro abierto (se hojea con flechas) ── */
+.viewer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.5vw, 16px);
+}
+
+/* Cuaderno abierto: dos páginas verticales (cada una ~A5, w/h ≈ 0.7). */
+.book {
+  width: min(600px, 100%);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 6px 1fr;
+  aspect-ratio: 7 / 5;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 44px rgba(42, 28, 16, 0.16);
+  animation: spreadIn 0.28s ease both;
+}
+
+@keyframes spreadIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book {
+    animation: none;
+  }
+}
+
+.spreadImg {
+  width: min(600px, 100%);
+  min-width: 0;
+  border-radius: 14px;
+  object-fit: cover;
+  aspect-ratio: 7 / 5;
+}
+
+.page {
+  background: #fffdf7;
+  padding: clamp(14px, 2.4vw, 26px);
+  overflow: hidden;
+}
+
+/* Sombra hacia el lomo (efecto libro abierto). */
+.pageLeft {
+  box-shadow: inset -14px 0 18px -14px rgba(42, 28, 16, 0.25);
+}
+
+.pageRight {
+  box-shadow: inset 14px 0 18px -14px rgba(42, 28, 16, 0.25);
+}
+
+.spine {
+  background: linear-gradient(90deg, rgba(42, 28, 16, 0.18), rgba(42, 28, 16, 0.08));
+}
+
+.arrow {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: none;
+  background: var(--olffy-morado);
+  color: var(--olffy-blanco);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(89, 87, 176, 0.3);
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.arrow:hover {
+  background: #4a4893;
+  transform: scale(1.06);
+}
+
+.arrow:active {
+  transform: scale(0.94);
+}
+
+.arrow:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 3px;
+}
+
+/* ── Footer: dots + caption ── */
+.footer {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dots {
+  display: flex;
+  gap: 7px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(42, 28, 16, 0.16);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.dotActive {
+  width: 22px;
+  background: var(--olffy-morado);
+}
+
+.caption {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--olffy-cafe-55);
+}
+
+/* ── Arte de páginas ── */
+.weekGrid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+}
+
+.weekBox {
+  border: 1px solid rgba(42, 28, 16, 0.12);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.weekDay {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--olffy-morado);
+}
+
+.weekLines {
+  flex: 1;
+  background: repeating-linear-gradient(to bottom, transparent 0 9px, rgba(42, 28, 16, 0.12) 9px 10px);
+}
+
+.monthWrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.monthTitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--olffy-naranjo);
+}
+
+.monthGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 3px;
+  min-height: 0;
+}
+
+.monthCell {
+  border: 1px solid rgba(42, 28, 16, 0.1);
+  border-radius: 3px;
+}
+
+.dotted {
+  height: 100%;
+  background-image: radial-gradient(rgba(42, 28, 16, 0.28) 1.2px, transparent 1.2px);
+  background-size: 16px 16px;
+}
+
+.ruled {
+  height: 100%;
+  background: repeating-linear-gradient(to bottom, transparent 0 17px, rgba(42, 28, 16, 0.14) 17px 18px);
+}
+
+.notesWrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notesTitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--olffy-cafe-68);
+}
+
+.paperWrap {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.paperGrain {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(42, 28, 16, 0.05) 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+
+.paperNote {
+  position: relative;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--olffy-cafe-55);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.illoWrap {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.illoBlob {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+  background: var(--olffy-morado-suave);
+}
+
+.illoBlobAlt {
+  background: var(--olffy-naranjo-suave);
+}
+
+.stickerSheet {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  place-items: center;
+}
+
+.stickerDot {
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 42% 58% 52% 48% / 55% 45% 55% 45%;
+  box-shadow: 0 3px 8px rgba(42, 28, 16, 0.12);
+}
+
+/* ── Mobile: una sola página vertical (evita el spread apretado) ── */
+@media (max-width: 640px) {
+  .viewer {
+    gap: 6px;
+  }
+
+  .arrow {
+    width: 34px;
+    height: 34px;
+  }
+
+  .book {
+    grid-template-columns: 1fr;
+    width: min(300px, 100%);
+    aspect-ratio: 3 / 4;
+  }
+
+  .spine,
+  .pageRight {
+    display: none;
+  }
+
+  .pageLeft {
+    box-shadow: none;
+  }
+
+  .spreadImg {
+    width: min(320px, 100%);
+    aspect-ratio: 3 / 4;
+  }
+}

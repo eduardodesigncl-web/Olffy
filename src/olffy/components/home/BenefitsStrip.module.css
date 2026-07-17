@@ -1,40 +1,126 @@
 .wrap {
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(40px, 5vw, 64px) clamp(14px, 4vw, 48px);
+  /* Más aire arriba y abajo; no pegado a los bordes. */
+  padding: clamp(40px, 5vw, 68px) clamp(14px, 4vw, 48px);
 }
 
-.grid {
+/* Cinta decorativa con sellos. */
+.ribbon {
+  position: relative;
+  background: var(--olffy-crema);
+  border-radius: var(--radius-lg);
+  padding: clamp(22px, 3vw, 34px) clamp(18px, 3vw, 40px);
+  box-shadow: inset 0 0 0 1px rgba(42, 28, 16, 0.05);
+}
+
+.deco {
+  position: absolute;
+  pointer-events: none;
+}
+
+.decoLeft {
+  top: -8px;
+  left: 24px;
+}
+
+.decoRight {
+  bottom: -6px;
+  right: 30px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(16px, 2.5vw, 30px);
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
+  gap: 13px;
+  min-width: 0;
 }
 
-.iconBox {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+/* Sello circular con borde punteado. */
+.stamp {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
-  font-size: 20px;
+  background: var(--olffy-blanco);
+  border: 2px dashed currentColor;
+}
+
+.textCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .title {
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--olffy-cafe);
+  line-height: 1.25;
 }
 
 .desc {
   font-size: 12px;
   color: var(--olffy-cafe-58, rgba(42, 28, 16, 0.58));
+}
+
+/* Separadores sutiles entre sellos. */
+.item:not(:first-child) {
+  position: relative;
+  padding-left: clamp(16px, 2.5vw, 30px);
+}
+
+.item:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 34px;
+  width: 1px;
+  background: rgba(42, 28, 16, 0.1);
+}
+
+@media (max-width: 760px) {
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 20px;
+  }
+
+  .item:not(:first-child)::before {
+    display: none;
+  }
+
+  .item:not(:first-child) {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile: texto ~4px más chico para aligerar el bloque. */
+@media (max-width: 520px) {
+  .title {
+    font-size: 11px;
+  }
+
+  .desc {
+    font-size: 11px;
+  }
 }

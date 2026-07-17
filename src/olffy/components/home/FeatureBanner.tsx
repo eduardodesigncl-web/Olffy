@@ -1,5 +1,5 @@
-import { Button, ProductImage } from "../ui";
-import styles from "./FeatureBanner.module.css";
+import { Button, ProductImage } from '../ui';
+import styles from './FeatureBanner.module.css';
 
 interface FeatureBannerProps {
   eyebrow: string;
@@ -13,15 +13,7 @@ interface FeatureBannerProps {
 
 // Bloque editorial texto + imagen — usado en "Lanzamientos nuevos" de la Home
 // (y reutilizable para otros banners destacados de colección).
-export function FeatureBanner({
-  eyebrow,
-  serif,
-  display,
-  subtitle,
-  ctaLabel,
-  onCtaClick,
-  bg = "#F2E0CC",
-}: FeatureBannerProps) {
+export function FeatureBanner({ eyebrow, serif, display, subtitle, ctaLabel, onCtaClick, bg = '#F2E0CC' }: FeatureBannerProps) {
   return (
     <section className={styles.section}>
       <div className={styles.textCol}>
@@ -31,11 +23,7 @@ export function FeatureBanner({
           <span className={styles.display}>{display}</span>
         </h2>
         <p className={styles.subtitle}>{subtitle}</p>
-        <Button
-          variant="primary"
-          className={styles.ctaBtn}
-          onClick={onCtaClick}
-        >
+        <Button variant="primary" className={styles.ctaBtn} onClick={onCtaClick}>
           {ctaLabel}
         </Button>
       </div>

@@ -1,45 +1,7 @@
-import {
-  getCustomerRedemptions,
-  getCustomerRewards,
-  getCustomerTransactions,
-} from "lib/customer/account";
-import { requireCustomerAccount } from "lib/customer/auth";
-import { AccountPageClient } from "src/integration/AccountPageClient";
-import { OlffyShell } from "src/integration/OlffyShell";
-import {
-  toFrontendCustomer,
-  toFrontendRedemptions,
-  toFrontendRewards,
-  toFrontendTransactions,
-} from "src/integration/mappers";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Historial de puntos",
-  robots: { index: false, follow: false },
-};
-
-export default async function CustomerHistoryPage() {
-  const { customer } = await requireCustomerAccount();
-  const [transactionsRaw, rewardsRaw, redemptionsRaw] = await Promise.all([
-    getCustomerTransactions(customer.id),
-    getCustomerRewards(),
-    getCustomerRedemptions(customer.id),
-  ]);
-  const transactions = toFrontendTransactions(transactionsRaw);
-  const redemptions = toFrontendRedemptions(redemptionsRaw);
-
-  return (
-    <OlffyShell>
-      <AccountPageClient
-        screen="history"
-        customer={toFrontendCustomer(customer, {
-          ordersCount: transactions.length,
-          redemptionsCount: redemptions.length,
-        })}
-        transactions={transactions}
-        rewards={toFrontendRewards(rewardsRaw)}
-        redemptions={redemptions}
-      />
-    </OlffyShell>
-  );
+// El panel nuevo de /cuenta unifica todo en pestañas; esta ruta se conserva
+// como enlace profundo hacia la pestaña correspondiente.
+export default function AccountLegacyRoute() {
+  redirect("/cuenta?tab=historial");
 }

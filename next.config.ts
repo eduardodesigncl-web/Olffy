@@ -1,5 +1,23 @@
 export default {
   cacheComponents: true,
+  // Cabeceras de seguridad básicas para todo el sitio. El admin además exige
+  // sesión firmada (proxy.ts) y las API revalidan la sesión por endpoint.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
+  },
   // Rutas legacy de producto y carrito → frontend oficial. Resueltas a nivel
   // de servidor, sin renderizar nada.
   async redirects() {

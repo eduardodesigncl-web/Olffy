@@ -1,3 +1,12 @@
-export { HeroCarousel } from "./HeroCarousel";
-export { FeatureBanner } from "./FeatureBanner";
-export { BenefitsStrip } from "./BenefitsStrip";
+export { HeroCarousel } from './HeroCarousel';
+export { HomeHero } from './HomeHero';
+export { FeatureBanner } from './FeatureBanner';
+export { CategoryStickers } from './CategoryStickers';
+export { ProductCarousel } from './ProductCarousel';
+export { FeaturedCollection } from './FeaturedCollection';
+export { MoodPicker } from './MoodPicker';
+export { StorySection } from './StorySection';
+export { BenefitsStrip } from './BenefitsStrip';
+export { InstagramFeed } from './InstagramFeed';
+export { CommunitySignup } from './CommunitySignup';
+export { Reveal } from './Reveal';

@@ -1,0 +1,144 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--olffy-morado);
+  border-radius: clamp(20px, 3vw, 32px);
+  padding: clamp(30px, 5vw, 60px) clamp(24px, 4vw, 56px);
+  margin-bottom: clamp(24px, 4vw, 40px);
+}
+
+.grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(28px, 5vw, 56px);
+  align-items: center;
+}
+
+/* ── Blobs y flor decorativa ── */
+.blob {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.blobOne {
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.07);
+  top: -130px;
+  right: -90px;
+}
+
+.blobTwo {
+  width: 200px;
+  height: 200px;
+  background: rgba(250, 180, 5, 0.1);
+  bottom: -110px;
+  left: 30%;
+}
+
+.deco {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.flower {
+  bottom: -34px;
+  left: -26px;
+  opacity: 0.9;
+}
+
+.sparkleA {
+  top: 26px;
+  left: 40%;
+}
+
+.sparkleB {
+  bottom: 30px;
+  right: 12%;
+}
+
+/* ── Columna editorial ── */
+.editorial {
+  color: var(--olffy-blanco);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--olffy-amarillo);
+  margin-bottom: 14px;
+}
+
+.title {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 4.2vw, 46px);
+  color: var(--olffy-blanco);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.text {
+  margin: 0 0 26px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 460px;
+}
+
+.benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  max-width: 460px;
+}
+
+.benefit {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.benefitIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--olffy-amarillo);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.benefitLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--olffy-blanco);
+  line-height: 1.3;
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: clamp(24px, 5vw, 36px);
+  }
+  .benefits {
+    max-width: none;
+  }
+}
+
+@media (max-width: 460px) {
+  .benefits {
+    grid-template-columns: 1fr;
+  }
+}

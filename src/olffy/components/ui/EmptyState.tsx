@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import styles from "./EmptyState.module.css";
+import type { ReactNode } from 'react';
+import styles from './EmptyState.module.css';
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -9,12 +9,7 @@ interface EmptyStateProps {
 }
 
 // Estado vacío reutilizable: carrito vacío, sin resultados de búsqueda, etc.
-export function EmptyState({
-  icon,
-  title,
-  description,
-  action,
-}: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className={styles.wrap}>
       {icon}

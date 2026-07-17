@@ -2,8 +2,8 @@ import { CUSTOMER_RECOVERY_COOKIE } from "lib/customer/recovery";
 import { getSupabaseServer } from "lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ResetPasswordClient } from "src/integration/ResetPasswordClient";
-import { OlffyShell } from "src/integration/OlffyShell";
+import { PuntosLanding } from "src/olffy/integration/PuntosLanding";
+import { OlffyStorefront } from "src/olffy/integration/shell";
 
 export const metadata = {
   title: "Restablecer contraseña",
@@ -26,8 +26,8 @@ export default async function CustomerResetPasswordPage() {
   }
 
   return (
-    <OlffyShell>
-      <ResetPasswordClient />
-    </OlffyShell>
+    <OlffyStorefront>
+      <PuntosLanding variant="reset" />
+    </OlffyStorefront>
   );
 }

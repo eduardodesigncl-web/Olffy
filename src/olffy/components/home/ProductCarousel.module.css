@@ -1,0 +1,87 @@
+.wrap {
+  position: relative;
+}
+
+.track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 4px 2px 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Desktop: ~4 cards por vista. */
+.slide {
+  flex: 0 0 calc((100% - 3 * 16px) / 4);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+/* Tablet: ~2.4 por vista. */
+@media (max-width: 1024px) {
+  .slide {
+    flex-basis: calc((100% - 16px) / 2.4);
+  }
+}
+
+/* Mobile: cards más chicas para percibir más productos (~1.7 por vista). */
+@media (max-width: 640px) {
+  .slide {
+    flex-basis: 60%;
+  }
+}
+
+@media (max-width: 380px) {
+  .slide {
+    flex-basis: 66%;
+  }
+}
+
+/* Flechas de navegación integradas. */
+.arrow {
+  position: absolute;
+  top: 33%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(42, 28, 16, 0.14);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.arrow:hover {
+  background: var(--olffy-crema);
+}
+
+.arrow:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.arrowLeft {
+  left: -8px;
+}
+
+.arrowRight {
+  right: -8px;
+}
+
+/* En mobile se navega por swipe; ocultamos las flechas. */
+@media (max-width: 640px) {
+  .arrow {
+    display: none;
+  }
+}

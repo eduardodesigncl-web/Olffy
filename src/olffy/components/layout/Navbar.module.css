@@ -77,106 +77,56 @@
   background: var(--olffy-cafe-06);
 }
 
-.account {
-  position: relative;
-}
-.loginBtn {
-  border: 1px solid var(--olffy-cafe-15, rgba(55, 35, 25, 0.15));
-  background: #fff;
-  color: var(--olffy-cafe);
-  border-radius: var(--radius-pill);
-  padding: 8px 12px;
-  font: 600 12px var(--font-body);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.avatarBtn,
-.accountLoading {
-  width: 37px;
-  height: 37px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-}
-.avatarBtn {
-  border: 0;
-  background: var(--olffy-lila, #5b57b7);
-  color: #fff;
-  font: 800 15px var(--font-body);
-  cursor: pointer;
-}
-.accountLoading {
-  background: var(--olffy-cafe-06);
-}
-.accountMenu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: 220px;
-  padding: 8px;
-  background: #fff;
-  border: 1px solid var(--olffy-cafe-08);
-  border-radius: 14px;
-  box-shadow: 0 16px 44px rgba(55, 35, 25, 0.16);
-  z-index: 80;
-}
-.accountMenu button {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 9px 10px;
-  border-radius: 8px;
-  text-align: left;
-  color: var(--olffy-cafe);
-  font: 500 13px var(--font-body);
-  cursor: pointer;
-}
-.accountMenu button:hover {
-  background: var(--olffy-cafe-06);
-}
-.accountSummary {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px 10px;
-  border-bottom: 1px solid var(--olffy-cafe-08);
-  margin-bottom: 4px;
-  color: var(--olffy-cafe);
-  font-size: 12px;
-}
-.accountSummary span {
-  color: var(--olffy-cafe-55);
-}
-.accountMenu .signOut {
-  color: #b23300;
-}
-
+/* Botón carrito OLFFY: bolsa con patita sobre lavanda suave, liviano y amable. */
 .cartBtn {
   position: relative;
-  height: 38px;
-  padding: 0 13px;
+  width: 40px;
+  height: 40px;
   border: none;
-  background: var(--olffy-cafe);
-  color: #fff;
-  border-radius: var(--radius-sm);
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  border-radius: 13px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-weight: 600;
-  font-size: 13px;
-  font-family: var(--font-body);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
 }
 
+.cartBtn:hover {
+  background: #cfcdee;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(89, 87, 176, 0.24);
+}
+
+.cartBtn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.cartBtn:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 2px;
+}
+
+.cartIcon {
+  display: block;
+}
+
+/* Contador flotante, con borde blanco para separarlo del ícono. */
 .cartBadge {
-  background: var(--olffy-naranjo);
-  color: #fff;
-  border-radius: var(--radius-pill);
-  min-width: 18px;
-  height: 18px;
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 19px;
+  height: 19px;
   padding: 0 5px;
-  font-size: 11px;
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+  border: 2px solid var(--olffy-blanco);
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
   font-weight: 700;
+  line-height: 1;
   display: grid;
   place-items: center;
 }

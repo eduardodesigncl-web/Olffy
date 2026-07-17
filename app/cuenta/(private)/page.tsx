@@ -1,24 +1,51 @@
-import { getCustomerOverview } from "lib/customer/account";
+import { getCustomerOverview, getCustomerTransactions } from "lib/customer/account";
 import { requireCustomerAccount } from "lib/customer/auth";
-import { AccountPageClient } from "src/integration/AccountPageClient";
-import { OlffyShell } from "src/integration/OlffyShell";
+import { getCustomerOrders } from "lib/customer/orders";
+import type { PuntosTab } from "src/olffy/components/puntos";
 import {
-  toFrontendCustomer,
-  toFrontendRedemptions,
-  toFrontendRewards,
-  toFrontendTransactions,
-} from "src/integration/mappers";
+  toPuntosCustomer,
+  toPuntosRedemptions,
+  toPuntosRewards,
+  toPuntosRuleInfo,
+  toPuntosRules,
+  toPuntosTransactions,
+} from "src/olffy/integration/account-mappers";
+import { PuntosPanelClient } from "src/olffy/integration/PuntosPanelClient";
+import { OlffyStorefront } from "src/olffy/integration/shell";
 
 export const metadata = {
   title: "Mi cuenta",
   robots: { index: false, follow: false },
 };
 
-export default async function CustomerAccountPage() {
-  const { customer } = await requireCustomerAccount();
-  const overview = await getCustomerOverview(customer);
-  const transactions = toFrontendTransactions(overview.transactions);
-  const redemptions = toFrontendRedemptions(overview.redemptions);
+const VALID_TABS: PuntosTab[] = [
+  "resumen",
+  "historial",
+  "recompensas",
+  "canjes",
+  "reglas",
+  "configuracion",
+];
+
+export default async function CustomerAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [{ customer }, params] = await Promise.all([
+    requireCustomerAccount(),
+    searchParams,
+  ]);
+
+  const [overview, transactions, orders] = await Promise.all([
+    getCustomerOverview(customer),
+    getCustomerTransactions(customer.id, 50),
+    getCustomerOrders(customer.id),
+  ]);
+
+  const initialTab = VALID_TABS.includes(params.tab as PuntosTab)
+    ? (params.tab as PuntosTab)
+    : undefined;
 
   const expiringNotice = overview.expiringPoints
     ? {
@@ -33,18 +60,18 @@ export default async function CustomerAccountPage() {
     : null;
 
   return (
-    <OlffyShell>
-      <AccountPageClient
-        screen="dashboard"
-        customer={toFrontendCustomer(customer, {
-          ordersCount: transactions.length,
-          redemptionsCount: redemptions.length,
-        })}
-        transactions={transactions}
-        rewards={toFrontendRewards(overview.rewards)}
-        redemptions={redemptions}
+    <OlffyStorefront>
+      <PuntosPanelClient
+        customer={toPuntosCustomer(customer)}
+        transactions={toPuntosTransactions(transactions)}
+        orders={orders}
+        rewards={toPuntosRewards(overview.rewards)}
+        redemptions={toPuntosRedemptions(overview.redemptions)}
+        rules={toPuntosRules(overview.rule)}
+        ruleInfo={toPuntosRuleInfo(overview.rule)}
         expiringNotice={expiringNotice}
+        {...(initialTab ? { initialTab } : {})}
       />
-    </OlffyShell>
+    </OlffyStorefront>
   );
 }

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import styles from "./Accordion.module.css";
+import { useState } from 'react';
+import styles from './Accordion.module.css';
 
 export interface AccordionItem {
   id: string;
@@ -26,22 +26,11 @@ export function Accordion({ items }: AccordionProps) {
         const isOpen = item.id === openId;
         return (
           <div key={item.id} className={styles.item}>
-            <button
-              type="button"
-              className={styles.trigger}
-              onClick={() => toggle(item.id)}
-            >
+            <button type="button" className={styles.trigger} onClick={() => toggle(item.id)}>
               <span className={styles.question}>{item.question}</span>
-              <span
-                className={`${styles.icon} ${isOpen ? styles.iconOpen : ""}`}
-              >
-                +
-              </span>
+              <span className={`${styles.icon} ${isOpen ? styles.iconOpen : ''}`}>+</span>
             </button>
-            <div
-              className={styles.answerWrap}
-              style={{ maxHeight: isOpen ? "240px" : "0" }}
-            >
+            <div className={styles.answerWrap} style={{ maxHeight: isOpen ? '640px' : '0' }}>
               <p className={styles.answer}>{item.answer}</p>
             </div>
           </div>

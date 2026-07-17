@@ -1,0 +1,37 @@
+.badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.flower {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--olffy-amarillo);
+  filter: drop-shadow(0 2px 6px rgba(250, 180, 5, 0.3));
+}
+
+.flowerCenter {
+  fill: var(--olffy-blanco);
+}
+
+.num {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--olffy-cafe);
+}
+
+/* Tono morado alternativo (números sobre fondo claro con acento morado). */
+.morado .flower {
+  color: var(--olffy-morado);
+  filter: drop-shadow(0 2px 6px rgba(89, 87, 176, 0.3));
+}
+
+.morado .num {
+  color: var(--olffy-blanco);
+}

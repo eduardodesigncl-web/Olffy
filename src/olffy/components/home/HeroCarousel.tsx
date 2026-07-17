@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { ProductImage } from "../ui";
-import type { HeroSlide } from "../../types";
-import styles from "./HeroCarousel.module.css";
+import { useEffect, useRef, useState } from 'react';
+import { ProductImage } from '../ui';
+import type { HeroSlide } from '../../types';
+import styles from './HeroCarousel.module.css';
 
 interface HeroCarouselProps {
   slides: HeroSlide[];
@@ -11,15 +11,11 @@ interface HeroCarouselProps {
 
 // Slides con fondo crema/amarillo/violeta claro usan puntos oscuros — el resto
 // (morado, naranjo, violeta oscuro) usa puntos claros. Igual que el original.
-const LIGHT_BG_SLIDES = new Set(["#F2E0CC", "#FAB405", "#DEDDF2"]);
+const LIGHT_BG_SLIDES = new Set(['#F2E0CC', '#FAB405', '#DEDDF2']);
 
 // Carrusel de hero de la Home — autoplay + flechas + dots, con fade al cambiar
 // de slide. Reemplaza el HERO_SLIDES / advanceHero() del original.
-export function HeroCarousel({
-  slides,
-  onCtaClick,
-  intervalMs = 5500,
-}: HeroCarouselProps) {
+export function HeroCarousel({ slides, onCtaClick, intervalMs = 5500 }: HeroCarouselProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [fading, setFading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -74,17 +70,11 @@ export function HeroCarousel({
 
   return (
     <div className={styles.hero} style={{ background: slide.bg }}>
-      <div
-        aria-hidden="true"
-        className={styles.watermark}
-        style={{ color: slide.wmColor }}
-      >
+      <div aria-hidden="true" className={styles.watermark} style={{ color: slide.wmColor }}>
         olffy
       </div>
 
-      <div
-        className={`${styles.content} ${fading ? styles.contentFading : ""}`}
-      >
+      <div className={`${styles.content} ${fading ? styles.contentFading : ''}`}>
         <div className={styles.textCol}>
           <p className={styles.eyebrow} style={{ color: slide.mutedColor }}>
             {slide.eyebrow}
@@ -119,20 +109,10 @@ export function HeroCarousel({
         </div>
       </div>
 
-      <button
-        type="button"
-        className={`${styles.arrow} ${styles.arrowPrev}`}
-        onClick={handlePrev}
-        aria-label="Slide anterior"
-      >
+      <button type="button" className={`${styles.arrow} ${styles.arrowPrev}`} onClick={handlePrev} aria-label="Slide anterior">
         ‹
       </button>
-      <button
-        type="button"
-        className={`${styles.arrow} ${styles.arrowNext}`}
-        onClick={handleNext}
-        aria-label="Slide siguiente"
-      >
+      <button type="button" className={`${styles.arrow} ${styles.arrowNext}`} onClick={handleNext} aria-label="Slide siguiente">
         ›
       </button>
 
@@ -148,11 +128,11 @@ export function HeroCarousel({
                 width: isActive ? 28 : 7,
                 background: isActive
                   ? isLightBg
-                    ? "#E94300"
-                    : "#fff"
+                    ? '#E94300'
+                    : '#fff'
                   : isLightBg
-                    ? "rgba(0,0,0,0.25)"
-                    : "rgba(255,255,255,0.35)",
+                    ? 'rgba(0,0,0,0.25)'
+                    : 'rgba(255,255,255,0.35)',
               }}
               onClick={() => handleDot(idx)}
               aria-label={`Ir al slide ${idx + 1}`}

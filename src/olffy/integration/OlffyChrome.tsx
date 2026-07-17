@@ -1,8 +1,9 @@
 "use client";
 
 // Chrome del storefront oficial OLFFY: announcement bar, navbar, footer,
-// menú mobile, drawer de carrito y modal de producto — el equivalente del
-// AppShell del frontend Vite, pero sobre el router real de Next.js.
+// menú mobile y drawer de carrito — el equivalente del AppShell del frontend
+// Vite, pero sobre el router real de Next.js. El detalle de producto ya no es
+// un modal: navega a /tienda/[handle] (página real, igual que el App.tsx nuevo).
 import {
   createContext,
   useCallback,
@@ -21,13 +22,11 @@ import {
 } from "../components/layout";
 import type { PublicPage } from "../components/layout";
 import { CartDrawer } from "../components/cart";
-import { ProductModal } from "../components/product";
 import { CartProvider, useCart } from "../context/CartContext";
 import type { Product, StorefrontLoyaltyState } from "../types";
 import { subscribeNewsletterAction } from "./marketing-actions";
 import {
   getStorefrontLoyaltyStateAction,
-  signOutStorefrontAction,
   startCheckoutAction,
 } from "./checkout-actions";
 
@@ -49,16 +48,15 @@ export const PAGE_ROUTES: Record<PublicPage, string> = {
   checkout: "/checkout",
 };
 
-// Modal de producto global (vista rápida): las páginas llaman a
-// openProduct(product) desde onProductClick.
-const ProductModalContext = createContext<
-  ((product: Product) => void) | undefined
->(undefined);
+// Apertura del detalle de producto: navega a la página real /tienda/[handle].
+const OpenProductContext = createContext<((product: Product) => void) | undefined>(
+  undefined,
+);
 
-export function useProductModal() {
-  const open = useContext(ProductModalContext);
+export function useOpenProduct() {
+  const open = useContext(OpenProductContext);
   if (!open) {
-    throw new Error("useProductModal debe usarse dentro de <OlffyChrome>");
+    throw new Error("useOpenProduct debe usarse dentro de <OlffyChrome>");
   }
   return open;
 }
@@ -75,7 +73,6 @@ function ChromeInner({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { cartCount, cartOpen, cartPending, openCart } = useCart();
   const [loyalty, setLoyalty] = useState<StorefrontLoyaltyState | null>(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState(true);
@@ -116,8 +113,15 @@ function ChromeInner({ children }: { children: ReactNode }) {
     if (route && route !== pathname) router.push(route);
   };
 
+  const openProduct = useCallback(
+    (product: Product) => {
+      router.push(`/tienda/${product.handle}`);
+    },
+    [router],
+  );
+
   return (
-    <ProductModalContext.Provider value={setSelectedProduct}>
+    <OpenProductContext.Provider value={openProduct}>
       <div className={styles.page}>
         <AnnouncementBar messages={ANNOUNCEMENTS} />
         <Navbar
@@ -125,15 +129,6 @@ function ChromeInner({ children }: { children: ReactNode }) {
           onOpenCart={openCart}
           onOpenMenu={() => setMenuOpen(true)}
           onNavigate={handleNavigate}
-          loyalty={loyalty}
-          loyaltyLoading={loyaltyLoading}
-          onNavigatePath={(path) => router.push(path)}
-          onSignOut={async () => {
-            await signOutStorefrontAction();
-            setLoyalty(null);
-            await refreshLoyalty();
-            router.refresh();
-          }}
         />
 
         <main className={styles.main}>{children}</main>
@@ -141,23 +136,13 @@ function ChromeInner({ children }: { children: ReactNode }) {
         <Footer
           onNavigate={handleNavigate}
           onSubscribe={subscribeNewsletterAction}
+          onEnterAdmin={() => router.push("/admin")}
         />
 
         <MobileMenuDrawer
           isOpen={menuOpen}
           onClose={() => setMenuOpen(false)}
           onNavigate={handleNavigate}
-          loyalty={loyalty}
-          onNavigatePath={(path) => {
-            router.push(path);
-            setMenuOpen(false);
-          }}
-          onSignOut={async () => {
-            await signOutStorefrontAction();
-            setMenuOpen(false);
-            await refreshLoyalty();
-            router.refresh();
-          }}
         />
 
         <CartDrawer
@@ -173,12 +158,7 @@ function ChromeInner({ children }: { children: ReactNode }) {
           }
           onGoToTienda={() => router.push("/tienda")}
         />
-
-        <ProductModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-        />
       </div>
-    </ProductModalContext.Provider>
+    </OpenProductContext.Provider>
   );
 }

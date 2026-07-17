@@ -65,19 +65,47 @@ function totalInventory(product: ShopifyProduct): number | null {
   return quantities.reduce((sum, value) => sum + value, 0);
 }
 
-function categoryFromTags(product: ShopifyProduct): string {
+// Colecciones que funcionan como marcadores (badge/portada), no como
+// categoría de catálogo.
+function isMarkerCollection(handle: string, title: string): boolean {
+  const h = handle.toLowerCase();
+  const t = title.toLowerCase();
+  return (
+    h.startsWith("novedades") ||
+    t.startsWith("novedades") ||
+    h === "frontpage" ||
+    h === "all" ||
+    h === "destacados"
+  );
+}
+
+// La categoría del producto viene de sus colecciones Shopify (Cuadernos,
+// Libretas, Stickers, Tacos de Notas, etc.); los tags quedan como respaldo.
+function categoryFor(product: ShopifyProduct): string {
+  const collection = product.collections.find(
+    (c) => !isMarkerCollection(c.handle, c.title),
+  );
+  if (collection) return collection.title.replace(/!+$/, "").trim();
+
   const visibleTag = product.tags.find(
     (tag) => !SYSTEM_TAGS.includes(tag.toLowerCase()),
   );
-
   return visibleTag ?? "Papelería";
 }
 
-function badgeFromTags(
+function badgeFor(
   product: ShopifyProduct,
   quantityAvailable: number | null,
 ): ProductTag {
   if (!product.availableForSale || quantityAvailable === 0) return "Agotado";
+
+  // La colección "Novedades!" marca los productos nuevos de la tienda.
+  if (
+    product.collections.some((c) => isMarkerCollection(c.handle, c.title) &&
+      c.title.toLowerCase().startsWith("novedades"))
+  ) {
+    return "Nuevo";
+  }
 
   const normalized = product.tags.map((tag) => tag.toLowerCase());
   if (normalized.includes("favorito")) return "Favorito";
@@ -100,28 +128,157 @@ function specsFromOptions(product: ShopifyProduct) {
     }));
 }
 
+// ── Parsing de la descripción (Shopify descriptionHtml) ────────────────────
+// Las descripciones OLFFY traen párrafos editoriales y, al final, una lista
+// "Detalles del producto" con líneas "Etiqueta: valor". Se separan en:
+// intro (desc corta bajo el precio), specs (grilla) y texto completo
+// (acordeón "Descripción completa").
+
+const HTML_ENTITIES: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&nbsp;": " ",
+};
+
+function htmlToLines(html: string): string[] {
+  const text = html
+    .replace(/<br[^>]*>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "- ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&[a-z#0-9]+;/gi, (entity) => HTML_ENTITIES[entity] ?? " ");
+
+  return text
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+// Etiquetas de specs priorizadas para la grilla del detalle.
+const SPEC_PRIORITY = [
+  "tamaño",
+  "cantidad",
+  "hojas",
+  "gramaje",
+  "formato",
+  "interior",
+  "terminación",
+  "terminacion",
+  "material",
+  "diseño",
+  "adhesivo",
+  "uso",
+];
+
+const SPEC_LABEL_RE = /^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ /()-]{1,24}):\s*(.{2,80})$/;
+const NON_SPEC_LABELS = new Set([
+  "descripción",
+  "descripcion",
+  "detalles del producto",
+  "contiene",
+  "incluye",
+  "nota",
+]);
+
+export interface ParsedDescription {
+  intro: string;
+  specs: { l: string; v: string }[];
+  full: string;
+}
+
+export function parseProductDescription(
+  html: string,
+  fallback: string,
+): ParsedDescription {
+  const lines = html ? htmlToLines(html) : [];
+
+  if (!lines.length) {
+    return { intro: fallback, specs: [], full: fallback };
+  }
+
+  const specs: { l: string; v: string }[] = [];
+  const seenLabels = new Set<string>();
+  const proseLines: string[] = [];
+
+  for (const line of lines) {
+    const match = SPEC_LABEL_RE.exec(line);
+    if (match) {
+      const label = match[1]!.trim();
+      const key = label.toLowerCase();
+      if (!NON_SPEC_LABELS.has(key) && !seenLabels.has(key)) {
+        seenLabels.add(key);
+        specs.push({ l: label.toUpperCase(), v: match[2]!.trim() });
+        continue;
+      }
+      if (NON_SPEC_LABELS.has(key)) continue;
+    }
+    // Encabezados de sección tipo "Detalles del producto:" no van a la prosa.
+    if (/^detalles del producto:?$/i.test(line) || /^descripción$/i.test(line)) {
+      continue;
+    }
+    proseLines.push(line);
+  }
+
+  // Intro: primeros párrafos editoriales (sin listas "- ..."), acotada.
+  const introParts: string[] = [];
+  for (const line of proseLines) {
+    if (line.startsWith("- ")) break;
+    introParts.push(line);
+    if (introParts.join(" ").length > 260) break;
+  }
+  const intro = introParts.join(" ").trim() || fallback;
+
+  // Specs ordenadas por prioridad (Tamaño, Cantidad, Gramaje, Formato…).
+  const orderedSpecs = [...specs].sort((a, b) => {
+    const pa = SPEC_PRIORITY.indexOf(a.l.toLowerCase());
+    const pb = SPEC_PRIORITY.indexOf(b.l.toLowerCase());
+    return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+  });
+
+  return {
+    intro,
+    specs: orderedSpecs.slice(0, 4),
+    full: proseLines.join("\n") || fallback,
+  };
+}
+
 export function toOlffyProduct(product: ShopifyProduct): Product {
   const variant = primaryVariant(product);
   const quantityAvailable = totalInventory(product);
   const image = product.featuredImage?.url ?? product.images[0]?.url;
+  const gallery = product.images
+    .map((img) => sizedImage(img.url, 960))
+    .filter((url): url is string => Boolean(url));
+  const hoverImage = product.images[1]?.url;
   const price =
     money(variant?.price.amount) ||
     money(product.priceRange.minVariantPrice.amount);
+  const parsed = parseProductDescription(
+    product.descriptionHtml,
+    product.description,
+  );
+  const optionSpecs = specsFromOptions(product);
 
   return {
     id: product.id,
     handle: product.handle,
     name: product.title,
-    cat: categoryFromTags(product),
+    cat: categoryFor(product),
     price: formatClp(price),
     n: price,
-    tag: badgeFromTags(product, quantityAvailable),
+    tag: badgeFor(product, quantityAvailable),
     bg: bgFromHandle(product.handle),
     image: sizedImage(image, 720),
+    hoverImage: sizedImage(hoverImage, 720),
+    images: gallery.length ? gallery : undefined,
     colors: [],
-    specs: specsFromOptions(product),
+    specs: [...parsed.specs, ...optionSpecs].slice(0, 4),
     bundle: null,
-    desc: product.description,
+    desc: parsed.intro,
+    fullDesc: parsed.full,
     variantId: variant?.id ?? "",
     availableForSale: product.availableForSale && quantityAvailable !== 0,
   };

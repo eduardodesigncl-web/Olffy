@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 
 const allowedLegacyPages = new Set(["terminos", "privacidad", "envios"]);
 
+// Placeholders legales: fuera del índice de buscadores hasta que exista el
+// contenido definitivo (quitar noindex al publicarlo).
+export const metadata = {
+  robots: { index: false, follow: true },
+};
+
 export async function generateStaticParams() {
   return Array.from(allowedLegacyPages).map((page) => ({ page }));
 }

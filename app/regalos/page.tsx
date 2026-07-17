@@ -24,7 +24,10 @@ export default async function GiftsPage() {
 
   return (
     <OlffyStorefront>
-      <RegalosPageClient products={gifts.length ? gifts : products} />
+      <RegalosPageClient
+        products={products}
+        giftProducts={gifts.length ? gifts : products}
+      />
     </OlffyStorefront>
   );
 }

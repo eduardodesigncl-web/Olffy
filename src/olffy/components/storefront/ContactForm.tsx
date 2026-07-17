@@ -1,6 +1,6 @@
-import type { FormEvent } from "react";
-import { Button } from "../ui";
-import styles from "./ContactForm.module.css";
+import type { FormEvent } from 'react';
+import { Button } from '../ui';
+import styles from './ContactForm.module.css';
 
 interface ContactFormProps {
   name: string;
@@ -33,7 +33,11 @@ export function ContactForm({
   if (sent) {
     return (
       <div className={styles.success}>
-        <div className={styles.successIcon}>💌</div>
+        <div className={styles.successIcon}>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 12.5l5 5 11-11" />
+          </svg>
+        </div>
         <h3 className={styles.successTitle}>¡Mensaje enviado!</h3>
         <p className={styles.successText}>
           Gracias por escribirnos — te responderemos a la brevedad.

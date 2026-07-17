@@ -1,0 +1,78 @@
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 16px);
+}
+
+.step {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  transition: transform 0.25s ease;
+}
+
+/* Paso actual — flor amarilla destacada, un poco más grande. */
+.current {
+  width: 54px;
+  height: 54px;
+}
+
+.flower {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: color 0.25s ease;
+}
+
+.num {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.current .num {
+  font-size: 16px;
+}
+
+/* ── Estados ── */
+/* Completado: flor amarillo suave, número morado. */
+.completed .flower {
+  color: var(--olffy-amarillo-suave);
+}
+.completed .flowerCenter {
+  fill: var(--olffy-blanco);
+}
+.completed .num {
+  color: var(--olffy-morado);
+}
+
+/* Actual: flor amarilla, número café (oscuro), con glow suave. */
+.current .flower {
+  color: var(--olffy-amarillo);
+  filter: drop-shadow(0 4px 10px rgba(250, 180, 5, 0.4));
+}
+.current .flowerCenter {
+  fill: var(--olffy-blanco);
+}
+.current .num {
+  color: var(--olffy-cafe);
+}
+
+/* Pendiente: flor translúcida clara, número tenue. */
+.upcoming .flower {
+  color: rgba(255, 255, 255, 0.28);
+}
+.upcoming .flowerCenter {
+  fill: rgba(255, 255, 255, 0.12);
+}
+.upcoming .num {
+  color: rgba(255, 255, 255, 0.75);
+}

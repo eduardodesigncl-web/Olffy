@@ -1,6 +1,6 @@
-import { AccountAuthClient } from "src/integration/AccountAuthClient";
-import { OlffyShell } from "src/integration/OlffyShell";
 import { safeCustomerReturnUrl } from "lib/customer/return-url";
+import { PuntosLanding } from "src/olffy/integration/PuntosLanding";
+import { OlffyStorefront } from "src/olffy/integration/shell";
 
 export const metadata = {
   title: "Inicia sesión",
@@ -26,14 +26,22 @@ export default async function CustomerLoginPage({
       ? "Tu sesión se cerró correctamente."
       : undefined;
 
+  const initialError =
+    params.error === "no-inscrita"
+      ? "No pudimos vincular tu cuenta de puntos. Contacta a OLFFY."
+      : params.error;
+
+  const returnTo = safeCustomerReturnUrl(params.next);
+
   return (
-    <OlffyShell>
-      <AccountAuthClient
-        initialMode={params.mode === "register" ? "register" : "login"}
-        initialError={params.error}
-        initialNotice={initialNotice}
-        returnTo={safeCustomerReturnUrl(params.next)}
+    <OlffyStorefront>
+      <PuntosLanding
+        variant="auth"
+        initialMode={params.mode === "register" ? "signup" : "login"}
+        {...(initialError ? { initialError } : {})}
+        {...(initialNotice ? { initialNotice } : {})}
+        {...(returnTo ? { returnTo } : {})}
       />
-    </OlffyShell>
+    </OlffyStorefront>
   );
 }

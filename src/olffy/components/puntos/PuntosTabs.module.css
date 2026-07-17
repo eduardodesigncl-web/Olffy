@@ -1,0 +1,47 @@
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--olffy-cafe-08);
+  margin-bottom: clamp(20px, 3vw, 32px);
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--olffy-cafe-55);
+  padding: 10px 16px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.18s ease;
+}
+
+.tab:hover {
+  color: var(--olffy-cafe);
+}
+
+.active {
+  color: var(--olffy-morado);
+}
+
+.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -5px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--olffy-morado);
+}

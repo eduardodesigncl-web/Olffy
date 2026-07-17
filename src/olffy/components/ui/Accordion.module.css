@@ -45,4 +45,6 @@
   font-size: 14px;
   line-height: 1.65;
   color: var(--olffy-cafe-68);
+  /* Las descripciones completas traen saltos de línea (párrafos y listas). */
+  white-space: pre-line;
 }

@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
-import styles from "./CountdownTimer.module.css";
+import { useEffect, useState } from 'react';
+import styles from './CountdownTimer.module.css';
 
 interface CountdownTimerProps {
   eyebrow: string;
   title: string;
-  durationMs: number;
+  targetDate: number;
 }
 
 function pad(n: number): string {
-  return String(n).padStart(2, "0");
+  return String(n).padStart(2, '0');
 }
 
-function getTimeLeftFromDiff(diffMs: number) {
-  const diff = Math.max(0, diffMs);
+function getTimeLeft(targetDate: number) {
+  const diff = Math.max(0, targetDate - Date.now());
   return {
     days: pad(Math.floor(diff / 86400000)),
     hours: pad(Math.floor((diff % 86400000) / 3600000)),
@@ -21,27 +21,23 @@ function getTimeLeftFromDiff(diffMs: number) {
   };
 }
 
-function getTimeLeft(targetDate: number) {
-  return getTimeLeftFromDiff(targetDate - Date.now());
-}
-
 // Contador regresivo mock hacia una fecha futura — se actualiza cada segundo
 // vía setInterval, igual que countdownTarget/countdownTick del original.
-export function CountdownTimer({
-  eyebrow,
-  title,
-  durationMs,
-}: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(() =>
-    getTimeLeftFromDiff(durationMs),
-  );
+export function CountdownTimer({ eyebrow, title, targetDate }: CountdownTimerProps) {
+  // La hora no se puede leer durante el prerender: parte con placeholder
+  // estático y se calcula al hidratar (luego cada segundo).
+  const [timeLeft, setTimeLeft] = useState({
+    days: '--',
+    hours: '--',
+    mins: '--',
+    secs: '--',
+  });
 
   useEffect(() => {
-    const targetDate = Date.now() + durationMs;
     setTimeLeft(getTimeLeft(targetDate));
     const timer = setInterval(() => setTimeLeft(getTimeLeft(targetDate)), 1000);
     return () => clearInterval(timer);
-  }, [durationMs]);
+  }, [targetDate]);
 
   return (
     <div className={styles.wrap}>

@@ -1,5 +1,5 @@
-import { ProductImage } from "../ui";
-import styles from "./CollectionCard.module.css";
+import { ProductImage } from '../ui';
+import styles from './CollectionCard.module.css';
 
 interface CollectionCardProps {
   title: string;
@@ -11,12 +11,7 @@ interface CollectionCardProps {
 // Card de colección destacada — usada en Novedades ("Colección Primavera",
 // "Edición Violeta", "Kits Regalo"). Al hacer click navega a Tienda (no hay
 // filtrado real por colección todavía, es un mock de navegación).
-export function CollectionCard({
-  title,
-  description,
-  bg,
-  onClick,
-}: CollectionCardProps) {
+export function CollectionCard({ title, description, bg, onClick }: CollectionCardProps) {
   return (
     <button type="button" className={styles.card} onClick={onClick}>
       <div className={styles.imageWrap}>

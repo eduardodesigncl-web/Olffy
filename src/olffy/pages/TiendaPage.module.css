@@ -1,49 +1,240 @@
-.wrap {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: clamp(36px, 4.5vw, 56px) clamp(14px, 4vw, 48px)
-    clamp(52px, 7vw, 90px);
+.page {
+  padding-bottom: clamp(56px, 8vw, 96px);
 }
 
-.header {
-  margin-bottom: clamp(22px, 3vw, 36px);
+/* ── Bloque superior compacto (header + búsqueda + filtros) ── */
+.top {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 90% at 100% 0%, rgba(222, 221, 242, 0.6), transparent 55%),
+    radial-gradient(90% 90% at 0% 100%, rgba(255, 233, 168, 0.5), transparent 55%),
+    var(--olffy-crema-suave);
+}
+
+.topInner {
+  position: relative;
+  z-index: 2;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(26px, 3.6vw, 46px) clamp(14px, 4vw, 48px) clamp(22px, 3vw, 32px);
+  text-align: center;
 }
 
 .eyebrow {
+  display: inline-block;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--olffy-naranjo);
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 
 .title {
-  margin: 0 0 8px;
+  margin: 0 auto 8px;
+  max-width: 660px;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(30px, 4.5vw, 52px);
+  font-size: clamp(26px, 4vw, 44px);
+  line-height: 1.06;
   color: var(--olffy-cafe);
   letter-spacing: -0.02em;
 }
 
 .subtitle {
-  margin: 0 0 6px;
-  font-size: 15.5px;
-  line-height: 1.6;
+  margin: 0 auto 20px;
+  max-width: 460px;
+  font-size: clamp(14px, 1.5vw, 15.5px);
+  line-height: 1.55;
   color: var(--olffy-cafe-68);
+}
+
+/* Toolbar: buscador + contador. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.searchWrap {
+  flex: 1 1 340px;
   max-width: 520px;
+  text-align: left;
 }
 
 .count {
-  margin: 0;
-  font-size: 14px;
-  color: var(--olffy-cafe-55);
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--olffy-morado);
+  background: var(--olffy-blanco);
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
 }
 
-.filters {
+/* Chips centrados dentro del bloque (con scroll horizontal en mobile). */
+.chipsWrap {
   display: flex;
-  flex-wrap: wrap;
-  gap: 13px;
-  align-items: center;
-  margin-bottom: 26px;
+  justify-content: center;
+}
+
+@media (max-width: 560px) {
+  .chipsWrap {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * clamp(14px, 4vw, 48px));
+    padding: 2px clamp(14px, 4vw, 48px);
+  }
+
+  .chipsWrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* La fila de chips no envuelve: se desplaza horizontalmente. */
+  .chipsWrap > div {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Decoración del bloque. */
+.deco {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.decoFlower {
+  top: 16%;
+  left: 4%;
+  opacity: 0.85;
+}
+
+.decoSparkleA {
+  top: 24%;
+  right: 8%;
+}
+
+.decoSparkleB {
+  bottom: 18%;
+  right: 16%;
+}
+
+/* ── Encabezados de sección ── */
+.sectionHead {
+  margin-bottom: clamp(14px, 2vw, 20px);
+}
+
+.sectionEyebrow {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--olffy-naranjo);
+  margin-bottom: 3px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 2.8vw, 30px);
+  color: var(--olffy-cafe);
+  letter-spacing: -0.02em;
+}
+
+/* ── Destacados ── */
+.featured {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(26px, 3.5vw, 40px) clamp(14px, 4vw, 48px) clamp(8px, 1.5vw, 14px);
+}
+
+.featuredGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 1.6vw, 18px);
+}
+
+/* ── Franja editorial intermedia ── */
+.band {
+  position: relative;
+  overflow: hidden;
+  max-width: 1240px;
+  margin: clamp(20px, 3vw, 32px) auto;
+  padding: clamp(20px, 3vw, 30px) clamp(20px, 4vw, 44px);
+  background: var(--olffy-morado-suave);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.bandSquiggle {
+  display: block;
+  margin: 0 auto 8px;
+}
+
+.bandText {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(16px, 2.2vw, 22px);
+  color: var(--olffy-cafe);
+}
+
+/* Deja aire lateral a la franja respecto al ancho de página. */
+@media (min-width: 1336px) {
+  .band {
+    max-width: 1240px;
+  }
+}
+
+/* ── Grilla principal ── */
+.gridScene {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(8px, 1.5vw, 16px) clamp(14px, 4vw, 48px) 0;
+}
+
+/* Grilla fija de categorías filtradas: columnas de tamaño constante para que
+   las cards NO se estiren con pocos productos. 3 / 2 / 1 columnas. */
+.filteredGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 1.8vw, 20px);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .filteredGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .filteredGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .featuredGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .decoFlower {
+    left: -4%;
+    opacity: 0.6;
+  }
+
+  .searchWrap {
+    flex-basis: 100%;
+    max-width: none;
+  }
 }
