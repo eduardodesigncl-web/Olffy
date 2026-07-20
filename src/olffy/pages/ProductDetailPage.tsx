@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
-import { ProductGallery, ProductInteriorPreview, RelatedProducts } from '../components/product';
-import { Accordion, Button, QuantityStepper } from '../components/ui';
-import { GiftIcon, type GiftIconName } from '../components/storefront';
-import { useCart } from '../context/CartContext';
-import { detailSectionsFor, interiorTabsFor } from '../data/productDetails';
-import type { Product } from '../types';
-import styles from './ProductDetailPage.module.css';
+import { useEffect, useState } from "react";
+import {
+  ProductGallery,
+  ProductInteriorPreview,
+  RelatedProducts,
+} from "../components/product";
+import { Accordion, Button, QuantityStepper } from "../components/ui";
+import { GiftIcon, type GiftIconName } from "../components/storefront";
+import { useCart } from "../context/CartContext";
+import { detailSectionsFor, interiorTabsFor } from "../data/productDetails";
+import type { Product } from "../types";
+import styles from "./ProductDetailPage.module.css";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -16,16 +20,21 @@ interface ProductDetailPageProps {
 
 // Beneficios de apoyo a la compra — sutiles, integrados a la columna de info.
 const BENEFITS: { icon: GiftIconName; label: string }[] = [
-  { icon: 'package', label: 'Envíos a todo Chile' },
-  { icon: 'store', label: 'Retiro gratis en Viña del Mar' },
-  { icon: 'palette', label: 'Diseño ilustrado propio' },
-  { icon: 'heart', label: 'Empacado a mano, con amor' },
+  { icon: "package", label: "Envíos a todo Chile" },
+  { icon: "store", label: "Retiro gratis en Viña del Mar" },
+  { icon: "palette", label: "Diseño ilustrado propio" },
+  { icon: "heart", label: "Empacado a mano, con amor" },
 ];
 
 // Página de detalle de producto (/tienda/<slug>) — reemplaza al antiguo modal.
 // Galería + info/compra en dos columnas, visor de interior tipo libro,
 // acordeones de información extendida y productos relacionados.
-export function ProductDetailPage({ product, relatedProducts, onProductClick, onGoToTienda }: ProductDetailPageProps) {
+export function ProductDetailPage({
+  product,
+  relatedProducts,
+  onProductClick,
+  onGoToTienda,
+}: ProductDetailPageProps) {
   const { addToCart, openCart } = useCart();
   const [qty, setQty] = useState(1);
   const [colorIdx, setColorIdx] = useState(0);
@@ -39,7 +48,8 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
   // Stock de la variante que se agrega al carrito. null = Shopify no expone
   // cantidad: no se inventa un número y la validación final es del servidor.
   const maxQty =
-    typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
+    typeof product.quantityAvailable === "number" &&
+    product.quantityAvailable > 0
       ? product.quantityAvailable
       : undefined;
 
@@ -64,10 +74,16 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
     <div className={styles.wrap}>
       {/* Breadcrumb */}
       <nav className={styles.breadcrumb} aria-label="Estás en">
-        <button type="button" className={styles.crumbLink} onClick={onGoToTienda}>
+        <button
+          type="button"
+          className={styles.crumbLink}
+          onClick={onGoToTienda}
+        >
           Tienda
         </button>
-        <span className={styles.crumbSep} aria-hidden="true">/</span>
+        <span className={styles.crumbSep} aria-hidden="true">
+          /
+        </span>
         <span className={styles.crumbCurrent}>{product.name}</span>
       </nav>
 
@@ -95,7 +111,7 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
                     title={color.name}
                     aria-label={`Color ${color.name}`}
                     aria-pressed={idx === colorIdx}
-                    className={`${styles.swatch} ${idx === colorIdx ? styles.swatchActive : ''}`}
+                    className={`${styles.swatch} ${idx === colorIdx ? styles.swatchActive : ""}`}
                     style={{ background: color.hex }}
                     onClick={() => setColorIdx(idx)}
                   />
@@ -127,13 +143,13 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
               onClick={handleAddToCart}
               disabled={!product.availableForSale}
             >
-              {product.availableForSale ? 'Agregar al carrito' : 'Agotado'}
+              {product.availableForSale ? "Agregar al carrito" : "Agotado"}
             </Button>
           </div>
 
           {product.availableForSale && maxQty !== undefined && (
             <p className={styles.stockNote}>
-              {maxQty} disponible{maxQty === 1 ? '' : 's'}
+              {maxQty} disponible{maxQty === 1 ? "" : "s"}
             </p>
           )}
 
@@ -160,7 +176,11 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
       )}
 
       <div className={styles.related}>
-        <RelatedProducts product={product} related={related} onProductClick={onProductClick} />
+        <RelatedProducts
+          product={product}
+          related={related}
+          onProductClick={onProductClick}
+        />
       </div>
     </div>
   );
