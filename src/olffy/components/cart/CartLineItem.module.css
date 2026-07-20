@@ -4,6 +4,12 @@
   padding: 13px 0;
   border-bottom: 1px solid var(--olffy-cafe-06);
   align-items: center;
+  transition: opacity 0.15s ease;
+}
+
+/* Mutación en curso solo para esta línea; el resto del carrito sigue vivo. */
+.rowPending {
+  opacity: 0.72;
 }
 
 .thumb {

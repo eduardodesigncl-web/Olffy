@@ -10,20 +10,24 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import {
-  addToCartAction,
-  decrementCartLineAction,
-  incrementCartLineAction,
-  removeCartLineAction,
-} from "src/integration/actions";
-import { getCartItemsAction } from "src/olffy/integration/cart-actions";
+  addCartLinesAction,
+  getCartItemsAction,
+  removeCartLinesAction,
+  setCartLineQuantityAction,
+} from "src/olffy/integration/cart-actions";
 import type { CartItem, Product } from "../types";
+import { createCartSyncEngine, type CartSyncEngine } from "./cart-sync";
 
 interface CartContextValue {
   cartItems: CartItem[];
   cartOpen: boolean;
   cartReady: boolean;
   cartPending: boolean;
+  // Variantes con mutaciones en curso: permite mostrar loading solo en la
+  // línea afectada, sin bloquear el resto del carrito.
+  pendingVariantIds: string[];
   openCart: () => void;
   closeCart: () => void;
   addToCart: (product: Product, qty?: number) => void;
@@ -31,6 +35,9 @@ interface CartContextValue {
   incrementQty: (lineId: string) => void;
   decrementQty: (lineId: string) => void;
   clearCart: () => void;
+  // Espera (o fuerza) las mutaciones pendientes; el checkout lo usa para
+  // nunca enviar un carrito antiguo.
+  flushCartMutations: () => Promise<void>;
   cartCount: number;
   cartSubtotal: number;
   formattedCartSubtotal: string;
@@ -42,147 +49,76 @@ function formatClp(n: number): string {
   return "$" + Math.round(n).toLocaleString("es-CL");
 }
 
-// Las líneas creadas de forma optimista todavía no existen en Shopify;
-// se identifican con este prefijo hasta que llegue la reconciliación.
-const PENDING_PREFIX = "pending:";
-
 // Estado global de carrito respaldado por el carrito real de Shopify.
 // El carrito se carga DESPUÉS del primer pintado (getCartItemsAction), así
 // ninguna página bloquea su render esperando a Shopify. Las mutaciones se
-// aplican optimistas en local y se reconcilian con el server al terminar.
+// aplican optimistas al instante y reconcilian con el carrito que devuelve
+// la propia mutación (una sola llamada de red por operación consolidada);
+// el motor de cart-sync coalesce clics, ignora respuestas viejas y hace
+// rollback visible si Shopify rechaza la operación.
 export function CartProvider({ children }: { children: ReactNode }) {
   // El primer render debe ser idéntico en servidor y navegador; Shopify se
   // sincroniza después de hidratar y luego las mutaciones quedan optimistas.
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [pendingVariantIds, setPendingVariantIds] = useState<string[]>([]);
   const [cartReady, setCartReady] = useState(false);
-  const [pendingOps, setPendingOps] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
-  const pendingOpsRef = useRef(0);
 
-  const syncFromServer = useCallback(async () => {
-    try {
-      const items = await getCartItemsAction();
-      // Si hay mutaciones en vuelo, esta respuesta ya está desactualizada:
-      // la reconciliación final la hará la última operación pendiente.
-      if (pendingOpsRef.current > 0) return;
-      setCartItems(items);
-    } catch (error) {
-      console.error("No se pudo sincronizar el carrito", error);
-    } finally {
-      setCartReady(true);
-    }
-  }, []);
+  const engineRef = useRef<CartSyncEngine | null>(null);
+  if (!engineRef.current) {
+    engineRef.current = createCartSyncEngine(
+      {
+        addLines: addCartLinesAction,
+        setLineQuantity: setCartLineQuantityAction,
+        removeLine: removeCartLinesAction,
+      },
+      {
+        onItems: setCartItems,
+        onPending: setPendingVariantIds,
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  }
+  const engine = engineRef.current;
 
   useEffect(() => {
-    void syncFromServer();
-  }, [syncFromServer]);
-
-  const runServer = useCallback((action: () => Promise<unknown>) => {
-    pendingOpsRef.current += 1;
-    setPendingOps((n) => n + 1);
+    let cancelled = false;
     void (async () => {
       try {
-        await action();
+        const items = await getCartItemsAction();
+        if (!cancelled) engine.hydrate(items);
       } catch (error) {
-        console.error("Error actualizando el carrito", error);
+        console.error("No se pudo sincronizar el carrito", error);
       } finally {
-        pendingOpsRef.current -= 1;
-        setPendingOps((n) => n - 1);
-        if (pendingOpsRef.current === 0) {
-          try {
-            const items = await getCartItemsAction();
-            if (pendingOpsRef.current === 0) {
-              setCartItems(items);
-            }
-          } catch (error) {
-            console.error("No se pudo sincronizar el carrito", error);
-          }
-        }
+        if (!cancelled) setCartReady(true);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [engine]);
 
   const openCart = useCallback(() => setCartOpen(true), []);
   const closeCart = useCallback(() => setCartOpen(false), []);
 
-  const applyLocal = useCallback((update: (prev: CartItem[]) => CartItem[]) => {
-    setCartItems((prev) => update(prev));
-  }, []);
-
   const addToCart = useCallback(
-    (product: Product, qty: number = 1) => {
-      if (!product.variantId) return;
-
-      applyLocal((prev) => {
-        const idx = prev.findIndex(
-          (item) => item.variantId === product.variantId,
-        );
-        if (idx >= 0) {
-          const next = [...prev];
-          const current = next[idx]!;
-          next[idx] = { ...current, qty: current.qty + qty };
-          return next;
-        }
-        return [
-          ...prev,
-          {
-            ...product,
-            qty,
-            lineId: `${PENDING_PREFIX}${product.variantId}`,
-          },
-        ];
-      });
-      runServer(() => addToCartAction(product.id, product.variantId, qty));
-    },
-    [applyLocal, runServer],
+    (product: Product, qty: number = 1) => engine.add(product, qty),
+    [engine],
   );
-
   const removeFromCart = useCallback(
-    (lineId: string) => {
-      applyLocal((prev) => prev.filter((item) => item.lineId !== lineId));
-      if (!lineId.startsWith(PENDING_PREFIX)) {
-        runServer(() => removeCartLineAction(lineId));
-      }
-    },
-    [applyLocal, runServer],
+    (lineId: string) => engine.remove(lineId),
+    [engine],
   );
-
   const incrementQty = useCallback(
-    (lineId: string) => {
-      applyLocal((prev) =>
-        prev.map((item) =>
-          item.lineId === lineId ? { ...item, qty: item.qty + 1 } : item,
-        ),
-      );
-      if (!lineId.startsWith(PENDING_PREFIX)) {
-        runServer(() => incrementCartLineAction(lineId));
-      }
-    },
-    [applyLocal, runServer],
+    (lineId: string) => engine.increment(lineId),
+    [engine],
   );
-
   const decrementQty = useCallback(
-    (lineId: string) => {
-      const current = cartItems.find((item) => item.lineId === lineId);
-      if (!current || current.qty <= 1) return;
-
-      applyLocal((prev) =>
-        prev.map((item) =>
-          item.lineId === lineId
-            ? { ...item, qty: Math.max(1, item.qty - 1) }
-            : item,
-        ),
-      );
-      if (!lineId.startsWith(PENDING_PREFIX)) {
-        runServer(() => decrementCartLineAction(lineId));
-      }
-    },
-    [applyLocal, cartItems, runServer],
+    (lineId: string) => engine.decrement(lineId),
+    [engine],
   );
-
-  const clearCart = useCallback(() => {
-    applyLocal(() => []);
-  }, [applyLocal]);
+  const clearCart = useCallback(() => engine.clear(), [engine]);
+  const flushCartMutations = useCallback(() => engine.flush(), [engine]);
 
   const cartCount = useMemo(
     () => cartItems.reduce((s, i) => s + i.qty, 0),
@@ -201,7 +137,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     cartItems,
     cartOpen,
     cartReady,
-    cartPending: pendingOps > 0,
+    cartPending: pendingVariantIds.length > 0,
+    pendingVariantIds,
     openCart,
     closeCart,
     addToCart,
@@ -209,6 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     incrementQty,
     decrementQty,
     clearCart,
+    flushCartMutations,
     cartCount,
     cartSubtotal,
     formattedCartSubtotal,

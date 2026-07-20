@@ -4,6 +4,9 @@ import styles from "./CartLineItem.module.css";
 
 interface CartLineItemProps {
   item: CartItem;
+  // Mutación en curso para esta línea: atenúa solo esta fila, sin bloquear
+  // el resto del carrito.
+  pending?: boolean;
   onIncrement: (lineId: string) => void;
   onDecrement: (lineId: string) => void;
   onRemove: (lineId: string) => void;
@@ -17,12 +20,16 @@ function formatClp(n: number): string {
 // unitario, stepper de cantidad, subtotal y botón eliminar.
 export function CartLineItem({
   item,
+  pending = false,
   onIncrement,
   onDecrement,
   onRemove,
 }: CartLineItemProps) {
   return (
-    <div className={styles.row}>
+    <div
+      className={`${styles.row} ${pending ? styles.rowPending : ""}`}
+      aria-busy={pending}
+    >
       <div className={styles.thumb}>
         <ProductImage
           src={item.image}
@@ -43,6 +50,9 @@ export function CartLineItem({
                 ? onIncrement(item.lineId)
                 : onDecrement(item.lineId)
             }
+            {...(typeof item.quantityAvailable === "number"
+              ? { max: item.quantityAvailable }
+              : {})}
           />
           <span className={styles.subtotal}>
             {formatClp(item.n * item.qty)}

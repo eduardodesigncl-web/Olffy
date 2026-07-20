@@ -39,10 +39,12 @@ export function CartDrawer({
     cartOpen,
     cartReady,
     cartPending,
+    pendingVariantIds,
     closeCart,
     incrementQty,
     decrementQty,
     removeFromCart,
+    flushCartMutations,
     cartCount,
     cartSubtotal,
   } = useCart();
@@ -97,6 +99,9 @@ export function CartDrawer({
     setCheckoutPending(true);
     setFeedback(null);
     try {
+      // Nunca enviar un carrito antiguo: fuerza el flush de mutaciones
+      // coalescidas y espera a que Shopify confirme antes de ir al pago.
+      await flushCartMutations();
       await onGoToCheckout();
     } catch (error) {
       setFeedback({
@@ -156,6 +161,7 @@ export function CartDrawer({
               <CartLineItem
                 key={item.lineId}
                 item={item}
+                pending={pendingVariantIds.includes(item.variantId)}
                 onIncrement={incrementQty}
                 onDecrement={decrementQty}
                 onRemove={removeFromCart}
