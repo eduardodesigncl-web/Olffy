@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import styles from './Footer.module.css';
-import { NewsletterForm } from './NewsletterForm';
-import type { PublicPage } from './navigation';
-import { INSTAGRAM_PROFILE_LINK } from '../../config/social';
+import { useEffect, useRef, useState } from "react";
+import styles from "./Footer.module.css";
+import { NewsletterForm } from "./NewsletterForm";
+import type { PublicPage } from "./navigation";
+import { INSTAGRAM_PROFILE_LINK } from "../../config/social";
 
 interface FooterProps {
   onNavigate: (page: PublicPage) => void;
@@ -16,7 +16,13 @@ interface FooterProps {
 
 function FooterSparkle() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--olffy-naranjo)" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="var(--olffy-naranjo)"
+      aria-hidden="true"
+    >
       <path d="M12 1.5l1.9 6.8L20.5 12l-6.6 3.7L12 22.5l-1.9-6.8L3.5 12l6.6-3.7L12 1.5z" />
     </svg>
   );
@@ -59,14 +65,18 @@ export function Footer({ onNavigate, onEnterAdmin, onSubscribe }: FooterProps) {
       <div className={styles.inner}>
         <div className={styles.brandStrip} aria-hidden="true">
           <FooterSparkle />
-          <span className={styles.brandStripText}>Hecho con amor y con las manos, claro</span>
+          <span className={styles.brandStripText}>
+            Hecho con amor y con las manos, claro
+          </span>
           <FooterSparkle />
         </div>
 
         <div className={styles.grid}>
           <div className={styles.brandCol}>
             <span className={styles.logo}>OLFFY®</span>
-            <p className={styles.tagline}>Papelería ilustrada para organizar, crear y regalar con magia.</p>
+            <p className={styles.tagline}>
+              Papelería ilustrada para organizar, crear y regalar con magia.
+            </p>
             <div className={styles.social}>
               <a
                 className={styles.socialLink}
@@ -76,10 +86,23 @@ export function Footer({ onNavigate, onEnterAdmin, onSubscribe }: FooterProps) {
                 aria-label="Instagram de OLFFY (abre en una pestaña nueva)"
                 title="Seguir a @olffy.cl en Instagram"
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="5" />
                   <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                  <circle
+                    cx="17.5"
+                    cy="6.5"
+                    r="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
                 </svg>
               </a>
             </div>
@@ -88,18 +111,54 @@ export function Footer({ onNavigate, onEnterAdmin, onSubscribe }: FooterProps) {
           <div>
             <h3 className={styles.colTitle}>Tienda</h3>
             <div className={styles.linkList}>
-              <button type="button" className={styles.linkBtn} onClick={() => onNavigate('tienda')}>Ver catálogo</button>
-              <button type="button" className={styles.linkBtn} onClick={() => onNavigate('novedades')}>Novedades</button>
-              <button type="button" className={styles.linkBtn} onClick={() => onNavigate('regalos')}>Regalos</button>
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => onNavigate("tienda")}
+              >
+                Ver catálogo
+              </button>
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => onNavigate("novedades")}
+              >
+                Novedades
+              </button>
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => onNavigate("regalos")}
+              >
+                Regalos
+              </button>
             </div>
           </div>
 
           <div>
             <h3 className={styles.colTitle}>Nosotros</h3>
             <div className={styles.linkList}>
-              <button type="button" className={styles.linkBtn} onClick={() => onNavigate('historia')}>Nuestra historia</button>
-              <button type="button" className={styles.linkBtn} onClick={() => onNavigate('contacto')}>Contacto</button>
-              <button type="button" className={styles.linkBtn} onClick={() => onNavigate('puntos')}>OLFFY Puntos</button>
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => onNavigate("historia")}
+              >
+                Nuestra historia
+              </button>
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => onNavigate("contacto")}
+              >
+                Contacto
+              </button>
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => onNavigate("puntos")}
+              >
+                OLFFY Puntos
+              </button>
             </div>
           </div>
 

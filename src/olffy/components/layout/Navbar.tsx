@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import styles from "./Navbar.module.css";
 import type { PublicPage } from "./navigation";
 
@@ -14,6 +14,9 @@ interface NavbarProps {
   cartCount: number;
   account: AccountSummary | null;
   accountLoading: boolean;
+  searchOpen: boolean;
+  onToggleSearch: () => void;
+  searchButtonRef?: Ref<HTMLButtonElement>;
   onOpenCart: () => void;
   onOpenMenu: () => void;
   onOpenAccount: () => void;
@@ -30,6 +33,9 @@ export function Navbar({
   cartCount,
   account,
   accountLoading,
+  searchOpen,
+  onToggleSearch,
+  searchButtonRef,
   onOpenCart,
   onOpenMenu,
   onOpenAccount,
@@ -145,6 +151,31 @@ export function Navbar({
         </div>
 
         <div className={styles.actions}>
+          {/* Lupa de búsqueda global: inmediatamente a la izquierda del
+              icono de usuario en todos los viewports. */}
+          <button
+            type="button"
+            ref={searchButtonRef}
+            className={styles.iconBtn}
+            aria-label="Buscar productos"
+            aria-expanded={searchOpen}
+            aria-controls="global-product-search"
+            onClick={onToggleSearch}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </button>
           <div className={styles.accountWrap} ref={accountRef}>
             <button
               type="button"

@@ -9,6 +9,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -17,6 +18,7 @@ import styles from "../App.module.css";
 import {
   AnnouncementBar,
   Footer,
+  GlobalProductSearch,
   MobileMenuDrawer,
   Navbar,
 } from "../components/layout";
@@ -74,6 +76,8 @@ function ChromeInner({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
   const { cartCount, cartOpen, cartPending, openCart } = useCart();
   const [loyalty, setLoyalty] = useState<StorefrontLoyaltyState | null>(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState(true);
@@ -130,6 +134,12 @@ function ChromeInner({ children }: { children: ReactNode }) {
         }
       : null;
 
+  // Cerrar la búsqueda devuelve el foco a la lupa (accesibilidad teclado).
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    searchButtonRef.current?.focus();
+  }, []);
+
   const handleSignOut = async () => {
     await signOutStorefrontAction();
     // Igual que en el login, la navegación completa evita que una transición
@@ -145,12 +155,26 @@ function ChromeInner({ children }: { children: ReactNode }) {
           cartCount={cartCount}
           account={account}
           accountLoading={loyaltyLoading}
+          searchOpen={searchOpen}
+          onToggleSearch={() => setSearchOpen((open) => !open)}
+          searchButtonRef={searchButtonRef}
           onOpenCart={openCart}
           onOpenMenu={() => setMenuOpen(true)}
           onOpenAccount={() => router.push("/cuenta")}
           onOpenRewards={() => router.push("/cuenta?tab=recompensas")}
           onSignOut={handleSignOut}
           onNavigate={handleNavigate}
+        />
+
+        {/* Búsqueda global: se ancla justo bajo la navbar y funciona en
+            todas las páginas públicas. */}
+        <GlobalProductSearch
+          open={searchOpen}
+          onClose={closeSearch}
+          onOpenProduct={(handle) => router.push(`/tienda/${handle}`)}
+          onViewAll={(query) =>
+            router.push(`/tienda?q=${encodeURIComponent(query)}`)
+          }
         />
 
         <main className={styles.main}>{children}</main>
