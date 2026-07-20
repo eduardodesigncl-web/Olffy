@@ -165,10 +165,19 @@ export type ShopifyCreateCartOperation = {
   data: { cartCreate: { cart: ShopifyCart } };
 };
 
+// userErrors de las mutaciones de líneas del carrito: se interpretan en la
+// capa Shopify (lib/shopify/cart-errors) y nunca se exponen crudos al cliente.
+export type CartLineUserError = {
+  field: string[] | null;
+  message: string;
+  code: string | null;
+};
+
 export type ShopifyAddToCartOperation = {
   data: {
     cartLinesAdd: {
       cart: ShopifyCart;
+      userErrors: CartLineUserError[];
     };
   };
   variables: {
@@ -184,6 +193,7 @@ export type ShopifyRemoveFromCartOperation = {
   data: {
     cartLinesRemove: {
       cart: ShopifyCart;
+      userErrors: CartLineUserError[];
     };
   };
   variables: {
@@ -196,6 +206,7 @@ export type ShopifyUpdateCartOperation = {
   data: {
     cartLinesUpdate: {
       cart: ShopifyCart;
+      userErrors: CartLineUserError[];
     };
   };
   variables: {

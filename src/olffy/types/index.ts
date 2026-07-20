@@ -70,6 +70,28 @@ export interface CartItem extends Product {
   lineId: string; // id de la línea del carrito Shopify
 }
 
+// Resultado tipado de toda mutación de carrito. `items` es siempre el
+// carrito real devuelto por Shopify (ya mapeado) para reconciliar la UI,
+// incluso en errores recuperables. NETWORK_ERROR lo agrega el cliente
+// cuando la acción ni siquiera respondió.
+export type CartMutationErrorCode =
+  | "OUT_OF_STOCK"
+  | "INSUFFICIENT_STOCK"
+  | "NOT_AVAILABLE"
+  | "SHOPIFY_ERROR"
+  | "NETWORK_ERROR";
+
+export type CartMutationResult =
+  | { ok: true; items: CartItem[] }
+  | {
+      ok: false;
+      // items del carrito real si se pudo recuperar; null cuando ni la
+      // lectura de respaldo respondió (el cliente restaura su snapshot).
+      items: CartItem[] | null;
+      code: CartMutationErrorCode;
+      message: string;
+    };
+
 export type Category = string;
 
 export interface HeroSlide {

@@ -31,6 +31,7 @@ import {
 } from "./queries/product";
 import {
   Cart,
+  CartLineUserError,
   Collection,
   Connection,
   Image,
@@ -274,9 +275,17 @@ export async function createCart(): Promise<Cart> {
   return reshapeCart(res.body.data.cartCreate.cart);
 }
 
+// Resultado de una mutación de líneas: el carrito devuelto por la propia
+// mutación (elimina la segunda lectura getCart) más los userErrors para que
+// la capa de acciones los convierta en códigos de dominio.
+export type CartLinesMutationResult = {
+  cart: Cart | undefined;
+  userErrors: CartLineUserError[];
+};
+
 export async function addToCart(
   lines: { merchandiseId: string; quantity: number }[],
-): Promise<Cart> {
+): Promise<CartLinesMutationResult> {
   const cartId = (await cookies()).get("cartId")?.value!;
   const res = await shopifyFetch<ShopifyAddToCartOperation>({
     query: addToCartMutation,
@@ -285,10 +294,16 @@ export async function addToCart(
       lines,
     },
   });
-  return reshapeCart(res.body.data.cartLinesAdd.cart);
+  const result = res.body.data.cartLinesAdd;
+  return {
+    cart: result.cart ? reshapeCart(result.cart) : undefined,
+    userErrors: result.userErrors ?? [],
+  };
 }
 
-export async function removeFromCart(lineIds: string[]): Promise<Cart> {
+export async function removeFromCart(
+  lineIds: string[],
+): Promise<CartLinesMutationResult> {
   const cartId = (await cookies()).get("cartId")?.value!;
   const res = await shopifyFetch<ShopifyRemoveFromCartOperation>({
     query: removeFromCartMutation,
@@ -298,12 +313,16 @@ export async function removeFromCart(lineIds: string[]): Promise<Cart> {
     },
   });
 
-  return reshapeCart(res.body.data.cartLinesRemove.cart);
+  const result = res.body.data.cartLinesRemove;
+  return {
+    cart: result.cart ? reshapeCart(result.cart) : undefined,
+    userErrors: result.userErrors ?? [],
+  };
 }
 
 export async function updateCart(
   lines: { id: string; merchandiseId: string; quantity: number }[],
-): Promise<Cart> {
+): Promise<CartLinesMutationResult> {
   const cartId = (await cookies()).get("cartId")?.value!;
   const res = await shopifyFetch<ShopifyUpdateCartOperation>({
     query: editCartItemsMutation,
@@ -313,7 +332,11 @@ export async function updateCart(
     },
   });
 
-  return reshapeCart(res.body.data.cartLinesUpdate.cart);
+  const result = res.body.data.cartLinesUpdate;
+  return {
+    cart: result.cart ? reshapeCart(result.cart) : undefined,
+    userErrors: result.userErrors ?? [],
+  };
 }
 
 export async function updateCartDiscountCodes(
