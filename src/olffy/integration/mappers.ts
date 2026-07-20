@@ -5,8 +5,14 @@ import type {
   CartItem as ShopifyCartLine,
   Collection as ShopifyCollection,
   Product as ShopifyProduct,
+  ProductVariant as ShopifyProductVariant,
 } from "lib/shopify/types";
-import type { CartItem, Product, ProductTag } from "../types";
+import type {
+  CartItem,
+  Product,
+  ProductTag,
+  ProductVariantSummary,
+} from "../types";
 
 // Paleta de fondos suaves para productos sin imagen (mismos tonos del mock).
 const BG_PALETTE = ["#F2E0CC", "#FFE9A8", "#DEDDF2", "#FBD4C2", "#FFF1CE"];
@@ -55,14 +61,37 @@ function primaryVariant(product: ShopifyProduct) {
   );
 }
 
-function totalInventory(product: ShopifyProduct): number | null {
-  const quantities = product.variants
-    .map((variant) => variant.quantityAvailable)
-    .filter((value): value is number => typeof value === "number");
+// Stock de UNA variante. La suma del inventario de todas las variantes nunca
+// se usa para decidir si una variante específica puede comprarse: el número
+// visible, el máximo del stepper y la validación del carrito deben referirse
+// a la misma variante que se agrega (merchandiseId).
+function variantQuantityAvailable(
+  variant: ShopifyProductVariant | undefined,
+): number | null {
+  return typeof variant?.quantityAvailable === "number"
+    ? variant.quantityAvailable
+    : null;
+}
 
-  if (!quantities.length) return null;
+function toVariantSummary(
+  variant: ShopifyProductVariant,
+): ProductVariantSummary {
+  return {
+    id: variant.id,
+    title: variant.title,
+    availableForSale: variant.availableForSale,
+    quantityAvailable: variantQuantityAvailable(variant),
+    price: money(variant.price.amount),
+    selectedOptions: variant.selectedOptions,
+  };
+}
 
-  return quantities.reduce((sum, value) => sum + value, 0);
+// Un producto "sin opciones" en Shopify tiene una sola opción "Title" con el
+// valor "Default Title"; en ese caso no hay selección real de variante.
+function hasRealOptions(product: ShopifyProduct): boolean {
+  return product.options.some(
+    (option) => option.name.toLowerCase() !== "title",
+  );
 }
 
 // Colecciones que funcionan como marcadores (badge/portada), no como
@@ -254,7 +283,8 @@ export function parseProductDescription(
 
 export function toOlffyProduct(product: ShopifyProduct): Product {
   const variant = primaryVariant(product);
-  const quantityAvailable = totalInventory(product);
+  // Fuente de verdad: la variante que se agrega al carrito, no el producto.
+  const quantityAvailable = variantQuantityAvailable(variant);
   const image = product.featuredImage?.url ?? product.images[0]?.url;
   const gallery = product.images
     .map((img) => sizedImage(img.url, 960))
@@ -288,7 +318,14 @@ export function toOlffyProduct(product: ShopifyProduct): Product {
     fullDesc: parsed.full,
     tags: product.tags,
     variantId: variant?.id ?? "",
-    availableForSale: product.availableForSale && quantityAvailable !== 0,
+    availableForSale:
+      product.availableForSale &&
+      (variant?.availableForSale ?? false) &&
+      quantityAvailable !== 0,
+    quantityAvailable,
+    ...(hasRealOptions(product)
+      ? { variants: product.variants.map(toVariantSummary) }
+      : {}),
   };
 }
 
@@ -313,6 +350,12 @@ function toOlffyCartItem(line: ShopifyCartLine): CartItem {
     line.merchandise.title && line.merchandise.title !== "Default Title"
       ? line.merchandise.title
       : "OLFFY";
+  // Disponibilidad real de la línea: viene de la variante (merchandise) que
+  // está en el carrito, no se infiere ni se hardcodea.
+  const quantityAvailable =
+    typeof line.merchandise.quantityAvailable === "number"
+      ? line.merchandise.quantityAvailable
+      : null;
 
   return {
     id: product.id,
@@ -329,7 +372,8 @@ function toOlffyCartItem(line: ShopifyCartLine): CartItem {
     bundle: null,
     desc: "",
     variantId: line.merchandise.id,
-    availableForSale: true,
+    availableForSale: line.merchandise.availableForSale,
+    quantityAvailable,
     qty: line.quantity,
     lineId: line.id ?? line.merchandise.id,
   };

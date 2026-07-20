@@ -23,6 +23,7 @@ function product(
     desc: "",
     variantId: `variant-${name}`,
     availableForSale: true,
+    quantityAvailable: null,
     ...extra,
   };
 }

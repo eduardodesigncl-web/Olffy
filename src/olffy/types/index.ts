@@ -27,6 +27,17 @@ export type ProductTag =
   | "Especial"
   | "Agotado";
 
+// Resumen de una variante Shopify: lo necesario para elegir variante y
+// validar stock sin exponer el objeto crudo de la API.
+export interface ProductVariantSummary {
+  id: string;
+  title: string;
+  availableForSale: boolean;
+  quantityAvailable: number | null; // null = Shopify no expone cantidad
+  price: number;
+  selectedOptions: { name: string; value: string }[];
+}
+
 export interface Product {
   id: string; // Shopify product GID
   handle: string; // handle de Shopify, usado en rutas /tienda/[handle]
@@ -47,8 +58,11 @@ export interface Product {
   image?: string; // portada / vista principal (Shopify CDN)
   hoverImage?: string; // vista secundaria (interior/detalle) en hover
   images?: string[]; // galería completa (detalle de producto)
-  variantId: string; // variante por defecto para agregar al carrito
+  variantId: string; // variante que se agrega al carrito
+  // Disponibilidad y stock de ESA variante (nunca la suma del producto).
   availableForSale: boolean;
+  quantityAvailable: number | null; // null = Shopify no expone cantidad
+  variants?: ProductVariantSummary[]; // solo cuando hay opciones reales
 }
 
 export interface CartItem extends Product {

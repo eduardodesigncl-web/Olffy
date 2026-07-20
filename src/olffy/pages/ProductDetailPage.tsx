@@ -36,6 +36,21 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
     setColorIdx(0);
   }, [product.id]);
 
+  // Stock de la variante que se agrega al carrito. null = Shopify no expone
+  // cantidad: no se inventa un número y la validación final es del servidor.
+  const maxQty =
+    typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
+      ? product.quantityAvailable
+      : undefined;
+
+  // Si el stock bajó (revalidación) y la cantidad elegida lo supera, se
+  // corrige al máximo disponible en vez de dejar pasar una cantidad inválida.
+  useEffect(() => {
+    if (maxQty !== undefined) {
+      setQty((current) => Math.min(current, maxQty));
+    }
+  }, [maxQty]);
+
   const interiorTabs = interiorTabsFor(product);
   const related = relatedProducts;
   const sections = detailSectionsFor(product);
@@ -101,7 +116,11 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
           )}
 
           <div className={styles.buyRow}>
-            <QuantityStepper value={qty} onChange={setQty} />
+            <QuantityStepper
+              value={qty}
+              onChange={setQty}
+              {...(maxQty !== undefined ? { max: maxQty } : {})}
+            />
             <Button
               variant="primary"
               className={styles.addBtn}
@@ -111,6 +130,12 @@ export function ProductDetailPage({ product, relatedProducts, onProductClick, on
               {product.availableForSale ? 'Agregar al carrito' : 'Agotado'}
             </Button>
           </div>
+
+          {product.availableForSale && maxQty !== undefined && (
+            <p className={styles.stockNote}>
+              {maxQty} disponible{maxQty === 1 ? '' : 's'}
+            </p>
+          )}
 
           <ul className={styles.benefits}>
             {BENEFITS.map((b) => (
