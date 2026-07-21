@@ -1,13 +1,11 @@
-/* Overlay bajo la navbar (z 40 < navbar 50): oscurece y difumina el fondo,
-   y bloquea la interacción con el contenido. La navbar queda nítida. */
+/* Overlay bajo la navbar (z 40 < navbar 50): oscurece y bloquea la
+   interacción. Evitamos difuminar toda la página porque es costoso al abrir
+   la búsqueda, especialmente en móviles y equipos con GPU integrada. */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 40;
   background: rgba(42, 28, 16, 0.28);
-  /* Sin prefijo -webkit- manual: Lightning CSS (Turbopack) colapsa la
-     declaración estándar cuando conviven ambas y el blur se pierde. */
-  backdrop-filter: blur(5px);
   animation: overlayIn 0.18s ease;
 }
 

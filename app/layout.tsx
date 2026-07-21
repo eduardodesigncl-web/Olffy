@@ -61,7 +61,7 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="es" className={GeistSans.variable}>
+    <html lang="es" className={GeistSans.variable} data-scroll-behavior="smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

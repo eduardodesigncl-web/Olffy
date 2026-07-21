@@ -434,99 +434,110 @@ export function AdminSupportInbox() {
       </header>
 
       <div className={styles.summary}>
-        <article>
+        <button
+          type="button"
+          className={filter === "new" ? styles.summaryCardActive : ""}
+          aria-pressed={filter === "new"}
+          onClick={() =>
+            setFilter((current) => (current === "new" ? "all" : "new"))
+          }
+        >
           <span>Nuevas</span>
           <strong>{counts.new}</strong>
-        </article>
-        <article>
+        </button>
+        <button
+          type="button"
+          className={filter === "in_progress" ? styles.summaryCardActive : ""}
+          aria-pressed={filter === "in_progress"}
+          onClick={() =>
+            setFilter((current) =>
+              current === "in_progress" ? "all" : "in_progress",
+            )
+          }
+        >
           <span>En atención</span>
           <strong>{counts.inProgress}</strong>
-        </article>
-        <article>
+        </button>
+        <button
+          type="button"
+          className={
+            filter === "waiting_information" ? styles.summaryCardActive : ""
+          }
+          aria-pressed={filter === "waiting_information"}
+          onClick={() =>
+            setFilter((current) =>
+              current === "waiting_information" ? "all" : "waiting_information",
+            )
+          }
+        >
           <span>Esperando información</span>
           <strong>{counts.waiting}</strong>
-        </article>
-        <article>
+        </button>
+        <button
+          type="button"
+          className={filter === "resolved" ? styles.summaryCardActive : ""}
+          aria-pressed={filter === "resolved"}
+          onClick={() =>
+            setFilter((current) =>
+              current === "resolved" ? "all" : "resolved",
+            )
+          }
+        >
           <span>Resueltas hoy</span>
           <strong>{counts.resolved}</strong>
-        </article>
+        </button>
       </div>
 
-      <nav className={styles.filters} aria-label="Filtrar consultas">
-        {(
-          [
-            ["all", "Todas"],
-            ["new", "Nuevas"],
-            ["in_progress", "En atención"],
-            ["waiting_information", "Esperando información"],
-            ["resolved", "Resueltas"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            type="button"
-            key={value}
-            className={filter === value ? styles.filterActive : ""}
-            onClick={() => setFilter(value)}
-            aria-pressed={filter === value}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      <nav className={styles.queueTabs} aria-label="Vista de conversaciones">
-        <button
-          type="button"
-          className={view === "active" ? styles.queueTabActive : ""}
-          aria-pressed={view === "active"}
-          onClick={() => {
-            setConversations([]);
-            setSelectedId(null);
-            setLoading(true);
-            setView("active");
-          }}
-        >
-          Bandeja activa
-        </button>
-        <button
-          type="button"
-          className={view === "archived" ? styles.queueTabActive : ""}
-          aria-pressed={view === "archived"}
-          onClick={() => {
-            setConversations([]);
-            setSelectedId(null);
-            setLoading(true);
-            setView("archived");
-          }}
-        >
-          Archivados
-        </button>
-      </nav>
-
-      <nav className={styles.categoryFilters} aria-label="Filtrar por motivo">
-        <span>Motivo</span>
-        <button
-          type="button"
-          className={categoryFilter === "all" ? styles.filterActive : ""}
-          onClick={() => setCategoryFilter("all")}
-          aria-pressed={categoryFilter === "all"}
-        >
-          Todos
-        </button>
-        {SUPPORT_DIAGNOSTIC_OPTIONS.map((option) => (
-          <button
-            type="button"
-            key={option.value}
-            className={
-              categoryFilter === option.value ? styles.filterActive : ""
+      <div className={styles.filterToolbar}>
+        <label className={styles.categoryFilterControl}>
+          <span>Motivo</span>
+          <select
+            value={categoryFilter}
+            onChange={(event) =>
+              setCategoryFilter(
+                event.currentTarget.value as "all" | SupportIssueCategory,
+              )
             }
-            onClick={() => setCategoryFilter(option.value)}
-            aria-pressed={categoryFilter === option.value}
+            aria-label="Filtrar por motivo"
           >
-            {option.label}
+            <option value="all">Todos los motivos</option>
+            {SUPPORT_DIAGNOSTIC_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <nav className={styles.queueTabs} aria-label="Vista de conversaciones">
+          <button
+            type="button"
+            className={view === "active" ? styles.queueTabActive : ""}
+            aria-pressed={view === "active"}
+            onClick={() => {
+              setConversations([]);
+              setSelectedId(null);
+              setLoading(true);
+              setView("active");
+            }}
+          >
+            Bandeja activa
           </button>
-        ))}
-      </nav>
+          <button
+            type="button"
+            className={view === "archived" ? styles.queueTabActive : ""}
+            aria-pressed={view === "archived"}
+            onClick={() => {
+              setConversations([]);
+              setSelectedId(null);
+              setLoading(true);
+              setView("archived");
+            }}
+          >
+            Archivados
+          </button>
+        </nav>
+      </div>
 
       <section className={styles.panel} aria-label="Bandeja de consultas">
         {bulkIntent && (

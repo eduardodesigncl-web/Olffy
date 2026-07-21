@@ -79,7 +79,7 @@ describe("GlobalProductSearch", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("waits exactly 2.5s after the last keystroke before searching", async () => {
+  it("searches shortly after the last keystroke", async () => {
     fetchMock.mockResolvedValue(jsonResponse([RESULT_PLANNER]));
     renderSearch();
 
@@ -95,6 +95,24 @@ describe("GlobalProductSearch", () => {
     await act(() => vi.advanceTimersByTimeAsync(100));
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]![0]).toContain("q=planner");
+    expect(screen.getByText("Planner Semanal")).toBeTruthy();
+  });
+
+  it("reuses recent results for the same query", async () => {
+    fetchMock.mockResolvedValue(jsonResponse([RESULT_PLANNER]));
+    renderSearch();
+
+    fireEvent.change(searchInput(), { target: { value: "planner" } });
+    fireEvent.keyDown(searchInput(), { key: "Enter" });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(searchInput(), { target: { value: "cuaderno" } });
+    fireEvent.change(searchInput(), { target: { value: "  PLÁNNER  " } });
+    fireEvent.keyDown(searchInput(), { key: "Enter" });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Planner Semanal")).toBeTruthy();
   });
 

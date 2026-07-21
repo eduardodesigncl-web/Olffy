@@ -11,13 +11,20 @@ import {
 import {
   isSearchableQuery,
   MIN_QUERY_LENGTH,
+  normalizeSearchText,
   type SearchResultDto,
 } from "lib/search/product-search";
 import styles from "./GlobalProductSearch.module.css";
 
 // Milisegundos desde la última pulsación hasta la búsqueda automática.
 // Enter cancela este temporizador y busca de inmediato.
-export const SEARCH_DEBOUNCE_MS = 2500;
+export const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+
+type CachedSearch = {
+  expiresAt: number;
+  results: SearchResultDto[];
+};
 
 type SearchStatus =
   | "idle" // sin consulta suficiente: texto de ayuda
@@ -51,6 +58,7 @@ export function GlobalProductSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const cacheRef = useRef(new Map<string, CachedSearch>());
   // Contador de versión: una respuesta solo puede aplicar si sigue siendo la
   // última búsqueda lanzada (protege contra respuestas fuera de orden).
   const versionRef = useRef(0);
@@ -96,12 +104,21 @@ export function GlobalProductSearch({
       debounceRef.current = null;
     }
     abortRef.current?.abort();
+    const version = ++versionRef.current;
+    setActiveIndex(-1);
+
+    const cacheKey = normalizeSearchText(trimmed);
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      setResults(cached.results);
+      setStatus(cached.results.length ? "results" : "empty");
+      return;
+    }
+    if (cached) cacheRef.current.delete(cacheKey);
+
     const controller = new AbortController();
     abortRef.current = controller;
-    const version = ++versionRef.current;
-
     setStatus("loading");
-    setActiveIndex(-1);
 
     try {
       const response = await fetch(
@@ -112,6 +129,10 @@ export function GlobalProductSearch({
       const data = (await response.json()) as { results: SearchResultDto[] };
 
       if (version !== versionRef.current) return;
+      cacheRef.current.set(cacheKey, {
+        expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+        results: data.results,
+      });
       setResults(data.results);
       setStatus(data.results.length ? "results" : "empty");
     } catch (error) {

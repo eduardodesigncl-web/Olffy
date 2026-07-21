@@ -19,6 +19,11 @@ export interface StorefrontSearchResponse {
   results: SearchResultDto[];
 }
 
+const SEARCH_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+};
+
 function toSearchResult(product: Product): SearchResultDto {
   return {
     handle: product.handle,
@@ -37,15 +42,21 @@ export async function GET(
 
   // Consultas vacías/cortas no ejecutan búsqueda (mismo criterio que la UI).
   if (!isSearchableQuery(query)) {
-    return NextResponse.json({ query, results: [] });
+    return NextResponse.json(
+      { query, results: [] },
+      { headers: SEARCH_CACHE_HEADERS },
+    );
   }
 
   const products = toOlffyProducts(
     await getProducts({ sortKey: "CREATED_AT", reverse: true }),
   );
 
-  return NextResponse.json({
-    query,
-    results: rankProducts(products, query, MAX_RESULTS).map(toSearchResult),
-  });
+  return NextResponse.json(
+    {
+      query,
+      results: rankProducts(products, query, MAX_RESULTS).map(toSearchResult),
+    },
+    { headers: SEARCH_CACHE_HEADERS },
+  );
 }
