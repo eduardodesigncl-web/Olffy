@@ -6,8 +6,8 @@ interface StoreLocationProps {
 }
 
 // Datos de la tienda física (dirección real confirmada).
-const STORE_ADDRESS = '2 Oriente 11-45, Local 3, Viña del Mar, Valparaíso, Chile';
-const STORE_ADDRESS_SHORT = '2 Oriente 11-45, Local 3, Viña del Mar, Valparaíso';
+const STORE_ADDRESS = '2 Oriente 1145, Local 3, Viña del Mar, Valparaíso, Chile';
+const STORE_ADDRESS_SHORT = '2 Oriente 1145, Local 3, Viña del Mar, Valparaíso';
 const STORE_HOURS = 'Lun a Vie, 10:00–19:00 (horario referencial, por confirmar)';
 
 const MAPS_QUERY = encodeURIComponent(STORE_ADDRESS);

@@ -1,9 +1,9 @@
-import type { MouseEvent } from 'react';
-import { Badge, Button } from '../ui';
-import { ProductCardArt } from './ProductCardArt';
-import { useCart } from '../../context/CartContext';
-import type { Product } from '../../types';
-import styles from './ProductCard.module.css';
+import type { MouseEvent } from "react";
+import { Badge, Button } from "../ui";
+import { ProductCardArt } from "./ProductCardArt";
+import { useCart } from "../../context/CartContext";
+import type { Product } from "../../types";
+import styles from "./ProductCard.module.css";
 
 interface ProductCardProps {
   product: Product;
@@ -16,25 +16,46 @@ interface ProductCardProps {
 // (/tienda/<slug>); el botón "Agregar al carrito" no propaga el click.
 export function ProductCard({ product, onClick }: ProductCardProps) {
   const { addToCart } = useCart();
+  const hasOptions = Boolean(product.variants?.length);
 
   const handleAddToCart = (e: MouseEvent) => {
     e.stopPropagation();
+    if (hasOptions && onClick) {
+      onClick(product);
+      return;
+    }
     addToCart(product, 1);
   };
 
   return (
-    <article className={styles.card} onClick={onClick ? () => onClick(product) : undefined}>
+    <article
+      className={styles.card}
+      onClick={onClick ? () => onClick(product) : undefined}
+    >
       <div className={styles.media}>
         <div className={`${styles.layer} ${styles.front}`}>
           {product.image ? (
-            <img className={styles.img} src={product.image} alt={product.name} loading="lazy" />
+            <img
+              className={styles.img}
+              src={product.image}
+              alt={product.name}
+              loading="lazy"
+            />
           ) : (
             <ProductCardArt product={product} variant="front" />
           )}
         </div>
-        <div className={`${styles.layer} ${styles.hoverLayer}`} aria-hidden="true">
+        <div
+          className={`${styles.layer} ${styles.hoverLayer}`}
+          aria-hidden="true"
+        >
           {product.hoverImage ? (
-            <img className={styles.img} src={product.hoverImage} alt="" loading="lazy" />
+            <img
+              className={styles.img}
+              src={product.hoverImage}
+              alt=""
+              loading="lazy"
+            />
           ) : (
             <ProductCardArt product={product} variant="hover" />
           )}
@@ -56,7 +77,11 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           onClick={handleAddToCart}
           disabled={!product.availableForSale}
         >
-          {product.availableForSale ? 'Agregar al carrito' : 'Agotado'}
+          {product.availableForSale
+            ? hasOptions
+              ? "Elegir opciones"
+              : "Agregar al carrito"
+            : "Agotado"}
         </Button>
       </div>
     </article>

@@ -39,12 +39,17 @@ export function PuntosAuthCard({
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [accountExists, setAccountExists] = useState(false);
+  const [invalidCredentials, setInvalidCredentials] = useState(false);
 
   const switchMode = (next: AuthMode) => {
     setMode(next);
     setError(null);
+    setNotice(null);
     setSuccess(null);
     setNeedsConfirmation(false);
+    setAccountExists(false);
+    setInvalidCredentials(false);
   };
 
   const handleSignup = async (e: FormEvent<HTMLFormElement>) => {
@@ -67,6 +72,7 @@ export function PuntosAuthCard({
     }
 
     setError(null);
+    setAccountExists(false);
     setPending(true);
     try {
       const result = await registerCustomerAction({
@@ -76,6 +82,11 @@ export function PuntosAuthCard({
         passwordConfirmation: password2,
       });
       if (!result.ok) {
+        if (result.code === "account_exists") {
+          setAccountExists(true);
+          setError(null);
+          return;
+        }
         setError(result.error);
         return;
       }
@@ -103,6 +114,7 @@ export function PuntosAuthCard({
 
     setError(null);
     setNeedsConfirmation(false);
+    setInvalidCredentials(false);
     setPending(true);
     try {
       const result = await loginCustomerAction({
@@ -112,6 +124,7 @@ export function PuntosAuthCard({
       if (!result.ok) {
         setError(result.error);
         setNeedsConfirmation(result.code === "email_not_confirmed");
+        setInvalidCredentials(result.code === "invalid_credentials");
         return;
       }
       // Una navegación completa garantiza que las cookies escritas por la
@@ -210,6 +223,45 @@ export function PuntosAuthCard({
     );
   }
 
+  if (accountExists) {
+    return (
+      <div className={styles.card}>
+        <span className={styles.cardBadge}>Cuenta existente</span>
+        <div className={styles.accountExists}>
+          <span className={styles.accountExistsIcon} aria-hidden="true">
+            @
+          </span>
+          <div>
+            <h3 className={styles.accountExistsTitle}>
+              Este correo ya tiene una cuenta
+            </h3>
+            <p className={styles.accountExistsText}>
+              Ingresa con tu contraseña. Si no la recuerdas, puedes crear una
+              nueva mediante un enlace seguro.
+            </p>
+          </div>
+          <div className={styles.accountExistsActions}>
+            <Button
+              type="button"
+              variant="primary"
+              className={styles.accountExistsPrimary}
+              onClick={() => switchMode("login")}
+            >
+              Iniciar sesión
+            </Button>
+            <button
+              type="button"
+              className={styles.forgotLink}
+              onClick={() => switchMode("forgot")}
+            >
+              Restablecer contraseña
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (mode === "forgot") {
     return (
       <div className={styles.card}>
@@ -236,7 +288,11 @@ export function PuntosAuthCard({
               autoComplete="email"
             />
           </label>
-          {error && <span className={styles.error}>{error}</span>}
+          {error && (
+            <span className={styles.error} role="alert">
+              {error}
+            </span>
+          )}
           <Button
             type="submit"
             variant="primary"
@@ -246,7 +302,7 @@ export function PuntosAuthCard({
             {pending ? "Enviando…" : "Enviar enlace"}
           </Button>
         </form>
-        <div className={styles.forgotRow}>
+        <div className={`${styles.forgotRow} ${styles.recoveryBackRow}`}>
           <button
             type="button"
             className={styles.forgotLink}
@@ -297,9 +353,12 @@ export function PuntosAuthCard({
       </p>
 
       {notice && (
-        <p className={styles.intro} role="status">
-          {notice}
-        </p>
+        <div className={styles.notice} role="status">
+          <span className={styles.noticeIcon} aria-hidden="true">
+            ✓
+          </span>
+          <span>{notice}</span>
+        </div>
       )}
 
       {isSignup ? (
@@ -369,7 +428,11 @@ export function PuntosAuthCard({
               autoComplete="new-password"
             />
           </div>
-          {error && <span className={styles.error}>{error}</span>}
+          {error && (
+            <span className={styles.error} role="alert">
+              {error}
+            </span>
+          )}
           <Button
             type="submit"
             variant="primary"
@@ -425,7 +488,23 @@ export function PuntosAuthCard({
               Olvidé mi contraseña
             </button>
           </div>
-          {error && <span className={styles.error}>{error}</span>}
+          {error && (
+            <span className={styles.error} role="alert">
+              {error}
+            </span>
+          )}
+          {invalidCredentials && (
+            <div className={styles.credentialsHelp}>
+              <span>¿El correo está correcto?</span>
+              <button
+                type="button"
+                className={styles.forgotLink}
+                onClick={() => switchMode("forgot")}
+              >
+                Restablecer contraseña
+              </button>
+            </div>
+          )}
           {needsConfirmation && (
             <button
               type="button"

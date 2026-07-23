@@ -165,3 +165,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 520px) {
+  .metrics,
+  .rewardsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rewardsPanel {
+    padding: 18px 16px;
+  }
+}

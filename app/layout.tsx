@@ -19,7 +19,7 @@ const organizationSchema = {
   sameAs: [INSTAGRAM_PROFILE_URL],
   address: {
     "@type": "PostalAddress",
-    streetAddress: "2 Oriente 11-45, Local 3",
+    streetAddress: "2 Oriente 1145, Local 3",
     addressLocality: "Viña del Mar",
     addressRegion: "Valparaíso",
     addressCountry: "CL",

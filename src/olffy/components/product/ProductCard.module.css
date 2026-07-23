@@ -7,7 +7,10 @@
   flex-direction: column;
   cursor: pointer;
   text-align: left;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .card:hover {
@@ -106,6 +109,35 @@
   }
   .card:hover .hoverLayer {
     opacity: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .badge {
+    top: 8px;
+    left: 8px;
+  }
+
+  .info {
+    padding: 10px 9px 11px;
+  }
+
+  .cat {
+    font-size: 9px;
+  }
+
+  .name {
+    font-size: 13px;
+  }
+
+  .price {
+    font-size: 15px;
+    margin-bottom: 5px;
+  }
+
+  .addBtn {
+    padding-inline: 7px;
+    font-size: 11px;
   }
 }
 

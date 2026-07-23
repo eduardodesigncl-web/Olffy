@@ -1251,9 +1251,17 @@
   }
 
   .customerPanel {
-    grid-column: 1 / -1;
+    position: fixed;
+    z-index: 440;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    width: min(390px, 100vw);
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
     border-top: 1px solid rgba(42, 28, 16, 0.09);
-    border-left: 0;
+    border-left: 1px solid rgba(42, 28, 16, 0.09);
+    box-shadow: -18px 0 48px rgba(42, 28, 16, 0.2);
   }
 
   .profileList {
@@ -1304,9 +1312,18 @@
     padding: 11px 8px;
   }
 
-  .detailCue,
   .statusBadge {
     display: none;
+  }
+
+  .detailCue {
+    flex-shrink: 0;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--olffy-morado-suave);
+    color: var(--olffy-morado);
+    font-size: 8px;
+    white-space: nowrap;
   }
 
   .replyActions {
@@ -1324,5 +1341,38 @@
 
   .profileList {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .panel,
+  .workspace {
+    min-height: 0;
+  }
+
+  .workspace {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .customerHeader {
+    gap: 7px;
+    padding-inline: 9px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .customerIdentity small {
+    display: none;
+  }
+
+  .messages {
+    padding: 12px 10px;
+  }
+
+  .customerPanel {
+    padding: 14px;
   }
 }

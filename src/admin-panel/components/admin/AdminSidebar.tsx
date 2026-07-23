@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useEffect, useState } from "react";
 import styles from "./AdminSidebar.module.css";
 
 export type AdminTab =
@@ -138,82 +139,139 @@ export function AdminSidebar({
   onToggle,
   allowedTabs,
 }: AdminSidebarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [activeTab]);
+
+  const selectTab = (tab: AdminTab) => {
+    setMobileOpen(false);
+    onTabChange(tab);
+  };
+
   return (
-    <aside
-      className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ""}`}
-    >
-      <div className={styles.brand}>
-        <span className={styles.logo}>OLFFY®</span>
-        <span className={styles.logoCompact}>O</span>
-        <span className={styles.badge}>Admin</span>
-      </div>
-
-      <button
-        type="button"
-        className={styles.collapseButton}
-        onClick={onToggle}
-        aria-label={
-          collapsed ? "Expandir barra lateral" : "Guardar barra lateral"
-        }
-        title={collapsed ? "Expandir barra" : "Guardar barra"}
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+    <>
+      <header className={styles.mobileHeader}>
+        <div className={styles.mobileBrand}>
+          <span className={styles.mobileLogo}>OLFFY®</span>
+          <span className={styles.mobileBadge}>Admin</span>
+        </div>
+        <button
+          type="button"
+          className={styles.mobileMenuButton}
+          onClick={() => setMobileOpen((current) => !current)}
+          aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={mobileOpen}
+          aria-controls="admin-navigation"
         >
-          <path d={collapsed ? "m9 18 6-6-6-6" : "m15 18-6-6 6-6"} />
-        </svg>
-      </button>
+          <span />
+          <span />
+          <span />
+        </button>
+      </header>
 
-      <nav className={styles.nav}>
-        {NAV.filter((item) => allowedTabs.includes(item.id)).map((item) => (
+      {mobileOpen ? (
+        <button
+          type="button"
+          className={styles.mobileBackdrop}
+          onClick={() => setMobileOpen(false)}
+          aria-label="Cerrar menú"
+        />
+      ) : null}
+
+      <aside
+        id="admin-navigation"
+        className={`${styles.sidebar} ${
+          collapsed ? styles.sidebarCollapsed : ""
+        } ${mobileOpen ? styles.sidebarMobileOpen : ""}`}
+      >
+        <div className={styles.brand}>
+          <span className={styles.logo}>OLFFY®</span>
+          <span className={styles.logoCompact}>O</span>
+          <span className={styles.badge}>Admin</span>
           <button
-            key={item.id}
             type="button"
-            className={`${styles.item} ${activeTab === item.id ? styles.itemActive : ""}`}
-            onClick={() => onTabChange(item.id)}
-            aria-current={activeTab === item.id ? "page" : undefined}
-            aria-label={item.label}
-            title={collapsed ? item.label : undefined}
+            className={styles.mobileClose}
+            onClick={() => setMobileOpen(false)}
+            aria-label="Cerrar menú"
           >
-            <span className={styles.itemIcon}>
-              <AdminIcon tab={item.id} />
-            </span>
-            <span className={styles.itemLabel}>{item.label}</span>
+            ×
           </button>
-        ))}
-      </nav>
+        </div>
 
-      <button
-        type="button"
-        className={styles.exit}
-        onClick={onExit}
-        aria-label="Salir al sitio"
-        title={collapsed ? "Salir al sitio" : undefined}
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+        <button
+          type="button"
+          className={styles.collapseButton}
+          onClick={onToggle}
+          aria-label={
+            collapsed ? "Expandir barra lateral" : "Guardar barra lateral"
+          }
+          title={collapsed ? "Expandir barra" : "Guardar barra"}
         >
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <path d="M16 17l5-5-5-5M21 12H9" />
-        </svg>
-        <span className={styles.itemLabel}>Salir al sitio</span>
-      </button>
-    </aside>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d={collapsed ? "m9 18 6-6-6-6" : "m15 18-6-6 6-6"} />
+          </svg>
+        </button>
+
+        <nav className={styles.nav} aria-label="Secciones del panel">
+          {NAV.filter((item) => allowedTabs.includes(item.id)).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`${styles.item} ${
+                activeTab === item.id ? styles.itemActive : ""
+              }`}
+              onClick={() => selectTab(item.id)}
+              aria-current={activeTab === item.id ? "page" : undefined}
+              aria-label={item.label}
+              title={collapsed ? item.label : undefined}
+            >
+              <span className={styles.itemIcon}>
+                <AdminIcon tab={item.id} />
+              </span>
+              <span className={styles.itemLabel}>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <button
+          type="button"
+          className={styles.exit}
+          onClick={() => {
+            setMobileOpen(false);
+            onExit();
+          }}
+          aria-label="Salir al sitio"
+          title={collapsed ? "Salir al sitio" : undefined}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5M21 12H9" />
+          </svg>
+          <span className={styles.itemLabel}>Salir al sitio</span>
+        </button>
+      </aside>
+    </>
   );
 }

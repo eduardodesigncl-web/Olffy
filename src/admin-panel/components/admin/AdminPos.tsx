@@ -564,8 +564,19 @@ export function AdminPos() {
           </span>
         </div>
       </header>
+
+      <a className={styles.mobileOrderShortcut} href="#pos-order-panel">
+        <span>
+          <strong>Venta actual</strong>
+          <small>
+            {itemCount === 1 ? "1 artículo" : `${itemCount} artículos`}
+          </small>
+        </span>
+        <b>{clp(total)} · Ver resumen →</b>
+      </a>
+
       {/* Columna izquierda: catálogo */}
-      <div className={styles.catalog}>
+      <div className={styles.catalog} id="pos-catalog">
         <div className={styles.searchBar}>
           <svg
             width="16"
@@ -699,7 +710,7 @@ export function AdminPos() {
       </div>
 
       {/* Columna derecha: venta en curso */}
-      <div className={styles.orderPanel}>
+      <div className={styles.orderPanel} id="pos-order-panel">
         {charge.phase === "success" ? (
           <div className={styles.result}>
             <div className={styles.resultIcon} aria-hidden="true">
@@ -1106,9 +1117,14 @@ export function AdminPos() {
           aria-modal="true"
           aria-label={`Variantes de ${overlay.product.name}`}
         >
-          <div className={styles.sheet}>
+          <div className={`${styles.sheet} ${styles.variantSheet}`}>
             <div className={styles.sheetHeader}>
-              <h3>{overlay.product.name}</h3>
+              <div>
+                <span className={styles.sheetEyebrow}>
+                  Selecciona una variante
+                </span>
+                <h3>{overlay.product.name}</h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setOverlay({ kind: "none" })}

@@ -24,7 +24,12 @@ export type CustomerAuthActionResult =
   | {
       ok: false;
       error: string;
-      code?: "email_not_confirmed" | "rate_limited" | "invalid_input";
+      code?:
+        | "account_exists"
+        | "email_not_confirmed"
+        | "invalid_credentials"
+        | "rate_limited"
+        | "invalid_input";
     };
 
 type LoginInput = { email: string; password: string };
@@ -87,12 +92,27 @@ function authFailure(cause: unknown): CustomerAuthActionResult {
   }
 
   if (
+    normalized.includes("user already registered") ||
+    normalized.includes("user_already_exists") ||
+    normalized.includes("email_exists")
+  ) {
+    return {
+      ok: false,
+      code: "account_exists",
+      error:
+        "Ya existe una cuenta asociada a este correo. Inicia sesión o restablece tu contraseña.",
+    };
+  }
+
+  if (
     normalized.includes("invalid login credentials") ||
     normalized.includes("invalid_credentials")
   ) {
     return {
       ok: false,
-      error: "El correo o la contraseña no son correctos.",
+      code: "invalid_credentials",
+      error:
+        "No pudimos validar el acceso. Revisa que el correo esté bien escrito; si está correcto, la contraseña no coincide.",
     };
   }
 
@@ -258,6 +278,19 @@ export async function registerCustomerAction(
     });
 
     if (error) return authFailure(error);
+
+    // Con protección contra enumeración, Supabase puede responder con un
+    // usuario ofuscado y sin identidades cuando el correo ya está registrado.
+    // Esta señal evita presentar el registro duplicado como una cuenta nueva
+    // sin consultar ni exponer el listado privado de usuarios.
+    if (data.user && data.user.identities?.length === 0) {
+      return {
+        ok: false,
+        code: "account_exists",
+        error:
+          "Ya existe una cuenta asociada a este correo. Inicia sesión o restablece tu contraseña.",
+      };
+    }
 
     if (data.session) {
       await supabase.auth.signOut({ scope: "local" });

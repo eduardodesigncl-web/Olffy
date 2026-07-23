@@ -1,16 +1,24 @@
 .row {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 7px;
+  width: 100%;
+  min-width: 0;
 }
 
 .chip {
+  min-width: 0;
   padding: 8px 16px;
   border-radius: var(--radius-pill);
   font-size: 13px;
   font-family: var(--font-body);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s ease;
   border: 1.5px solid var(--olffy-cafe-08);
   background: var(--olffy-blanco);
   color: var(--olffy-cafe-68);
@@ -37,4 +45,27 @@
   background: var(--olffy-morado);
   color: var(--olffy-blanco);
   border-color: var(--olffy-morado);
+}
+
+@media (max-width: 900px) {
+  .row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .chip {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chip {
+    padding: 9px 8px;
+    font-size: 12px;
+  }
 }

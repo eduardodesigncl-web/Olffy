@@ -51,7 +51,7 @@ export function AdminOperationalStatusFloating({
   const [supportUnread, setSupportUnread] = useState(0);
   const { diagnostics, checkedAt, loading, error, refresh } =
     useAdminDiagnostics(open);
-  const priority = highestPriority(diagnostics);
+  const priority = checkedAt ? highestPriority(diagnostics) : "mock";
   const checkedAtLabel = formatCheckedAt(checkedAt);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 .wrap {
   position: relative;
   flex: 1 1 220px;
-  max-width: 340px;
+  max-width: none;
 }
 
 .icon {

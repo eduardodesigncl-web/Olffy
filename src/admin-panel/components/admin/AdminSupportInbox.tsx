@@ -115,6 +115,12 @@ export function AdminSupportInbox() {
   const [success, setSuccess] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 1080px)").matches) {
+      setDetailsOpen(false);
+    }
+  }, []);
+
   const load = useCallback(
     async (manual = false) => {
       if (manual) {

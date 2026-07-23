@@ -333,11 +333,30 @@ export function toOlffyProducts(products: ShopifyProduct[]): Product[] {
   return products.map(toOlffyProduct).filter((product) => product.variantId);
 }
 
+const CATEGORY_ORDER = [
+  "cuadernos",
+  "planners",
+  "libretas",
+  "tacos de notas",
+  "stickers",
+  "flashcards",
+  "marcapáginas",
+  "papelería",
+  "empaque",
+];
+
 // Categorías visibles para los chips de la tienda: 'Todos' + categorías
-// reales presentes en el catálogo, en orden alfabético.
+// reales presentes en el catálogo, priorizadas según navegación de compra.
 export function toOlffyCategories(products: Product[]): string[] {
   const unique = [...new Set(products.map((product) => product.cat))].sort(
-    (a, b) => a.localeCompare(b, "es"),
+    (a, b) => {
+      const aIndex = CATEGORY_ORDER.indexOf(a.toLocaleLowerCase("es"));
+      const bIndex = CATEGORY_ORDER.indexOf(b.toLocaleLowerCase("es"));
+      const aRank = aIndex === -1 ? CATEGORY_ORDER.length : aIndex;
+      const bRank = bIndex === -1 ? CATEGORY_ORDER.length : bIndex;
+
+      return aRank - bRank || a.localeCompare(b, "es");
+    },
   );
   return ["Todos", ...unique];
 }

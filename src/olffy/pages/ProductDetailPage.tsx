@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ProductGallery,
   ProductInteriorPreview,
@@ -8,7 +8,7 @@ import { Accordion, Button, QuantityStepper } from "../components/ui";
 import { GiftIcon, type GiftIconName } from "../components/storefront";
 import { useCart } from "../context/CartContext";
 import { detailSectionsFor, interiorTabsFor } from "../data/productDetails";
-import type { Product } from "../types";
+import type { Product, ProductVariantSummary } from "../types";
 import styles from "./ProductDetailPage.module.css";
 
 interface ProductDetailPageProps {
@@ -26,6 +26,18 @@ const BENEFITS: { icon: GiftIconName; label: string }[] = [
   { icon: "heart", label: "Empacado a mano, con amor" },
 ];
 
+function formatClp(value: number): string {
+  return "$" + Math.round(value).toLocaleString("es-CL");
+}
+
+function optionValue(
+  variant: ProductVariantSummary | undefined,
+  optionName: string,
+): string | undefined {
+  return variant?.selectedOptions.find((option) => option.name === optionName)
+    ?.value;
+}
+
 // Página de detalle de producto (/tienda/<slug>) — reemplaza al antiguo modal.
 // Galería + info/compra en dos columnas, visor de interior tipo libro,
 // acordeones de información extendida y productos relacionados.
@@ -38,19 +50,40 @@ export function ProductDetailPage({
   const { addToCart, openCart } = useCart();
   const [qty, setQty] = useState(1);
   const [colorIdx, setColorIdx] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState(product.variantId);
+  const interiorRef = useRef<HTMLDivElement>(null);
 
   // Reset del estado de compra al cambiar de producto (relacionados).
   useEffect(() => {
     setQty(1);
     setColorIdx(0);
+    setSelectedVariantId(product.variantId);
   }, [product.id]);
+
+  const variants = product.variants ?? [];
+  const selectedVariant =
+    variants.find((variant) => variant.id === selectedVariantId) ??
+    variants.find((variant) => variant.id === product.variantId) ??
+    variants[0];
+  const selectedProduct: Product = selectedVariant
+    ? {
+        ...product,
+        variantId: selectedVariant.id,
+        price: formatClp(selectedVariant.price),
+        n: selectedVariant.price,
+        availableForSale:
+          selectedVariant.availableForSale &&
+          selectedVariant.quantityAvailable !== 0,
+        quantityAvailable: selectedVariant.quantityAvailable,
+      }
+    : product;
 
   // Stock de la variante que se agrega al carrito. null = Shopify no expone
   // cantidad: no se inventa un número y la validación final es del servidor.
   const maxQty =
-    typeof product.quantityAvailable === "number" &&
-    product.quantityAvailable > 0
-      ? product.quantityAvailable
+    typeof selectedProduct.quantityAvailable === "number" &&
+    selectedProduct.quantityAvailable > 0
+      ? selectedProduct.quantityAvailable
       : undefined;
 
   // Si el stock bajó (revalidación) y la cantidad elegida lo supera, se
@@ -64,10 +97,52 @@ export function ProductDetailPage({
   const interiorTabs = interiorTabsFor(product);
   const related = relatedProducts;
   const sections = detailSectionsFor(product);
+  const optionNames = [
+    ...new Set(
+      variants.flatMap((variant) =>
+        variant.selectedOptions.map((option) => option.name),
+      ),
+    ),
+  ];
+  const variantOptionNames = new Set(
+    optionNames.map((name) => name.toLocaleLowerCase("es")),
+  );
+  const visibleSpecs = product.specs.filter(
+    (spec) => !variantOptionNames.has(spec.l.toLocaleLowerCase("es")),
+  );
 
   const handleAddToCart = () => {
-    addToCart(product, qty);
+    addToCart(selectedProduct, qty);
     openCart();
+  };
+
+  const handleOptionSelect = (optionName: string, value: string) => {
+    const otherSelections = new Map(
+      selectedVariant?.selectedOptions
+        .filter((option) => option.name !== optionName)
+        .map((option) => [option.name, option.value]),
+    );
+    const exactMatch = variants.find(
+      (variant) =>
+        optionValue(variant, optionName) === value &&
+        [...otherSelections].every(
+          ([name, selectedValue]) =>
+            optionValue(variant, name) === selectedValue,
+        ),
+    );
+    const nextVariant =
+      exactMatch ??
+      variants.find((variant) => optionValue(variant, optionName) === value);
+
+    if (nextVariant) {
+      setSelectedVariantId(nextVariant.id);
+      setQty(1);
+    }
+  };
+
+  const scrollToInterior = () => {
+    interiorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    interiorRef.current?.focus({ preventScroll: true });
   };
 
   return (
@@ -97,8 +172,53 @@ export function ProductDetailPage({
         <div className={styles.infoCol}>
           <span className={styles.cat}>{product.cat}</span>
           <h1 className={styles.name}>{product.name}</h1>
-          <div className={styles.price}>{product.price}</div>
+          <div className={styles.price}>{selectedProduct.price}</div>
           <p className={styles.desc}>{product.desc}</p>
+
+          {optionNames.map((optionName) => {
+            const values = [
+              ...new Set(
+                variants
+                  .map((variant) => optionValue(variant, optionName))
+                  .filter((value): value is string => Boolean(value)),
+              ),
+            ];
+            const selectedValue = optionValue(selectedVariant, optionName);
+
+            return (
+              <fieldset key={optionName} className={styles.variantGroup}>
+                <legend className={styles.blockLabel}>{optionName}</legend>
+                <div className={styles.variantOptions}>
+                  {values.map((value) => {
+                    const isSelected = selectedValue === value;
+                    const isAvailable = variants.some(
+                      (variant) =>
+                        optionValue(variant, optionName) === value &&
+                        variant.availableForSale &&
+                        variant.quantityAvailable !== 0,
+                    );
+
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={isSelected}
+                        className={`${styles.variantOption} ${
+                          isSelected ? styles.variantOptionActive : ""
+                        } ${!isAvailable ? styles.variantOptionUnavailable : ""}`}
+                        onClick={() => handleOptionSelect(optionName, value)}
+                      >
+                        {value}
+                        {!isAvailable && (
+                          <span className={styles.variantSoldOut}>Agotado</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            );
+          })}
 
           {product.colors.length > 0 && (
             <div className={styles.block}>
@@ -120,9 +240,9 @@ export function ProductDetailPage({
             </div>
           )}
 
-          {product.specs.length > 0 && (
+          {visibleSpecs.length > 0 && (
             <div className={styles.specs}>
-              {product.specs.map((spec) => (
+              {visibleSpecs.map((spec) => (
                 <div key={spec.l} className={styles.spec}>
                   <span className={styles.specLabel}>{spec.l}</span>
                   <span className={styles.specValue}>{spec.v}</span>
@@ -141,13 +261,15 @@ export function ProductDetailPage({
               variant="primary"
               className={styles.addBtn}
               onClick={handleAddToCart}
-              disabled={!product.availableForSale}
+              disabled={!selectedProduct.availableForSale}
             >
-              {product.availableForSale ? "Agregar al carrito" : "Agotado"}
+              {selectedProduct.availableForSale
+                ? "Agregar al carrito"
+                : "Agotado"}
             </Button>
           </div>
 
-          {product.availableForSale && maxQty !== undefined && (
+          {selectedProduct.availableForSale && maxQty !== undefined && (
             <p className={styles.stockNote}>
               {maxQty} disponible{maxQty === 1 ? "" : "s"}
             </p>
@@ -162,6 +284,22 @@ export function ProductDetailPage({
             ))}
           </ul>
 
+          {interiorTabs.length > 0 && (
+            <button
+              type="button"
+              className={styles.interiorCta}
+              onClick={scrollToInterior}
+            >
+              <span>
+                <strong>Mira cómo es por dentro</strong>
+                Revisa sus páginas y detalles en formato libro
+              </span>
+              <span className={styles.interiorCtaArrow} aria-hidden="true">
+                ↓
+              </span>
+            </button>
+          )}
+
           <div className={styles.accordions}>
             <Accordion items={sections} />
           </div>
@@ -170,7 +308,7 @@ export function ProductDetailPage({
 
       {/* Visor de interior (solo productos con páginas/contenido interior). */}
       {interiorTabs.length > 0 && (
-        <div className={styles.interior}>
+        <div ref={interiorRef} className={styles.interior} tabIndex={-1}>
           <ProductInteriorPreview product={product} tabs={interiorTabs} />
         </div>
       )}

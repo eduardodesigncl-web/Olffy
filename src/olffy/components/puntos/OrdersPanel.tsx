@@ -46,7 +46,7 @@ export interface Order {
 // Único lugar configurable; cuando exista backend real, se reemplaza aquí.
 export const SUPPORT_EMAIL = "contacto@olffy.cl";
 
-const STORE_ADDRESS_SHORT = "2 Oriente 11-45, Local 3, Viña del Mar";
+const STORE_ADDRESS_SHORT = "2 Oriente 1145, Local 3, Viña del Mar";
 const STORE_HOURS = "Lun a Vie, 10:00–19:00";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {

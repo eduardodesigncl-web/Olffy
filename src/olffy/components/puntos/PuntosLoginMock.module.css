@@ -118,14 +118,24 @@
 }
 
 .error {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 69, 0, 0.18);
+  border-radius: 10px;
+  background: rgba(240, 69, 0, 0.07);
   font-size: 12px;
+  line-height: 1.45;
   color: var(--olffy-naranjo);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .forgotRow {
   text-align: right;
   margin-top: -2px;
+}
+
+.recoveryBackRow {
+  margin-top: 18px;
 }
 
 .forgotLink {
@@ -142,6 +152,43 @@
 .submitBtn {
   width: 100%;
   margin-top: 4px;
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 12px 13px;
+  border: 1px solid rgba(46, 125, 50, 0.2);
+  border-radius: 12px;
+  background: #edf7ee;
+  color: #245f29;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.noticeIcon {
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #2e7d32;
+  color: var(--olffy-blanco);
+  font-size: 12px;
+}
+
+.credentialsHelp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: -4px;
+  color: var(--olffy-cafe-55);
+  font-size: 11.5px;
 }
 
 .note {
@@ -194,4 +241,61 @@
   font-weight: 600;
   color: var(--olffy-cafe-55);
   padding: 2px 0;
+}
+
+/* ── Registro duplicado: acceso y recuperación, sin falso estado de éxito ── */
+.accountExists {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0 4px;
+  text-align: center;
+}
+
+.accountExistsIcon {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--olffy-morado-suave);
+  color: var(--olffy-morado);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.accountExistsTitle {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--olffy-cafe);
+}
+
+.accountExistsText {
+  max-width: 330px;
+  margin: 0;
+  color: var(--olffy-cafe-68);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.accountExistsActions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.accountExistsPrimary {
+  width: 100%;
+}
+
+@media (max-width: 420px) {
+  .credentialsHelp {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
