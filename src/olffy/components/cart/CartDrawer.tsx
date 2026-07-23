@@ -16,7 +16,7 @@ interface CartDrawerProps {
   loyaltyLoading: boolean;
   onLoyaltyChange: (state: StorefrontLoyaltyState) => void;
   onRefreshLoyalty: () => Promise<void>;
-  onGoToCheckout: () => Promise<void>;
+  onGoToCheckout: () => Promise<string>;
   onGoToTienda: () => void;
   onLogin: () => void;
 }
@@ -102,7 +102,8 @@ export function CartDrawer({
       // Nunca enviar un carrito antiguo: fuerza el flush de mutaciones
       // coalescidas y espera a que Shopify confirme antes de ir al pago.
       await flushCartMutations();
-      await onGoToCheckout();
+      const checkoutUrl = await onGoToCheckout();
+      window.location.assign(checkoutUrl);
     } catch (error) {
       setFeedback({
         kind: "error",

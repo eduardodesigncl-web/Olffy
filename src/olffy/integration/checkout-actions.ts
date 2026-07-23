@@ -18,7 +18,6 @@ import {
 } from "lib/shopify";
 import { prepareOnlineSale } from "lib/transactions/online";
 import { updateTag } from "next/cache";
-import { redirect } from "next/navigation";
 import { getSupabaseServer } from "lib/supabase/server";
 import type {
   AppliedCheckoutReward,
@@ -377,7 +376,16 @@ export async function startCheckoutAction(_guestEmail?: string) {
       quantity: line.quantity,
     })),
   });
-  redirect(cart.checkoutUrl);
+  const checkoutUrl = new URL(cart.checkoutUrl);
+  if (checkoutUrl.protocol !== "https:") {
+    throw new Error("Shopify devolvió una dirección de pago no segura.");
+  }
+
+  // La navegación externa debe ocurrir en el cliente. Si se usa redirect()
+  // dentro de una Server Action, una redirección posterior de Shopify (por
+  // ejemplo /password mientras la tienda está protegida) puede resolverse
+  // erróneamente contra el dominio de Vercel.
+  return checkoutUrl.toString();
 }
 
 export async function estimateCheckoutPointsAction(guestEmail?: string) {
