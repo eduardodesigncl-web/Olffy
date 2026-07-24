@@ -130,7 +130,11 @@ function PostThumb({ post, onOpen }: { post: IgPost; onOpen: () => void }) {
     const v = videoRef.current;
     if (v) {
       v.pause();
-      v.currentTime = 0;
+      // Al sacar el cursor NO volvemos al fotograma 0 (en varios reels es un
+      // fundido en negro): saltamos a un cuadro representativo ya cargado.
+      if (Number.isFinite(v.duration) && v.duration > 0) {
+        v.currentTime = Math.min(2, v.duration * 0.4);
+      }
     }
   };
 
