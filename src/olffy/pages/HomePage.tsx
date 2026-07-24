@@ -66,7 +66,7 @@ export function HomePage({
       </Reveal>
 
       <Reveal>
-        <CategoryBanners onNavigate={onNavigate} />
+        <CategoryBanners />
       </Reveal>
 
       <Reveal>

@@ -1,23 +1,33 @@
-import type { PublicPage } from "../layout";
+"use client";
+
+import { useRouter } from "next/navigation";
 import styles from "./CategoryBanners.module.css";
 
-interface CategoryBannersProps {
-  onNavigate: (page: PublicPage) => void;
-}
-
 // Banda "explora por categoría": banners ilustrados (con texto propio) que
-// llevan a la tienda. Las imágenes ya traen el título, por eso el <img> lleva
-// alt descriptivo y el botón un aria-label.
-const BANNERS: { src: string; label: string }[] = [
-  { src: "/olffy/banners/kit-papeleria.webp", label: "Kit de Papelería" },
+// llevan a la tienda con el filtro de categoría ya aplicado. Las imágenes ya
+// traen el título, por eso el <img> lleva alt descriptivo y el botón aria-label.
+// No existe categoría "Kit", así que ese banner usa búsqueda (?q=kit).
+const BANNERS: { src: string; label: string; href: string }[] = [
+  {
+    src: "/olffy/banners/kit-papeleria.webp",
+    label: "Kit de Papelería",
+    href: "/tienda?q=kit",
+  },
   {
     src: "/olffy/banners/planers-cuadernos.webp",
     label: "Planers y Cuadernos",
+    href: "/tienda?categoria=Cuadernos",
   },
-  { src: "/olffy/banners/stickers.webp", label: "Stickers" },
+  {
+    src: "/olffy/banners/stickers.webp",
+    label: "Stickers",
+    href: "/tienda?categoria=Stickers",
+  },
 ];
 
-export function CategoryBanners({ onNavigate }: CategoryBannersProps) {
+export function CategoryBanners() {
+  const router = useRouter();
+
   return (
     <section className={styles.section} aria-labelledby="cat-banners-title">
       <div className={styles.head}>
@@ -32,7 +42,7 @@ export function CategoryBanners({ onNavigate }: CategoryBannersProps) {
             key={banner.label}
             type="button"
             className={styles.banner}
-            onClick={() => onNavigate("tienda")}
+            onClick={() => router.push(banner.href)}
             aria-label={`Ver ${banner.label} en la tienda`}
           >
             <img
