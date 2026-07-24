@@ -1,0 +1,24 @@
+# OLFFY
+
+> Papelería chilena creativa desde Viña del Mar: cuadernos, planners, stickers y
+> regalos ilustrados hechos a mano. Diseño original con identidad propia.
+
+OLFFY es una tienda de papelería ilustrada con sede en Viña del Mar, Chile.
+Vende productos físicos (cuadernos, libretas, planners, stickers, tacos de notas,
+flashcards y kits de regalo) con envíos a todo Chile y retiro gratis en tienda.
+
+## Páginas principales
+
+- [Inicio](https://www.olffy.cl/): presentación de la marca y destacados.
+- [Tienda](https://www.olffy.cl/tienda): catálogo completo de productos.
+- [Novedades](https://www.olffy.cl/novedades): lanzamientos y colecciones nuevas.
+- [Regalos](https://www.olffy.cl/regalos): kits y detalles para regalar, con quiz de recomendación.
+- [Nuestra historia](https://www.olffy.cl/nuestra-historia): historia y valores de OLFFY.
+- [Contacto](https://www.olffy.cl/contacto): canal de contacto y soporte.
+
+## Información de la tienda
+
+- Rubro: papelería creativa y regalos.
+- Ubicación: 2 Oriente 1145, Local 3, Viña del Mar, Región de Valparaíso, Chile.
+- Envíos: a todo Chile. Retiro gratis en tienda.
+- Redes: Instagram @olffy.cl

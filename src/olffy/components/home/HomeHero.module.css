@@ -63,7 +63,10 @@
   font-weight: 800;
   padding: 14px 28px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .ctaPrimary {
@@ -195,13 +198,14 @@
 }
 
 /* ── Animaciones ── */
+/* Entrada solo por desplazamiento (sin opacity:0). El título del hero es el
+   elemento LCP y Chrome NO registra el LCP de elementos pintados con opacity:0,
+   lo que provocaba "NO_LCP" en Lighthouse. */
 @keyframes heroIn {
   from {
-    opacity: 0;
     transform: translateY(16px);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }
