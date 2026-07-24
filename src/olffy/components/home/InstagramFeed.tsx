@@ -149,6 +149,7 @@ function PostThumb({ post, onOpen }: { post: IgPost; onOpen: () => void }) {
         ref={videoRef}
         className={styles.postVideo}
         src={post.src}
+        poster="/olffy/instagram/poster.webp"
         muted
         loop
         playsInline
