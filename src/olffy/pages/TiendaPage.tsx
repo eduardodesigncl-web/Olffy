@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SearchBar, CategoryChips } from "../components/storefront";
 import { ProductGrid, ProductCard } from "../components/product";
 import { Button, EmptyState } from "../components/ui";
@@ -87,6 +87,25 @@ export function TiendaPage({
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Sincroniza los filtros con la URL (?categoria= / ?q=). Al navegar entre
+  // categorías la ruta /tienda no se remonta (solo cambia el query), así que
+  // useState no reinicializa: sin esto quedarían los filtros anteriores. Cada
+  // cambio de parámetro reemplaza el filtro por el de la URL y limpia el resto.
+  // Solo depende de los parámetros de la URL, no del estado local, para no pisar
+  // los cambios manuales de filtros/búsqueda del usuario dentro de la misma vista.
+  useEffect(() => {
+    setActiveCategories(
+      initialCategory &&
+        initialCategory !== "Todos" &&
+        categories.includes(initialCategory)
+        ? [initialCategory]
+        : [],
+    );
+    setSearchQuery(initialQuery ?? "");
+    setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCategory, initialQuery]);
 
   // Destacados de la semana: productos con etiqueta (Nuevo/Favorito/Especial)
   // y con stock primero, completando a 4 con el resto disponible.
