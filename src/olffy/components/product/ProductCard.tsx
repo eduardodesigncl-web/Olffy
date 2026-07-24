@@ -10,6 +10,25 @@ interface ProductCardProps {
   onClick?: (product: Product) => void;
 }
 
+// Ancho al que se muestra la card en cada breakpoint (evita descargar imágenes
+// más grandes de lo necesario desde el CDN de Shopify).
+const CARD_SIZES = "(max-width: 700px) 45vw, (max-width: 1000px) 30vw, 300px";
+const SRCSET_WIDTHS = [240, 320, 480, 640];
+
+// Reemplaza (o agrega) el parámetro width= en una URL de imagen de Shopify.
+function withWidth(url: string, width: number): string {
+  if (/[?&]width=\d+/.test(url)) {
+    return url.replace(/([?&]width=)\d+/, `$1${width}`);
+  }
+  return `${url}${url.includes("?") ? "&" : "?"}width=${width}`;
+}
+
+// Genera un srcset responsivo solo para imágenes servidas por el CDN de Shopify.
+function shopifySrcSet(url: string): string | undefined {
+  if (!url.includes("cdn.shopify.com")) return undefined;
+  return SRCSET_WIDTHS.map((w) => `${withWidth(url, w)} ${w}w`).join(", ");
+}
+
 // Card de producto reutilizada en Home (rails/favoritos), Tienda, Novedades,
 // resultados del quiz, etc. Dos capas de visual: portada + interior/detalle que
 // aparece al hover (solo desktop). `onClick` abre la página de detalle
@@ -37,7 +56,13 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           {product.image ? (
             <img
               className={styles.img}
-              src={product.image}
+              src={
+                shopifySrcSet(product.image)
+                  ? withWidth(product.image, 480)
+                  : product.image
+              }
+              srcSet={shopifySrcSet(product.image)}
+              sizes={shopifySrcSet(product.image) ? CARD_SIZES : undefined}
               alt={product.name}
               loading="lazy"
             />
@@ -52,7 +77,13 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           {product.hoverImage ? (
             <img
               className={styles.img}
-              src={product.hoverImage}
+              src={
+                shopifySrcSet(product.hoverImage)
+                  ? withWidth(product.hoverImage, 480)
+                  : product.hoverImage
+              }
+              srcSet={shopifySrcSet(product.hoverImage)}
+              sizes={shopifySrcSet(product.hoverImage) ? CARD_SIZES : undefined}
               alt=""
               loading="lazy"
             />

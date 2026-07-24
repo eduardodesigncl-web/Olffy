@@ -1,4 +1,5 @@
 import { GeistSans } from "geist/font/sans";
+import { Poppins } from "next/font/google";
 import { ReactNode } from "react";
 import { Toaster } from "sonner";
 import "src/styles/olffy-tokens.css";
@@ -8,6 +9,15 @@ import { baseUrl } from "lib/utils";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { INSTAGRAM_PROFILE_URL } from "src/olffy/config/social";
+
+// Poppins self-hosteada por Next (sin request bloqueante a Google Fonts).
+// Expone la variable CSS --font-poppins-src que usan los tokens de marca.
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-poppins-src",
+});
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -61,17 +71,19 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="es" className={GeistSans.variable} data-scroll-behavior="smooth">
+    <html
+      lang="es"
+      className={`${GeistSans.variable} ${poppins.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Preload de la fuente del título del hero (elemento LCP). */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/olffy/fonts/Piepie-W01-Regular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
         />
         <script
           type="application/ld+json"

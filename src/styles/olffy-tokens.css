@@ -42,7 +42,7 @@
   /* Fonts */
   --font-piepie: "PiepieW01-Regular", sans-serif;
   --font-ivy: "IvyPresto Text", Georgia, serif;
-  --font-poppins: "Poppins", sans-serif;
+  --font-poppins: var(--font-poppins-src), "Poppins", sans-serif;
 
   /* Spacing scale (optional) */
   --space-1: 4px;
