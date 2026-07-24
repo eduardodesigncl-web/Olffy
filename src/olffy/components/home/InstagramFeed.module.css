@@ -50,22 +50,36 @@
   height: 100%;
   object-fit: cover;
   z-index: 0;
+  /* Fondo de marca visible mientras el video no está cargado (preload="none"). */
+  background: linear-gradient(150deg, var(--olffy-morado-suave), #c9c7ec);
 }
 
-/* Badge de "reel" (icono de play) en la esquina superior derecha. */
-.postReel {
+/* Botón de play central, visible siempre: la tarjeta se lee como video sin
+   necesidad de descargar un fotograma. */
+.postPlay {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 50%;
+  left: 50%;
   z-index: 2;
+  transform: translate(-50%, -50%);
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 46px;
+  height: 46px;
   border-radius: 999px;
-  color: var(--olffy-blanco);
-  background: rgba(42, 28, 16, 0.42);
-  backdrop-filter: blur(2px);
+  color: var(--olffy-morado);
+  background: rgba(255, 255, 255, 0.92);
+  padding-left: 3px;
+  box-shadow: 0 6px 16px rgba(42, 28, 16, 0.18);
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+/* Al reproducirse el video (hover), el botón central se desvanece. */
+.post:hover .postPlay,
+.post:focus-visible .postPlay {
+  opacity: 0;
 }
 
 .postTheme {
@@ -100,17 +114,6 @@
 .post:hover .postOverlay,
 .post:focus-visible .postOverlay {
   opacity: 1;
-}
-
-.overlayPlay {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--olffy-cafe);
-  padding-left: 2px;
 }
 
 .overlayCta {

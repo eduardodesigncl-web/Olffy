@@ -115,18 +115,13 @@ function OlffyIsotype({ size = 44 }: { size?: number }) {
   );
 }
 
-// Miniatura de video para la grilla: se reproduce (silenciada) al pasar el
-// cursor o al enfocar con teclado, y se pausa al salir.
+// Miniatura de la grilla. El video NO se precarga (`preload="none"`) para no
+// descargar ~48 MB de reels en la carga inicial: la tarjeta muestra un
+// placeholder de marca con botón de play y el video solo se carga y reproduce
+// al pasar el cursor (desktop) o al abrir el modal (click/tap).
 function PostThumb({ post, onOpen }: { post: IgPost; onOpen: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  // Fotograma de portada: algunos reels abren con un fundido en negro, así que
-  // usamos un cuadro a ~1/4 del video como miniatura representativa.
-  const posterTimeRef = useRef(0);
 
-  const showPoster = () => {
-    const v = videoRef.current;
-    if (v) v.currentTime = posterTimeRef.current;
-  };
   const play = () => {
     const v = videoRef.current;
     if (v) void v.play().catch(() => {});
@@ -135,7 +130,7 @@ function PostThumb({ post, onOpen }: { post: IgPost; onOpen: () => void }) {
     const v = videoRef.current;
     if (v) {
       v.pause();
-      showPoster();
+      v.currentTime = 0;
     }
   };
 
@@ -157,24 +152,15 @@ function PostThumb({ post, onOpen }: { post: IgPost; onOpen: () => void }) {
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="none"
         tabIndex={-1}
-        onLoadedMetadata={(e) => {
-          const v = e.currentTarget;
-          if (Number.isFinite(v.duration) && v.duration > 0) {
-            posterTimeRef.current = Math.min(v.duration * 0.25, 2);
-            v.currentTime = posterTimeRef.current;
-          }
-        }}
       />
       <span className={styles.postTheme}>{post.theme}</span>
-      <span className={styles.postReel} aria-hidden="true">
-        <PlayGlyph size={13} />
+      {/* Botón de play visible siempre: identifica la tarjeta como video. */}
+      <span className={styles.postPlay} aria-hidden="true">
+        <PlayGlyph size={22} />
       </span>
       <span className={styles.postOverlay} aria-hidden="true">
-        <span className={styles.overlayPlay}>
-          <PlayGlyph size={20} />
-        </span>
         <span className={styles.overlayCta}>Ver post</span>
       </span>
     </button>
