@@ -99,6 +99,9 @@ export function AdminSupportInbox() {
   >("all");
   const [context, setContext] = useState<SupportCustomerContext | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(true);
+  // En móvil, la lista de chats y la ficha son cajones laterales (drawers) que
+  // se abren con las pestañas de los bordes; el chat queda como vista central.
+  const [listOpen, setListOpen] = useState(true);
   const [reply, setReply] = useState("");
   const [resolutionMessage, setResolutionMessage] = useState(
     "Marcamos tu consulta como resuelta. Si todavía necesitas ayuda, puedes responder por este mismo chat.",
@@ -118,6 +121,10 @@ export function AdminSupportInbox() {
   useEffect(() => {
     if (window.matchMedia("(max-width: 1080px)").matches) {
       setDetailsOpen(false);
+    }
+    // En móvil ambos cajones parten cerrados para que el chat sea protagonista.
+    if (window.matchMedia("(max-width: 820px)").matches) {
+      setListOpen(false);
     }
   }, []);
 
@@ -594,8 +601,45 @@ export function AdminSupportInbox() {
             </div>
           </div>
         )}
+        {/* Pestañas laterales (solo móvil): abren los cajones izq/der. */}
+        <button
+          type="button"
+          className={styles.edgeTabLeft}
+          onClick={() => {
+            setListOpen((v) => !v);
+            setDetailsOpen(false);
+          }}
+          aria-expanded={listOpen}
+        >
+          Chats
+        </button>
+        <button
+          type="button"
+          className={styles.edgeTabRight}
+          onClick={() => {
+            setDetailsOpen((v) => !v);
+            setListOpen(false);
+          }}
+          aria-expanded={detailsOpen}
+          disabled={!selected}
+        >
+          Ficha
+        </button>
+        {(listOpen || detailsOpen) && (
+          <div
+            className={styles.drawerBackdrop}
+            onClick={() => {
+              setListOpen(false);
+              setDetailsOpen(false);
+            }}
+            aria-hidden="true"
+          />
+        )}
         <div className={styles.workspace}>
-          <aside className={styles.list} aria-label="Conversaciones">
+          <aside
+            className={`${styles.list} ${listOpen ? styles.listOpen : ""}`}
+            aria-label="Conversaciones"
+          >
             <div className={styles.listHead}>
               <label className={styles.selectAllControl}>
                 <input
@@ -668,7 +712,9 @@ export function AdminSupportInbox() {
                     className={`${styles.listItem} ${conversation.id === selectedId ? styles.listItemActive : ""}`}
                     onClick={() => {
                       setSelectedId(conversation.id);
-                      setDetailsOpen(true);
+                      // En móvil, al elegir un chat se cierra el cajón para ver
+                      // la conversación centrada.
+                      setListOpen(false);
                     }}
                   >
                     <span className={styles.customerLine}>

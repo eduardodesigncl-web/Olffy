@@ -30,9 +30,16 @@ function validRole(value: unknown): AdminRole {
   return role;
 }
 
+// El admin maestro (por contraseña de entorno) y las cuentas con rol "owner"
+// son las únicas que pueden eliminar cuentas de administración.
+function actorIsOwner(actor: Awaited<ReturnType<typeof getAdminSessionActor>>) {
+  return actor?.legacy === true || actor?.role === "owner";
+}
+
 export async function GET() {
   const unauthorized = await getAdminApiUnauthorizedResponse("ajustes");
   if (unauthorized) return unauthorized;
+  const actor = await getAdminSessionActor();
 
   const { data, error } = await getSupabaseAdmin()
     .from("admin_accounts")
@@ -42,7 +49,11 @@ export async function GET() {
     .order("created_at", { ascending: true });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ accounts: data ?? [] });
+  return NextResponse.json({
+    accounts: data ?? [],
+    viewerIsOwner: actorIsOwner(actor),
+    viewerUserId: actor?.userId ?? null,
+  });
 }
 
 export async function POST(request: Request) {
@@ -198,6 +209,71 @@ export async function PATCH(request: Request) {
     if (error) throw new Error(error.message);
 
     return NextResponse.json({ success: true, account: data });
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const unauthorized = await getAdminApiUnauthorizedResponse("ajustes");
+  if (unauthorized) return unauthorized;
+  const actor = await getAdminSessionActor();
+
+  // Restricción de rol: solo el propietario (o el admin maestro) puede eliminar.
+  if (!actorIsOwner(actor)) {
+    return NextResponse.json(
+      {
+        error:
+          "Solo una cuenta propietaria puede eliminar cuentas de administración.",
+      },
+      { status: 403 },
+    );
+  }
+
+  try {
+    const body = (await request.json()) as Record<string, unknown>;
+    const id = String(body.id ?? "").trim();
+    if (!id) throw new Error("Cuenta inválida");
+
+    const supabase = getSupabaseAdmin();
+    const { data: target, error: targetError } = await supabase
+      .from("admin_accounts")
+      .select("auth_user_id,role,status")
+      .eq("id", id)
+      .single();
+    if (targetError) throw new Error(targetError.message);
+
+    // No permitir borrar la cuenta con la que se inició sesión.
+    if (target.auth_user_id && target.auth_user_id === actor?.userId) {
+      throw new Error(
+        "No puedes eliminar la cuenta con la que iniciaste sesión.",
+      );
+    }
+
+    // No dejar el panel sin ninguna cuenta propietaria activa.
+    if (target.role === "owner" && target.status === "active") {
+      const { count } = await supabase
+        .from("admin_accounts")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "owner")
+        .eq("status", "active");
+      if ((count ?? 0) <= 1) {
+        throw new Error("No puedes eliminar la última cuenta propietaria.");
+      }
+    }
+
+    // Borrado definitivo: fila del panel + acceso de Auth.
+    const { error: deleteError } = await supabase
+      .from("admin_accounts")
+      .delete()
+      .eq("id", id);
+    if (deleteError) throw new Error(deleteError.message);
+
+    if (target.auth_user_id) {
+      await supabase.auth.admin.deleteUser(target.auth_user_id).catch(() => {});
+    }
+
+    return NextResponse.json({ success: true, id });
   } catch (error) {
     return NextResponse.json({ error: message(error) }, { status: 400 });
   }

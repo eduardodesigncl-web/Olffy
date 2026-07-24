@@ -12,6 +12,7 @@ import { PasswordInput } from "src/shared/PasswordInput";
 
 interface TeamMember {
   id: string;
+  auth_user_id: string;
   email: string;
   full_name: string;
   role: Role;
@@ -61,6 +62,12 @@ export function AdminTeamSettings({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Solo el propietario puede eliminar cuentas; el borrado es definitivo y
+  // pide una confirmación inline por cuenta.
+  const [viewerIsOwner, setViewerIsOwner] = useState(false);
+  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadTeam = async () => {
     setLoading(true);
@@ -71,10 +78,14 @@ export function AdminTeamSettings({
       const data = (await response.json()) as {
         error?: string;
         accounts?: TeamMember[];
+        viewerIsOwner?: boolean;
+        viewerUserId?: string | null;
       };
       if (!response.ok)
         throw new Error(data.error || "No se pudo cargar el equipo");
       setTeam(data.accounts ?? []);
+      setViewerIsOwner(Boolean(data.viewerIsOwner));
+      setViewerUserId(data.viewerUserId ?? null);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "No se pudo cargar el equipo",
@@ -102,6 +113,35 @@ export function AdminTeamSettings({
   const selectRole = (next: Role) => {
     setRole(next);
     if (next !== "custom") setPermissions(ADMIN_ROLE_PERMISSIONS[next]);
+  };
+
+  const removeMember = async (member: TeamMember) => {
+    setDeletingId(member.id);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/accounts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id: member.id }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo eliminar la cuenta");
+      }
+      setTeam((current) => current.filter((item) => item.id !== member.id));
+      if (editing?.id === member.id) resetForm();
+      setConfirmId(null);
+      onNotice("Cuenta eliminada definitivamente.");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "No se pudo eliminar la cuenta",
+      );
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const startEditing = (member: TeamMember) => {
@@ -192,13 +232,48 @@ export function AdminTeamSettings({
                 ))}
               </div>
             </div>
-            <button
-              type="button"
-              className={styles.editBtn}
-              onClick={() => startEditing(member)}
-            >
-              Editar permisos
-            </button>
+            {confirmId === member.id ? (
+              <div className={styles.confirmBox}>
+                <span className={styles.confirmText}>
+                  ¿Eliminar definitivamente?
+                </span>
+                <button
+                  type="button"
+                  className={styles.confirmDeleteBtn}
+                  onClick={() => void removeMember(member)}
+                  disabled={deletingId === member.id}
+                >
+                  {deletingId === member.id ? "Eliminando…" : "Sí, eliminar"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setConfirmId(null)}
+                  disabled={deletingId === member.id}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className={styles.memberActions}>
+                <button
+                  type="button"
+                  className={styles.editBtn}
+                  onClick={() => startEditing(member)}
+                >
+                  Editar permisos
+                </button>
+                {viewerIsOwner && member.auth_user_id !== viewerUserId ? (
+                  <button
+                    type="button"
+                    className={styles.deleteBtn}
+                    onClick={() => setConfirmId(member.id)}
+                  >
+                    Eliminar
+                  </button>
+                ) : null}
+              </div>
+            )}
           </div>
         ))}
       </div>

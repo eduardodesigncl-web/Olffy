@@ -13,8 +13,16 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(90% 90% at 100% 0%, rgba(255, 233, 168, 0.6), transparent 55%),
-    radial-gradient(90% 90% at 0% 100%, rgba(251, 212, 194, 0.5), transparent 55%),
+    radial-gradient(
+      90% 90% at 100% 0%,
+      rgba(255, 233, 168, 0.6),
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 90% at 0% 100%,
+      rgba(251, 212, 194, 0.5),
+      transparent 55%
+    ),
     var(--olffy-crema-suave);
 }
 
@@ -23,7 +31,8 @@
   z-index: 2;
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(30px, 4.2vw, 52px) clamp(14px, 4vw, 48px) clamp(28px, 3.6vw, 44px);
+  padding: clamp(30px, 4.2vw, 52px) clamp(14px, 4vw, 48px)
+    clamp(28px, 3.6vw, 44px);
   text-align: center;
 }
 
@@ -213,7 +222,8 @@
 /* ── Beneficios ── */
 .benefitsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* 2 columnas en móvil y desktop (máx 4 tarjetas). */
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px;
   margin-bottom: clamp(40px, 5vw, 64px);
 }

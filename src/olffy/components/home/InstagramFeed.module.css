@@ -30,13 +30,42 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  padding: 0;
+  background: var(--olffy-morado-suave);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .post:hover,
 .post:focus-visible {
   transform: translateY(-4px);
   box-shadow: 0 16px 34px rgba(42, 28, 16, 0.16);
+}
+
+.postVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* Badge de "reel" (icono de play) en la esquina superior derecha. */
+.postReel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--olffy-blanco);
+  background: rgba(42, 28, 16, 0.42);
+  backdrop-filter: blur(2px);
 }
 
 .postTheme {
@@ -53,19 +82,15 @@
   backdrop-filter: blur(2px);
 }
 
-.postIcon {
-  display: grid;
-  place-items: center;
-}
-
 .postOverlay {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--olffy-blanco);
   background: rgba(42, 28, 16, 0.34);
   opacity: 0;
@@ -77,12 +102,15 @@
   opacity: 1;
 }
 
-.overlayLikes {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  font-weight: 700;
+.overlayPlay {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--olffy-cafe);
+  padding-left: 2px;
 }
 
 .overlayCta {
@@ -148,7 +176,9 @@
   border-radius: var(--radius-pill);
   text-decoration: none;
   box-shadow: 0 10px 22px rgba(89, 87, 176, 0.26);
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
 .handleBtn:hover,
@@ -193,41 +223,46 @@
   }
 }
 
-/* ── Modal editorial de post (grande, imagen protagonista) ── */
+/* ── Modal editorial de post (compacto, video protagonista) ── */
 .modalPanel {
-  --modal-panel-width: min(1000px, 100%);
+  --modal-panel-width: min(720px, 100%);
 }
 
 .modal {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  /* Altura fija del modal: ambas columnas la comparten, así el video llena todo
+     el alto y no queda espacio en blanco debajo. */
+  height: min(80vh, 620px);
 }
 
 .modalMedia {
   position: relative;
-  aspect-ratio: 4 / 5;
+  height: 100%;
   display: grid;
   place-items: center;
+  overflow: hidden;
+  background: #1c130b;
   border-top-left-radius: var(--radius-lg);
   border-bottom-left-radius: var(--radius-lg);
 }
 
-.modalTheme {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--olffy-cafe);
-  background: rgba(255, 255, 255, 0.85);
-  padding: 5px 13px;
-  border-radius: var(--radius-pill);
+.modalVideo {
+  width: 100%;
+  height: 100%;
+  /* Vertical (reels): llena todo el espacio. Los horizontales se ajustan a
+     `contain` vía JS (onLoadedMetadata) para no recortarse. */
+  object-fit: cover;
+  background: #1c130b;
 }
 
 .modalBody {
   padding: 28px 30px 30px;
   display: flex;
   flex-direction: column;
+  /* Permite que la descripción haga scroll interno sin desbordar. */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .modalAccount {
@@ -246,12 +281,14 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--olffy-morado);
-  color: var(--olffy-blanco);
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 20px;
+  overflow: hidden;
   flex-shrink: 0;
+}
+
+.modalAvatar svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .modalHandle {
@@ -268,31 +305,19 @@
 
 .modalCaption {
   margin: 0 0 18px;
-  font-size: 15px;
-  line-height: 1.7;
+  /* Tipografía más compacta: las descripciones largas caben mejor y no se
+     "estiran" tanto verticalmente. */
+  font-size: 13.5px;
+  line-height: 1.5;
   color: var(--olffy-cafe);
-}
-
-.modalStats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.modalLikes {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--olffy-naranjo);
-}
-
-.modalDate {
-  font-size: 12px;
-  color: var(--olffy-cafe-55);
+  white-space: pre-line;
+  /* Descripciones largas: permite scroll dentro del cuerpo del modal, con la
+     barra de scroll y algo de aire a la derecha. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
 }
 
 .modalCta {
@@ -325,15 +350,23 @@
   }
 }
 
-/* Mobile modal: apilado, imagen cuadrada arriba. */
+/* Mobile modal: apilado, video arriba con altura acotada. */
 @media (max-width: 600px) {
   .modal {
     grid-template-columns: 1fr;
+    /* Apilado: la altura la definen las filas, no una altura fija. */
+    height: auto;
+    max-height: 92vh;
   }
 
   .modalMedia {
-    aspect-ratio: 1 / 1;
+    height: min(48vh, 380px);
     border-top-right-radius: var(--radius-lg);
     border-bottom-left-radius: 0;
+  }
+
+  .modalBody {
+    padding: 20px 22px 22px;
+    overflow: visible;
   }
 }

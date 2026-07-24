@@ -51,6 +51,60 @@
   background: var(--olffy-morado-suave);
 }
 
+/* Acciones a la derecha de cada cuenta (editar / eliminar). */
+.memberActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.deleteBtn {
+  border: 1px solid rgba(233, 67, 0, 0.35);
+  background: var(--olffy-blanco);
+  color: var(--olffy-naranjo);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.deleteBtn:hover {
+  border-color: var(--olffy-naranjo);
+  background: rgba(233, 67, 0, 0.08);
+}
+
+/* Confirmación inline de borrado definitivo. */
+.confirmBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.confirmText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--olffy-cafe);
+}
+
+.confirmDeleteBtn {
+  border: none;
+  background: var(--olffy-naranjo);
+  color: var(--olffy-blanco);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.confirmDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;
