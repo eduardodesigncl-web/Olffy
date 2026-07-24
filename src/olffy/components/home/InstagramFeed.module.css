@@ -251,10 +251,14 @@
 }
 
 .modalVideo {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   /* Vertical (reels): llena todo el espacio. Los horizontales se ajustan a
-     `contain` vía JS (onLoadedMetadata) para no recortarse. */
+     `contain` vía JS (onLoadedMetadata) para no recortarse. `absolute inset:0`
+     evita que el elemento crezca más que el contenedor y deje los controles
+     nativos (volumen, barra) recortados fuera del modal. */
   object-fit: cover;
   background: #1c130b;
 }

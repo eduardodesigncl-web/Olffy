@@ -314,10 +314,10 @@ export function NovedadesPage({
             </div>
           </Reveal>
           <Reveal delay={80}>
+            {/* Desktop: 2 filas de 4 (grilla responsiva por defecto); móvil: 2 col. */}
             <ProductGrid
-              products={newProducts.slice(0, 4)}
+              products={newProducts.slice(0, 8)}
               onProductClick={onProductClick}
-              variant="duo"
             />
           </Reveal>
         </section>

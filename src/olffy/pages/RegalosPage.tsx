@@ -152,14 +152,25 @@ export function RegalosPage({
           ))}
         </div>
 
+        <figure className={styles.giftFeature}>
+          <img
+            className={styles.giftFeatureImg}
+            src="/olffy/lifestyle/life-5.webp"
+            alt="Bolsa de regalo OLFFY con papel de seda de la marca y cuadernos ilustrados, lista para regalar."
+            loading="lazy"
+          />
+          <figcaption className={styles.giftFeatureCaption}>
+            Cada pedido se empaca a mano y con cariño, listo para sorprender.
+          </figcaption>
+        </figure>
+
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Ideas para regalar</h2>
           </div>
           <ProductGrid
-            products={giftProducts.slice(0, 4)}
+            products={giftProducts.slice(0, 8)}
             onProductClick={onProductClick}
-            variant="duo"
           />
         </section>
       </div>

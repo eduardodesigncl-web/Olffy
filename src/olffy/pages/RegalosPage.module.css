@@ -261,6 +261,41 @@
   margin-top: 2px;
 }
 
+/* ── Banner de empaque de regalo (foto real) ── */
+.giftFeature {
+  position: relative;
+  margin: 0 0 clamp(40px, 5vw, 64px);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.giftFeatureImg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+}
+
+.giftFeatureCaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: clamp(28px, 5vw, 44px) clamp(16px, 4vw, 32px) clamp(14px, 2vw, 20px);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(15px, 2vw, 20px);
+  color: var(--olffy-blanco);
+  background: linear-gradient(to top, rgba(42, 28, 16, 0.62), transparent);
+}
+
+@media (max-width: 600px) {
+  .giftFeatureImg {
+    aspect-ratio: 4 / 3;
+  }
+}
+
 /* ── Sección "Ideas para regalar" ── */
 .section {
   margin-bottom: clamp(40px, 5vw, 64px);

@@ -3,17 +3,19 @@ import {
   CategoryStickers,
   ProductCarousel,
   FeaturedCollection,
+  CategoryBanners,
   MoodPicker,
   StorySection,
+  LifestyleGallery,
   BenefitsStrip,
   InstagramFeed,
   CommunitySignup,
   Reveal,
-} from '../components/home';
-import { Button } from '../components/ui';
-import type { PublicPage } from '../components/layout';
-import type { Product } from '../types';
-import styles from './HomePage.module.css';
+} from "../components/home";
+import { Button } from "../components/ui";
+import type { PublicPage } from "../components/layout";
+import type { Product } from "../types";
+import styles from "./HomePage.module.css";
 
 interface HomePageProps {
   products: Product[]; // catálogo real (Shopify), más nuevos primero
@@ -25,7 +27,11 @@ interface HomePageProps {
 // de novedades, colección editorial, "elige según tu mood", escena editorial de
 // "Conoce OLFFY", beneficios, Instagram simulado y comunidad. Apariciones suaves
 // con <Reveal>.
-export function HomePage({ products, onProductClick, onNavigate }: HomePageProps) {
+export function HomePage({
+  products,
+  onProductClick,
+  onNavigate,
+}: HomePageProps) {
   const featuredProducts = products.slice(0, 6);
   return (
     <>
@@ -43,11 +49,14 @@ export function HomePage({ products, onProductClick, onNavigate }: HomePageProps
                 <div className={styles.eyebrow}>RECIÉN LLEGADOS</div>
                 <h2 className={styles.sectionTitle}>Nuevos productos</h2>
               </div>
-              <Button variant="outline" onClick={() => onNavigate('tienda')}>
+              <Button variant="outline" onClick={() => onNavigate("tienda")}>
                 Ver todos
               </Button>
             </div>
-            <ProductCarousel products={featuredProducts} onProductClick={onProductClick} />
+            <ProductCarousel
+              products={featuredProducts}
+              onProductClick={onProductClick}
+            />
           </div>
         </section>
       </Reveal>
@@ -57,11 +66,19 @@ export function HomePage({ products, onProductClick, onNavigate }: HomePageProps
       </Reveal>
 
       <Reveal>
+        <CategoryBanners onNavigate={onNavigate} />
+      </Reveal>
+
+      <Reveal>
         <MoodPicker onNavigate={onNavigate} />
       </Reveal>
 
       <Reveal>
         <StorySection onNavigate={onNavigate} />
+      </Reveal>
+
+      <Reveal>
+        <LifestyleGallery />
       </Reveal>
 
       <Reveal>
