@@ -28,8 +28,8 @@
 }
 
 .grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: clamp(14px, 2vw, 22px);
 }
 
@@ -56,5 +56,16 @@
 .bannerImg {
   display: block;
   width: 100%;
+  /* Imagen completa, sin recortar (los banners traen el texto integrado). */
   height: auto;
+  /* Las imágenes venían muy claras/lavadas: bajamos brillo y subimos
+     saturación y contraste para acercarlas a los colores reales. */
+  filter: brightness(0.9) saturate(1.18) contrast(1.08);
+}
+
+/* Móvil: se apilan en una columna a todo el ancho. */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

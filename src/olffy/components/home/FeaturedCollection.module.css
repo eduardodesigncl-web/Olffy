@@ -16,13 +16,13 @@
   z-index: 0;
 }
 
-/* Degradado que oscurece el lado del texto para que se lea sobre la foto. */
+/* Degradado que oscurece el lado del texto (derecha) para que se lea. */
 .scrim {
   position: absolute;
   inset: 0;
   z-index: 1;
   background: linear-gradient(
-    90deg,
+    270deg,
     rgba(42, 28, 16, 0.7) 0%,
     rgba(42, 28, 16, 0.42) 42%,
     rgba(42, 28, 16, 0.05) 70%,
@@ -38,6 +38,11 @@
   margin: 0 auto;
   padding: clamp(28px, 5vw, 64px) clamp(16px, 4vw, 48px);
   color: var(--olffy-blanco);
+  /* Texto alineado a la derecha del banner. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
 }
 
 .eyebrow {
@@ -127,6 +132,12 @@
       rgba(42, 28, 16, 0.1) 70%,
       transparent 100%
     );
+  }
+
+  /* En móvil el texto vuelve a la izquierda para leerse mejor apilado. */
+  .content {
+    align-items: flex-start;
+    text-align: left;
   }
 
   .title,

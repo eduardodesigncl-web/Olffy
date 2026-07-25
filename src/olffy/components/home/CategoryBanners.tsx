@@ -6,13 +6,7 @@ import styles from "./CategoryBanners.module.css";
 // Banda "explora por categoría": banners ilustrados (con texto propio) que
 // llevan a la tienda con el filtro de categoría ya aplicado. Las imágenes ya
 // traen el título, por eso el <img> lleva alt descriptivo y el botón aria-label.
-// No existe categoría "Kit", así que ese banner usa búsqueda (?q=kit).
 const BANNERS: { src: string; label: string; href: string }[] = [
-  {
-    src: "/olffy/banners/kit-papeleria.webp",
-    label: "Kit de Papelería",
-    href: "/tienda?q=kit",
-  },
   {
     src: "/olffy/banners/planers-cuadernos.webp",
     label: "Planers y Cuadernos",

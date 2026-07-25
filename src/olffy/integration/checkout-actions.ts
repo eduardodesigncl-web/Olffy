@@ -5,10 +5,13 @@ import { getCustomerAccountState } from "lib/customer/auth";
 import { issueStorefrontCartRewardRedemption } from "lib/loyalty/automatic-redemptions";
 import { cancelShopifyRewardRedemption } from "lib/loyalty/redemptions";
 import {
+  calculatePointsForAmount,
+  getActiveLoyaltyRule,
   getActiveStorefrontCartRedemption,
   getCustomerBalance,
   listRewards,
   type LoyaltyReward,
+  type LoyaltyRule,
   type RewardRedemption,
 } from "lib/loyalty/service";
 import {
@@ -107,14 +110,28 @@ function rewardViews(input: {
 }
 
 export async function getStorefrontLoyaltyStateAction(): Promise<StorefrontLoyaltyState> {
-  const [account, cart, rewards] = await Promise.all([
+  const [account, cart, rewards, rule] = await Promise.all([
     getCustomerAccountState(),
     getCart(),
     listRewards(true),
+    getActiveLoyaltyRule().catch((error): LoyaltyRule | null => {
+      console.error("No se pudo cargar la regla de puntos:", error);
+      return null;
+    }),
   ]);
   const subtotal = clp(cart?.cost.subtotalAmount.amount);
   const total = clp(cart?.cost.totalAmount.amount);
   const discount = Math.max(subtotal - total, 0);
+
+  // Puntos que acumula la compra: estimación sobre el total a pagar (tras
+  // descuentos). Los puntos definitivos se confirman al completar el pago.
+  const earnRate = rule
+    ? {
+        spendingUnitClp: rule.spending_unit_clp,
+        pointsPerUnit: rule.points_per_unit,
+      }
+    : null;
+  const pointsToEarn = rule ? calculatePointsForAmount(total, rule) : 0;
 
   if (account.status !== "ready") {
     return {
@@ -123,6 +140,8 @@ export async function getStorefrontLoyaltyStateAction(): Promise<StorefrontLoyal
       subtotal,
       discount,
       total,
+      pointsToEarn,
+      earnRate,
       rewards: [],
       activeReward: null,
     };
@@ -147,6 +166,8 @@ export async function getStorefrontLoyaltyStateAction(): Promise<StorefrontLoyal
     subtotal,
     discount,
     total,
+    pointsToEarn,
+    earnRate,
     rewards: rewardViews({
       rewards,
       pointsBalance: account.customer.points_balance,

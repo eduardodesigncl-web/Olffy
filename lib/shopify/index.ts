@@ -59,7 +59,11 @@ import {
   ShopifyUpdateCartDiscountCodesOperation,
 } from "./types";
 
-const OLFFY_SHOPIFY_STORE_DOMAIN = "olffy.cl";
+// Dominio técnico de Shopify para la Storefront API. Debe ser el
+// `.myshopify.com` (o el dominio que Shopify realmente sirve), NUNCA el dominio
+// público olffy.cl: ese ahora apunta a Vercel (Next.js), no a Shopify, así que
+// llamar la Storefront API contra olffy.cl devuelve el HTML de la web y falla.
+const OLFFY_SHOPIFY_STORE_DOMAIN = "f46f6e-a4.myshopify.com";
 const configuredShopifyStoreDomain =
   process.env.SHOPIFY_s_SHOPIFY_STORE_DOMAIN?.trim() ||
   process.env.SHOPIFY_STORE_DOMAIN?.trim() ||
@@ -68,10 +72,10 @@ const normalizedShopifyStoreDomain = configuredShopifyStoreDomain
   ?.replace(/^https?:\/\//, "")
   .replace(/\/$/, "")
   .toLowerCase();
+// Usa el dominio configurado (el técnico de Shopify); solo cae al de respaldo
+// si no hay ninguno definido.
 const shopifyStoreDomain =
-  normalizedShopifyStoreDomain === OLFFY_SHOPIFY_STORE_DOMAIN
-    ? normalizedShopifyStoreDomain
-    : OLFFY_SHOPIFY_STORE_DOMAIN;
+  normalizedShopifyStoreDomain || OLFFY_SHOPIFY_STORE_DOMAIN;
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";

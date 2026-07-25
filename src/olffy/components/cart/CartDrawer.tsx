@@ -176,7 +176,7 @@ export function CartDrawer({
               <div className={styles.loyaltyHeading}>
                 <div>
                   <span className={styles.eyebrow}>OLFFY PUNTOS</span>
-                  <h3 id="cart-loyalty-title">Usa tus puntos</h3>
+                  <h3 id="cart-loyalty-title">Tus puntos OLFFY</h3>
                 </div>
                 {loyalty?.accountStatus === "ready" && (
                   <strong>
@@ -185,6 +185,33 @@ export function CartDrawer({
                 )}
               </div>
 
+              {/* Puntos que acumula esta compra. Solo para cuenta lista y
+                  cuando NO se canjea un beneficio: al canjear mostramos el
+                  descuento. Para invitados el incentivo va en el prompt. */}
+              {loyalty?.accountStatus === "ready" &&
+                !loyalty.activeReward &&
+                loyalty.pointsToEarn > 0 && (
+                  <p className={styles.earnCallout}>
+                    <span className={styles.earnStar} aria-hidden="true">
+                      ✦
+                    </span>
+                    <span>
+                      Ganas{" "}
+                      <strong>
+                        {loyalty.pointsToEarn.toLocaleString("es-CL")} puntos
+                      </strong>{" "}
+                      OLFFY con esta compra.
+                      {loyalty.earnRate && (
+                        <small>
+                          {loyalty.earnRate.pointsPerUnit} punto
+                          {loyalty.earnRate.pointsPerUnit === 1 ? "" : "s"} por
+                          cada {formatClp(loyalty.earnRate.spendingUnitClp)}.
+                        </small>
+                      )}
+                    </span>
+                  </p>
+                )}
+
               {loyaltyLoading && !loyalty ? (
                 <p className={styles.muted}>Cargando tu saldo y recompensas…</p>
               ) : loyalty?.accountStatus === "signed_out" ||
@@ -192,8 +219,18 @@ export function CartDrawer({
                 !loyalty ? (
                 <div className={styles.loginPrompt}>
                   <p>
-                    Inicia sesión para ver tu saldo y aplicar una recompensa
-                    antes de pagar.
+                    {loyalty && loyalty.pointsToEarn > 0 ? (
+                      <>
+                        Inicia sesión y acumula{" "}
+                        <strong>
+                          {loyalty.pointsToEarn.toLocaleString("es-CL")} puntos
+                        </strong>{" "}
+                        con esta compra. También podrás usar tus recompensas
+                        antes de pagar.
+                      </>
+                    ) : (
+                      "Inicia sesión para ganar puntos, ver tu saldo y aplicar una recompensa antes de pagar."
+                    )}
                   </p>
                   <Button variant="secondary" size="sm" onClick={onLogin}>
                     Iniciar sesión
@@ -316,6 +353,14 @@ export function CartDrawer({
               <span>−{formatClp(discount)}</span>
             </div>
           )}
+          {!loyalty?.activeReward &&
+            loyalty?.accountStatus === "ready" &&
+            loyalty.pointsToEarn > 0 && (
+              <div className={`${styles.summaryRow} ${styles.earnRow}`}>
+                <span>Puntos que ganas</span>
+                <span>+{loyalty.pointsToEarn.toLocaleString("es-CL")} pts</span>
+              </div>
+            )}
           <div className={styles.totalRow}>
             <span className={styles.totalLabel}>Total estimado</span>
             <span className={styles.totalValue}>{formatClp(total)}</span>

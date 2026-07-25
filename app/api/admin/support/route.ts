@@ -648,7 +648,7 @@ export async function POST(request: Request) {
       if (action === "request_information") {
         if (currentStatus === "resolved")
           throw new Error("Reabre la consulta antes de solicitar información");
-        message = `Para revisar mejor tu caso necesitamos que nos envíes las fotografías, comprobantes o documentos a soporte@olffy.cl.\n\nEn el asunto escribe Consulta #SUP-${conversation.reference_number} para que podamos relacionar la información con esta conversación.`;
+        message = `Para revisar mejor tu caso necesitamos que nos envíes las fotografías, comprobantes o documentos a Admin@olffy.cl.\n\nEn el asunto escribe Consulta #SUP-${conversation.reference_number} para que podamos relacionar la información con esta conversación.`;
         deliveryChannel = "chat_and_email";
         nextStatus = "waiting_information";
         heading = "Necesitamos información para continuar";

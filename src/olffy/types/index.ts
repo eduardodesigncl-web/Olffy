@@ -213,6 +213,11 @@ export type StorefrontLoyaltyState = {
   subtotal: number;
   discount: number;
   total: number;
+  // Puntos que acumula esta compra (sobre el total tras descuentos). Se
+  // muestran cuando el cliente NO está canjeando un beneficio.
+  pointsToEarn: number;
+  // Tasa vigente para explicar cómo se ganan los puntos.
+  earnRate: { spendingUnitClp: number; pointsPerUnit: number } | null;
   rewards: StorefrontLoyaltyReward[];
   activeReward: StorefrontAppliedReward | null;
 };

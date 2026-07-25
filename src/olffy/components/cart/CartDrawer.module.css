@@ -73,6 +73,34 @@
   font-weight: 800;
   letter-spacing: 0.12em;
 }
+/* Aviso de puntos que acumula la compra (cuando no se canjea un beneficio). */
+.earnCallout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: #fff;
+  border: 1px solid rgba(89, 87, 176, 0.18);
+  color: var(--olffy-cafe);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.earnCallout strong {
+  color: #5957b0;
+}
+.earnCallout small {
+  display: block;
+  color: var(--olffy-cafe-55);
+  font-size: 10.5px;
+  margin-top: 1px;
+}
+.earnStar {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+}
 .loginPrompt {
   display: flex;
   flex-direction: column;
@@ -195,6 +223,10 @@
 }
 .discountRow {
   color: #26783b;
+  font-weight: 700;
+}
+.earnRow {
+  color: #5957b0;
   font-weight: 700;
 }
 .shopifyNote {
