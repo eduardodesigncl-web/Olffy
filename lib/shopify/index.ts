@@ -183,6 +183,23 @@ const removeEdgesAndNodes = <T>(array: Connection<T>): T[] => {
   return array.edges.map((edge) => edge?.node);
 };
 
+// Shopify devuelve la URL de checkout con su dominio principal (olffy.cl), que
+// ahora sirve Vercel y no puede alojar el pago. Forzamos el host al dominio
+// técnico de Shopify (f46f6e-a4.myshopify.com), que sí sirve el checkout.
+// Requiere que en Shopify esté DESACTIVADO "redirigir al dominio principal".
+const rewriteCheckoutHost = (rawUrl: string): string => {
+  if (!rawUrl || !shopifyStoreDomain) return rawUrl;
+  try {
+    const url = new URL(rawUrl);
+    if (url.host !== shopifyStoreDomain) {
+      url.host = shopifyStoreDomain;
+    }
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+};
+
 const reshapeCart = (cart: ShopifyCart): Cart => {
   if (!cart.cost?.totalTaxAmount) {
     cart.cost.totalTaxAmount = {
@@ -193,6 +210,7 @@ const reshapeCart = (cart: ShopifyCart): Cart => {
 
   return {
     ...cart,
+    checkoutUrl: rewriteCheckoutHost(cart.checkoutUrl),
     lines: removeEdgesAndNodes(cart.lines),
   };
 };
