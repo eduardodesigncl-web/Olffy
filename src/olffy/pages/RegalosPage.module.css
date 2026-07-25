@@ -222,8 +222,8 @@
 /* ── Beneficios ── */
 .benefitsGrid {
   display: grid;
-  /* 2 columnas en móvil y desktop (máx 4 tarjetas). */
-  grid-template-columns: repeat(2, 1fr);
+  /* 3 tarjetas alineadas en una fila horizontal. */
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: clamp(40px, 5vw, 64px);
 }
@@ -235,7 +235,7 @@
   padding: 18px 20px;
   border-radius: var(--radius-md);
   background: var(--olffy-blanco);
-  border: 1px solid var(--olffy-cafe-08);
+  border: 1px solid rgba(42, 28, 16, 0.16);
 }
 
 .benefitIcon {
@@ -257,7 +257,7 @@
 
 .benefitText {
   font-size: 12px;
-  color: var(--olffy-cafe-55);
+  color: var(--olffy-cafe-68);
   margin-top: 2px;
 }
 
@@ -293,6 +293,11 @@
 @media (max-width: 600px) {
   .giftFeatureImg {
     aspect-ratio: 4 / 3;
+  }
+
+  /* En móvil las 3 tarjetas se apilan en una sola columna. */
+  .benefitsGrid {
+    grid-template-columns: 1fr;
   }
 }
 

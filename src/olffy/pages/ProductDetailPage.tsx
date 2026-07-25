@@ -7,7 +7,12 @@ import {
 import { Accordion, Button, QuantityStepper } from "../components/ui";
 import { GiftIcon, type GiftIconName } from "../components/storefront";
 import { useCart } from "../context/CartContext";
-import { detailSectionsFor, interiorTabsFor } from "../data/productDetails";
+import {
+  customInteriorFor,
+  detailSectionsFor,
+  interiorTabsFor,
+  rulingOptionFrom,
+} from "../data/productDetails";
 import type { Product, ProductVariantSummary } from "../types";
 import styles from "./ProductDetailPage.module.css";
 
@@ -94,7 +99,13 @@ export function ProductDetailPage({
     }
   }, [maxQty]);
 
-  const interiorTabs = interiorTabsFor(product);
+  // Interior: los productos con diseño propio muestran sus páginas reales y
+  // siguen el patrón de hojas elegido; el resto usa el interior por categoría.
+  const customInterior = customInteriorFor(
+    product,
+    rulingOptionFrom(selectedVariant),
+  );
+  const interiorTabs = customInterior?.tabs ?? interiorTabsFor(product);
   const related = relatedProducts;
   const sections = detailSectionsFor(product);
   const optionNames = [
@@ -309,7 +320,11 @@ export function ProductDetailPage({
       {/* Visor de interior (solo productos con páginas/contenido interior). */}
       {interiorTabs.length > 0 && (
         <div ref={interiorRef} className={styles.interior} tabIndex={-1}>
-          <ProductInteriorPreview product={product} tabs={interiorTabs} />
+          <ProductInteriorPreview
+            product={product}
+            tabs={interiorTabs}
+            custom={customInterior}
+          />
         </div>
       )}
 

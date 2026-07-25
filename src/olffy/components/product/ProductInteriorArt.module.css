@@ -1,0 +1,291 @@
+/* Arte de páginas interiores. Todo se dibuja dentro de una página del visor
+   (ProductInteriorPreview), que fija el formato real del producto. */
+
+/* Página a sangre: guardas y páginas ilustradas ocupan el papel completo. */
+.bleed {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.patternSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.trail {
+  position: absolute;
+  inset: 8% 6%;
+  width: 88%;
+  height: 84%;
+}
+
+/* Sello circular impreso al pie de página. */
+.stamp {
+  position: absolute;
+  right: 7%;
+  bottom: 6%;
+  width: clamp(14px, 6cqw, 26px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 3px rgba(42, 28, 16, 0.18);
+}
+
+.stamp svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* ── Plan mensual ── */
+.monthPage {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4%;
+}
+
+.monthHead {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.monthField,
+.monthFieldSmall {
+  font-family: var(--font-serif);
+  font-size: clamp(7px, 1.3cqw, 11px);
+  letter-spacing: 0.14em;
+  color: var(--olffy-cafe-45);
+  border-bottom: 1px solid rgba(42, 28, 16, 0.22);
+  padding-bottom: 2px;
+  flex: 1;
+}
+
+.monthFieldSmall {
+  flex: 0 0 28%;
+}
+
+.monthGrid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: auto repeat(5, 1fr);
+  gap: 1px;
+  background: rgba(42, 28, 16, 0.1);
+  border: 1px solid rgba(42, 28, 16, 0.1);
+}
+
+.monthDay {
+  background: rgba(42, 28, 16, 0.05);
+  padding: 3% 6%;
+  font-family: var(--font-serif);
+  font-size: clamp(5px, 0.95cqw, 9px);
+  letter-spacing: 0.06em;
+  color: var(--olffy-cafe-55);
+  text-align: center;
+  align-self: stretch;
+}
+
+.monthCell {
+  background: #fffdf7;
+  padding: 6% 8% 0;
+}
+
+.monthTick {
+  display: block;
+  width: 34%;
+  height: 1px;
+  background: rgba(42, 28, 16, 0.2);
+}
+
+.monthNotes {
+  position: relative;
+  flex: 0 0 16%;
+  border: 1px solid rgba(42, 28, 16, 0.1);
+  overflow: hidden;
+}
+
+.monthNotes .stamp {
+  right: 3%;
+  bottom: 12%;
+}
+
+/* ── Vista anual ── */
+.yearPage {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 5%;
+}
+
+.yearMonth {
+  display: flex;
+  flex-direction: column;
+  gap: 6%;
+  min-height: 0;
+}
+
+.yearMonthName {
+  font-family: var(--font-serif);
+  font-size: clamp(5px, 1cqw, 9px);
+  letter-spacing: 0.12em;
+}
+
+.yearMonthGrid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 1px;
+}
+
+.yearMonthCell {
+  border: 0.5px solid rgba(42, 28, 16, 0.14);
+}
+
+/* ── Hojas interiores (el patrón elegido en la ficha) ── */
+.rulingPage {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4%;
+}
+
+.rulingHead {
+  flex: 0 0 auto;
+  height: 1px;
+  background: rgba(42, 28, 16, 0.16);
+}
+
+.gridFill {
+  flex: 1;
+  min-height: 0;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(42, 28, 16, 0.13) 0 1px,
+      transparent 1px 5.4%
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(42, 28, 16, 0.13) 0 1px,
+      transparent 1px 5.4%
+    );
+}
+
+.dotted {
+  flex: 1;
+  min-height: 0;
+  background-image: radial-gradient(
+    rgba(42, 28, 16, 0.3) 1.1px,
+    transparent 1.1px
+  );
+  background-size: 6.4% 5.4%;
+}
+
+.ruled {
+  flex: 1;
+  min-height: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 8.2%,
+    rgba(42, 28, 16, 0.15) 8.2% calc(8.2% + 1px)
+  );
+}
+
+/* ── Datos personales ── */
+.dataPage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4%;
+  padding: 7% 9%;
+}
+
+.dataQuote {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(6px, 1.25cqw, 12px);
+  line-height: 1.45;
+  color: var(--olffy-cafe-68);
+}
+
+.dataTitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(9px, 1.7cqw, 16px);
+  text-align: center;
+}
+
+.dataList {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3%;
+}
+
+.dataRow {
+  display: flex;
+  align-items: center;
+  gap: 5%;
+  min-height: 0;
+  flex: 1;
+}
+
+.dataIcon {
+  flex: 0 0 auto;
+  width: clamp(13px, 2.2cqw, 21px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+}
+
+.dataIcon svg {
+  width: 62%;
+  height: 62%;
+}
+
+.dataField {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  max-height: clamp(13px, 2.2cqw, 21px);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(42, 28, 16, 0.12);
+  display: flex;
+  align-items: center;
+  padding: 0 5%;
+  font-size: clamp(5px, 0.95cqw, 9px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--olffy-cafe-45);
+}
+
+.dataLogo {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(7px, 1.2cqw, 12px);
+  color: var(--olffy-cafe-45);
+}
+
+/* Las medidas tipográficas van en cqw: el visor declara cada página como
+   contenedor, así el interior se ve igual de proporcionado en cualquier
+   ancho (móvil incluido, donde la doble página se mantiene completa). */

@@ -199,12 +199,6 @@ export function TiendaPage({
                 placeholder="Buscar cuadernos, planners, stickers..."
               />
             </div>
-            <span className={styles.count}>
-              {filteredProducts.length}{" "}
-              {filteredProducts.length === 1
-                ? "producto disponible"
-                : "productos disponibles"}
-            </span>
           </div>
 
           <div className={styles.filterHeader}>

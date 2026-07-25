@@ -9,6 +9,7 @@ import { INSTAGRAM_HANDLE, INSTAGRAM_PROFILE_LINK } from "../../config/social";
 interface IgPost {
   id: number;
   src: string;
+  poster: string;
   theme: string;
   caption: string;
 }
@@ -17,6 +18,7 @@ const POSTS: IgPost[] = [
   {
     id: 1,
     src: "/olffy/instagram/ig-1.mp4",
+    poster: "/olffy/instagram/poster-1.webp",
     theme: "Detrás de escena",
     caption:
       "A veces me preguntan por qué somos tan detallista y es porque siento que no hay segunda oportunidad, para causar una buena primera impresión.\n\nAbrir, limpiar, sacar el polvo, ordenar todo, preocuparme de que huela rico, que se vea bonito… para mí también es una forma de darle amor a la marca, al proyecto. Es una forma de alimentar mi amor por el proceso.\n\nPorque no se trata solo de vender cosas lindas, se trata de que cada persona que entre sienta el cariño con el que hacemos todo.",
@@ -24,6 +26,7 @@ const POSTS: IgPost[] = [
   {
     id: 2,
     src: "/olffy/instagram/ig-2.mp4",
+    poster: "/olffy/instagram/poster-2.webp",
     theme: "Nuestra historia",
     caption:
       "Hace 6 años, Olffy era solo una idea.\nHoy, es una marca construida con creatividad, aprendizaje y muchas personas que confiaron en nosotros desde el comienzo. 🤍\n\nDetrás de cada diseño, cada empaque y cada detalle, hay una historia real de esfuerzo, crecimiento y pasión por crear algo diferente. ✍🏻✨\n\nEste video es para quienes sueñan con empezar algo propio, para quienes valoran los detalles y para quienes creen que una marca puede transmitir emociones, no solo vender productos.\n\nGracias por ser parte de este proceso.\nY si recién estás llegando… bienvenido a @olffy.cl 🫶🏻\n\n📍Papelería creativa, detalles personalizados y diseño con identidad.\n\n#chile #creatividad #original #crear #conectar",
@@ -31,6 +34,7 @@ const POSTS: IgPost[] = [
   {
     id: 3,
     src: "/olffy/instagram/ig-3.mp4",
+    poster: "/olffy/instagram/poster-3.webp",
     theme: "Cómo empezó",
     caption:
       "No empezó con un logo.\nEmpezó con una idea, muchas dudas y las ganas de crear algo distinto.\n\nEste es solo el comienzo de una historia que todavía se sigue escribiendo. ✍🏻✨\n\nPronto les mostraremos cómo nació @olffy.cl, todo lo que hubo detrás y cómo fuimos construyendo lo que hoy ven en pantalla.\n\nPorque a veces, las mejores marcas no nacen perfectas… se forman con tiempo, errores, aprendizaje y personas que creen en el proceso. 🤍",
@@ -38,6 +42,7 @@ const POSTS: IgPost[] = [
   {
     id: 4,
     src: "/olffy/instagram/ig-4.mp4",
+    poster: "/olffy/instagram/poster-4.webp",
     theme: "Oliver & Luffy",
     caption:
       "Esto comenzó como una idea en la mesa, entre lápices, café y risas ☕🎨\n\n¿Qué pasaría si Oliver y Luffy vivieran los cuentos que nos acompañaron cuando éramos niños?\n\nBueno… la historia va así:\n\nDicen que todo empezó cuando Oliver le pidió un deseo a Luffy…\nY Luffy, con su corazón enorme (y cero precisión 😅), lo cumplió a su manera.\n\nPum ✨\nTerminaron dentro de los cuentos clásicos.\n\nPor eso los verás ahí…\nsiendo un personaje más en cada historia 🌙📖\n\nAhora este proyecto está tomando vida 💛\nPronto podrás pintarlo tú también. 🐾✨",
@@ -45,6 +50,7 @@ const POSTS: IgPost[] = [
   {
     id: 5,
     src: "/olffy/instagram/ig-5.mp4",
+    poster: "/olffy/instagram/poster-5.webp",
     theme: "Inspiración",
     caption:
       "Las ideas que plasmas en una hoja son como semillas en un jardín: cada trazo que dibujas y cada palabra que escribes tienen el potencial de florecer en algo grandioso. Esas hojas en blanco esperan ansiosas ser llenadas con tu creatividad, tus sueños y tus reflexiones.\n\n¡No subestimes el poder de lo que plasmas en una hoja! 💡🤎",
@@ -52,6 +58,7 @@ const POSTS: IgPost[] = [
   {
     id: 6,
     src: "/olffy/instagram/ig-6.mp4",
+    poster: "/olffy/instagram/poster-6.webp",
     theme: "Novedades",
     caption: "EN PROCESO . . . . ⚙️🤎✨️",
   },
@@ -153,7 +160,7 @@ function PostThumb({ post, onOpen }: { post: IgPost; onOpen: () => void }) {
         ref={videoRef}
         className={styles.postVideo}
         src={post.src}
-        poster="/olffy/instagram/poster.webp"
+        poster={post.poster}
         muted
         loop
         playsInline

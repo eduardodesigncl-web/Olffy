@@ -30,6 +30,46 @@
   padding: 4px 12px;
 }
 
+/* ── Tabs de páginas (solo interiores dibujados página por página) ── */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  border: 1px solid var(--olffy-cafe-08);
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe-68);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.tab:hover {
+  border-color: var(--olffy-morado);
+  color: var(--olffy-cafe);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 2px;
+}
+
+.tabActive {
+  background: var(--olffy-morado);
+  border-color: var(--olffy-morado);
+  color: var(--olffy-blanco);
+}
+
 /* ── Visor libro abierto (se hojea con flechas) ── */
 .viewer {
   position: relative;
@@ -77,6 +117,139 @@
   aspect-ratio: 7 / 5;
 }
 
+/* ── Cuaderno real (interior dibujado página por página) ──
+   El formato sale de --page-ratio (ancho/alto de UNA página) y los colores
+   del diseño del producto. Se hojea con flechas, tabs, teclado o arrastre. */
+.notebook {
+  position: relative;
+  width: min(660px, 100%);
+  min-width: 0;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.bookCustom {
+  width: 100%;
+  aspect-ratio: calc(var(--page-ratio) * 2);
+  grid-template-columns: 1fr clamp(12px, 3.2%, 24px) 1fr;
+  gap: 0;
+  padding: clamp(5px, 1.1%, 10px);
+  border-radius: 10px;
+  background: var(--edge);
+  box-shadow:
+    0 22px 46px rgba(42, 28, 16, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.bookCustom .page {
+  position: relative;
+  padding: 4.2%;
+  background: #fffdf7;
+  container-type: inline-size;
+  overflow: hidden;
+}
+
+.bookCustom .pageLeft {
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset -16px 0 20px -16px rgba(42, 28, 16, 0.35);
+}
+
+.bookCustom .pageRight {
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 16px 0 20px -16px rgba(42, 28, 16, 0.35);
+}
+
+/* Anillado metálico al centro de la doble página. */
+.rings {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  background: linear-gradient(
+    90deg,
+    rgba(42, 28, 16, 0.28),
+    rgba(42, 28, 16, 0.06) 45%,
+    rgba(42, 28, 16, 0.28)
+  );
+}
+
+.ring {
+  width: 74%;
+  height: 2.6%;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0.12)),
+    var(--binding);
+  box-shadow: 0 1px 2px rgba(42, 28, 16, 0.4);
+}
+
+/* Elástico de cierre con el dije, sobre el canto derecho. */
+.elastic {
+  position: absolute;
+  top: -1.5%;
+  bottom: -1.5%;
+  right: 1.4%;
+  width: clamp(5px, 0.9vw, 9px);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.75),
+    var(--soft) 55%,
+    rgba(42, 28, 16, 0.2)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.charm {
+  flex-shrink: 0;
+  width: clamp(12px, 1.6vw, 19px);
+  aspect-ratio: 1;
+  border-radius: 46% 54% 52% 48% / 50% 46% 54% 50%;
+  background: var(--accent);
+  box-shadow: 0 2px 5px rgba(42, 28, 16, 0.35);
+}
+
+/* Paso de página con dirección (flechas, tabs, teclado o swipe). */
+.turnNext {
+  animation: turnNext 0.34s ease both;
+}
+
+.turnPrev {
+  animation: turnPrev 0.34s ease both;
+}
+
+@keyframes turnNext {
+  from {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(-7deg) translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes turnPrev {
+  from {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(7deg) translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turnNext,
+  .turnPrev {
+    animation: none;
+  }
+}
+
 .page {
   background: #fffdf7;
   padding: clamp(14px, 2.4vw, 26px);
@@ -93,7 +266,11 @@
 }
 
 .spine {
-  background: linear-gradient(90deg, rgba(42, 28, 16, 0.18), rgba(42, 28, 16, 0.08));
+  background: linear-gradient(
+    90deg,
+    rgba(42, 28, 16, 0.18),
+    rgba(42, 28, 16, 0.08)
+  );
 }
 
 .arrow {
@@ -108,7 +285,9 @@
   place-items: center;
   cursor: pointer;
   box-shadow: 0 10px 22px rgba(89, 87, 176, 0.3);
-  transition: background 0.15s ease, transform 0.12s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.12s ease;
 }
 
 .arrow:hover {
@@ -142,9 +321,19 @@
 .dot {
   width: 7px;
   height: 7px;
+  padding: 0;
+  border: none;
   border-radius: 999px;
   background: rgba(42, 28, 16, 0.16);
-  transition: width 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
+}
+
+.dot:focus-visible {
+  outline: 2px solid var(--olffy-morado);
+  outline-offset: 3px;
 }
 
 .dotActive {
@@ -187,7 +376,11 @@
 
 .weekLines {
   flex: 1;
-  background: repeating-linear-gradient(to bottom, transparent 0 9px, rgba(42, 28, 16, 0.12) 9px 10px);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 9px,
+    rgba(42, 28, 16, 0.12) 9px 10px
+  );
 }
 
 .monthWrap {
@@ -221,13 +414,20 @@
 
 .dotted {
   height: 100%;
-  background-image: radial-gradient(rgba(42, 28, 16, 0.28) 1.2px, transparent 1.2px);
+  background-image: radial-gradient(
+    rgba(42, 28, 16, 0.28) 1.2px,
+    transparent 1.2px
+  );
   background-size: 16px 16px;
 }
 
 .ruled {
   height: 100%;
-  background: repeating-linear-gradient(to bottom, transparent 0 17px, rgba(42, 28, 16, 0.14) 17px 18px);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 17px,
+    rgba(42, 28, 16, 0.14) 17px 18px
+  );
 }
 
 .notesWrap {
@@ -254,7 +454,10 @@
 .paperGrain {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(42, 28, 16, 0.05) 1px, transparent 1px);
+  background-image: radial-gradient(
+    rgba(42, 28, 16, 0.05) 1px,
+    transparent 1px
+  );
   background-size: 5px 5px;
 }
 
@@ -331,5 +534,50 @@
   .spreadImg {
     width: min(320px, 100%);
     aspect-ratio: 3 / 4;
+  }
+
+  /* El cuaderno real mantiene la doble página: el plan mensual y la página
+     de datos solo se entienden completos. Para que quepan, las flechas pasan
+     a ir sobre el papel en vez de a los costados. */
+  .viewerCustom {
+    position: relative;
+    gap: 0;
+  }
+
+  .viewerCustom .notebook {
+    width: 100%;
+  }
+
+  .viewerCustom .arrow {
+    position: absolute;
+    z-index: 2;
+    opacity: 0.92;
+  }
+
+  .viewerCustom .arrow:first-of-type {
+    left: -8px;
+  }
+
+  .viewerCustom .arrow:last-of-type {
+    right: -8px;
+  }
+
+  .bookCustom {
+    width: 100%;
+    grid-template-columns: 1fr auto 1fr;
+    aspect-ratio: calc(var(--page-ratio) * 2);
+  }
+
+  .bookCustom .pageRight {
+    display: block;
+  }
+
+  .bookCustom .pageLeft {
+    box-shadow: inset -10px 0 14px -12px rgba(42, 28, 16, 0.35);
+  }
+
+  .tab {
+    padding: 6px 11px;
+    font-size: 11px;
   }
 }

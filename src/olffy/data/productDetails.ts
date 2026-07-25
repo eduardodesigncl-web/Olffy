@@ -1,4 +1,4 @@
-import type { Product } from "../types";
+import type { Product, ProductVariantSummary } from "../types";
 
 // Capa derivada para las páginas de detalle de producto (/tienda/<handle>).
 // Calcula vistas de galería, previews de interior, contenido extendido y
@@ -39,10 +39,14 @@ export const GALLERY_VIEWS: GalleryView[] = [
 
 // ── Visor de interior (tipo libro abierto) ───────────────────────────────
 export type InteriorType =
+  | "guarda"
   | "semanal"
   | "mensual"
+  | "anual"
   | "punteado"
+  | "cuadriculado"
   | "rayado"
+  | "datos"
   | "notas"
   | "papel"
   | "ilustracion"
@@ -51,7 +55,47 @@ export type InteriorType =
 export interface InteriorTab {
   id: InteriorType;
   label: string;
+  hint?: string; // qué se ve en esa doble página (pie del visor)
   src?: string;
+}
+
+export type RulingType = "punteado" | "cuadriculado" | "rayado";
+
+// Patrón de hoja a partir de un texto libre: el valor de la opción Shopify
+// ("Cuadriculado" / "Punto" / "Lineas") o la descripción del producto.
+export function rulingTypeFrom(text: string): RulingType | null {
+  const value = text.toLowerCase();
+  if (/cuadricul|grid/.test(value)) return "cuadriculado";
+  if (/puntead|punto|dot/.test(value)) return "punteado";
+  if (/rayad|l[ií]nea|lined/.test(value)) return "rayado";
+  return null;
+}
+
+const RULING_TABS: Record<RulingType, InteriorTab> = {
+  cuadriculado: {
+    id: "cuadriculado",
+    label: "Hoja cuadriculada",
+    hint: "Cuadrícula fina para escribir, dibujar y ordenar ideas",
+  },
+  punteado: {
+    id: "punteado",
+    label: "Hoja punteada",
+    hint: "Retícula de puntos: guía sin líneas a la vista",
+  },
+  rayado: {
+    id: "rayado",
+    label: "Hoja de líneas",
+    hint: "Líneas parejas para escribir cómodo",
+  },
+};
+
+// La opción de variante que define el interior (p. ej. "Patrón de hojas").
+export function rulingOptionFrom(
+  variant: ProductVariantSummary | undefined,
+): string | undefined {
+  return variant?.selectedOptions.find((option) =>
+    /patr[oó]n|hoja|interior|papel/i.test(option.name),
+  )?.value;
 }
 
 // Qué interior mostrar según el tipo de producto (categorías reales de las
@@ -150,6 +194,95 @@ export function interiorTabsFor(product: Product): InteriorTab[] {
 function dedupTabs(tabs: InteriorTab[]): InteriorTab[] {
   const seen = new Set<string>();
   return tabs.filter((t) => (seen.has(t.id) ? false : (seen.add(t.id), true)));
+}
+
+// ── Interiores propios ───────────────────────────────────────────────────
+// Productos cuyo interior real está dibujado página por página (formato,
+// guardas, planificadores y colores del diseño). Solo aplica a los handles
+// listados acá: el resto del catálogo sigue con el interior genérico de
+// arriba hasta que se dibuje —o se fotografíe— el suyo.
+
+export type InteriorMotif = "perro" | "hoja" | "estrella";
+
+export interface InteriorArt {
+  motif: InteriorMotif;
+  ink: string; // trazo del patrón de las guardas
+  paper: string; // fondo de la guarda
+  soft: string; // fondo de las páginas ilustradas suaves
+  accent: string; // detalles cálidos (elástico y dije)
+  binding: string; // anillado metálico
+  edge: string; // canto de la tapa dura
+}
+
+export interface CustomInterior {
+  tabs: InteriorTab[];
+  art: InteriorArt;
+  pageRatio: number; // ancho/alto de UNA página, según el tamaño real
+}
+
+// Cuaderno Galgo Azul: 19×18 cm, tapa dura azul con guardas de galgos, plan
+// mensual y anual, hojas según la variante y página de datos personales.
+const GALGO_AZUL_ART: InteriorArt = {
+  motif: "perro",
+  ink: "#2f9fd4",
+  paper: "#efe184",
+  soft: "#cfe7f7",
+  accent: "#e3b23c",
+  binding: "#1f6fa8",
+  edge: "#4e9fd0",
+};
+
+export function customInteriorFor(
+  product: Product,
+  ruling?: string,
+): CustomInterior | null {
+  if (product.handle !== "cuaderno-galgo-azul") return null;
+
+  const sheet =
+    rulingTypeFrom(ruling ?? "") ??
+    rulingTypeFrom(product.fullDesc ?? product.desc) ??
+    "cuadriculado";
+
+  return {
+    art: GALGO_AZUL_ART,
+    pageRatio: pageRatioFor(product, 19 / 18),
+    tabs: [
+      {
+        id: "guarda",
+        label: "Guarda",
+        hint: "Tapa interior estampada con galgos y huellas",
+      },
+      {
+        id: "mensual",
+        label: "Plan mensual",
+        hint: "El mes completo en doble página, sin fechas fijas",
+      },
+      {
+        id: "anual",
+        label: "Vista anual",
+        hint: "Los doce meses de un vistazo para planificar el año",
+      },
+      RULING_TABS[sheet],
+      {
+        id: "datos",
+        label: "Datos personales",
+        hint: "Página de información para que el cuaderno vuelva a ti",
+      },
+    ],
+  };
+}
+
+// Proporción de UNA página, leída del spec de tamaño ("19x18 cm").
+function pageRatioFor(product: Product, fallback: number): number {
+  const size = product.specs.find((spec) =>
+    /tama[nñ]o|medida/i.test(spec.l),
+  )?.v;
+  const match = size?.match(/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/);
+  if (!match) return fallback;
+  const width = Number(match[1]!.replace(",", "."));
+  const height = Number(match[2]!.replace(",", "."));
+  if (!width || !height) return fallback;
+  return Math.min(1.4, Math.max(0.55, width / height));
 }
 
 // ── Contenido extendido (acordeones) ─────────────────────────────────────
