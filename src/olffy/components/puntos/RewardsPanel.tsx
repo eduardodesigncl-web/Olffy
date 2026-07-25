@@ -7,6 +7,12 @@ export interface RewardTier {
   puntos: number;
   label: string;
   desc: string;
+  /** Valor del descuento en CLP (para mostrar cuánto ahorra el canje). */
+  descuentoClp?: number;
+}
+
+function formatClp(value: number) {
+  return `$${Math.round(value).toLocaleString("es-CL")}`;
 }
 
 interface RewardsPanelProps {
@@ -75,6 +81,11 @@ export function RewardsPanel({ rewards, saldo, onRedeem }: RewardsPanelProps) {
             </span>
             <div className={styles.pts}>{reward.puntos} pts</div>
             <div className={styles.label}>{reward.label}</div>
+            {typeof reward.descuentoClp === 'number' && reward.descuentoClp > 0 && (
+              <div className={styles.descuento}>
+                Descuento de {formatClp(reward.descuentoClp)}
+              </div>
+            )}
             <div className={styles.desc}>{reward.desc}</div>
 
             {/* Progreso hacia la recompensa (solo si aún no alcanza). */}
@@ -100,7 +111,11 @@ export function RewardsPanel({ rewards, saldo, onRedeem }: RewardsPanelProps) {
               ) : isConfirming ? (
                 <div className={styles.confirmBox}>
                   <p className={styles.confirmText}>
-                    ¿Quieres solicitar este canje? Se descontarán {reward.puntos} pts de tu saldo.
+                    ¿Quieres solicitar este canje? Se descontarán {reward.puntos} pts de tu saldo
+                    {typeof reward.descuentoClp === 'number' && reward.descuentoClp > 0
+                      ? ` y obtendrás un descuento de ${formatClp(reward.descuentoClp)}`
+                      : ''}
+                    .
                   </p>
                   <div className={styles.confirmActions}>
                     <button type="button" className={styles.confirmBtn} onClick={() => void handleConfirm(reward)}>

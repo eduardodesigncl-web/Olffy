@@ -110,6 +110,7 @@ export function toPuntosRewards(rewards: CustomerReward[]): RewardTier[] {
     id: reward.id,
     puntos: reward.points_cost,
     label: reward.name,
+    descuentoClp: reward.discount_amount_clp ?? undefined,
     desc:
       reward.description?.trim() ||
       (reward.minimum_purchase_clp > 0
@@ -148,6 +149,7 @@ export function toPuntosRedemptions(
       recompensa: redemption.rewards?.name ?? "Recompensa OLFFY",
       fecha: formatDate(redemption.redeemed_at),
       puntos: redemption.points_spent,
+      descuentoClp: redemption.rewards?.discount_amount_clp ?? undefined,
       estado,
       ...(codigo && (estado === "Aprobado" || estado === "Usado")
         ? { codigo }

@@ -9,10 +9,15 @@ export interface Redemption {
   recompensa: string;
   fecha: string;
   puntos?: number;
+  descuentoClp?: number;
   estado: RedemptionStatus;
   codigo?: string;
   usadoFecha?: string;
   motivo?: string;
+}
+
+function formatClp(value: number) {
+  return `$${Math.round(value).toLocaleString("es-CL")}`;
 }
 
 interface RedemptionsPanelProps {
@@ -61,6 +66,8 @@ export function RedemptionsPanel({ redemptions }: RedemptionsPanelProps) {
             <div className={styles.fecha}>
               {r.fecha}
               {typeof r.puntos === 'number' && ` · ${r.puntos} pts`}
+              {typeof r.descuentoClp === 'number' && r.descuentoClp > 0 &&
+                ` · descuento ${formatClp(r.descuentoClp)}`}
             </div>
 
             {r.estado === 'Solicitado' && (
