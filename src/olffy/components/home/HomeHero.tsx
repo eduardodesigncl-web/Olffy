@@ -21,13 +21,13 @@ export function HomeHero({ onNavigate }: HomeHeroProps) {
 
       <div className={styles.inner}>
         <div className={styles.textCol}>
-          <span className={styles.eyebrow}>PAPELERÍA ILUSTRADA · HECHA A MANO</span>
+          <span className={styles.eyebrow}>HECHA A MANO EN VIÑA DEL MAR · CHILE</span>
           <h1 id="hero-title" className={styles.title}>
-            Papelería ilustrada para escribir, regalar y hacer más linda tu rutina
+            Papelería ilustrada
           </h1>
           <p className={styles.subtitle}>
-            Cuadernos, planners, stickers y detalles creativos hechos para acompañar tus ideas todos
-            los días.
+            Cuadernos, planners, stickers y detalles creativos hechos para
+            acompañar tus ideas todos los días.
           </p>
           <div className={styles.ctaRow}>
             <button type="button" className={styles.ctaPrimary} onClick={() => onNavigate('tienda')}>

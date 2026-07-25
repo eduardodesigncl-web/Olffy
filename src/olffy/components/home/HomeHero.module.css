@@ -32,21 +32,24 @@
 }
 
 .title {
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(32px, 5.4vw, 60px);
-  line-height: 1.04;
-  letter-spacing: -0.02em;
+  /* Título corto: tamaño grande y contenido para que tenga presencia sin
+     desbordar. text-wrap:balance reparte las palabras de forma pareja. */
+  font-size: clamp(44px, 8vw, 84px);
+  line-height: 1;
+  letter-spacing: -0.025em;
   color: var(--olffy-blanco);
+  text-wrap: balance;
 }
 
 .subtitle {
-  margin: 0 0 28px;
-  max-width: 480px;
+  margin: 0 0 30px;
+  max-width: 440px;
   font-size: clamp(15px, 1.6vw, 18px);
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .ctaRow {
