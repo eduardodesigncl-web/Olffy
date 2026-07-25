@@ -72,10 +72,14 @@ const normalizedShopifyStoreDomain = configuredShopifyStoreDomain
   ?.replace(/^https?:\/\//, "")
   .replace(/\/$/, "")
   .toLowerCase();
-// Usa el dominio configurado (el técnico de Shopify); solo cae al de respaldo
-// si no hay ninguno definido.
+// Usa el dominio configurado (el técnico de Shopify). Ignora olffy.cl aunque
+// esté configurado por error: ese dominio ahora sirve Vercel, no Shopify.
+const OLFFY_PUBLIC_DOMAIN = "olffy.cl";
 const shopifyStoreDomain =
-  normalizedShopifyStoreDomain || OLFFY_SHOPIFY_STORE_DOMAIN;
+  normalizedShopifyStoreDomain &&
+  normalizedShopifyStoreDomain !== OLFFY_PUBLIC_DOMAIN
+    ? normalizedShopifyStoreDomain
+    : OLFFY_SHOPIFY_STORE_DOMAIN;
 const domain = shopifyStoreDomain
   ? ensureStartsWith(shopifyStoreDomain, "https://")
   : "";
