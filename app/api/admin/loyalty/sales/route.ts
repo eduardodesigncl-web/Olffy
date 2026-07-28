@@ -22,6 +22,8 @@ type SaleRequest = {
   benefitAmount?: number;
   discountCode?: string;
   manualDiscountReason?: string;
+  paymentReference?: string;
+  /** Compatibilidad con clientes anteriores del POS. */
   tuuTransactionId?: string;
   receiptNumber?: string;
   responsible?: string;
@@ -55,9 +57,9 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as SaleRequest;
-    const tuuTransactionId = requiredPhysicalSaleText(
-      body.tuuTransactionId,
-      "la referencia TUU",
+    const paymentReference = requiredPhysicalSaleText(
+      body.paymentReference ?? body.tuuTransactionId,
+      "la referencia del pago",
     );
     const responsible = requiredPhysicalSaleText(
       body.responsible,
@@ -65,12 +67,12 @@ export async function POST(request: Request) {
     );
 
     if (body.paymentConfirmed !== true) {
-      throw new Error("Debes confirmar que el pago TUU fue recibido");
+      throw new Error("Debes confirmar que el pago fue recibido");
     }
 
     const prepared = await preparePhysicalSale(body);
     attempt = await claimPhysicalSalePosAttempt({
-      tuuTransactionId,
+      tuuTransactionId: paymentReference,
       payloadFingerprint: prepared.fingerprint,
       createdBy: responsible,
     });
@@ -79,9 +81,17 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         alreadyCompleted: true,
+        status: "completed",
+        paymentReference,
+        folio: attempt.physicalSaleId
+          ? `#${attempt.physicalSaleId}`
+          : undefined,
         physicalSaleId: attempt.physicalSaleId,
         shopifyOrderId: attempt.shopifyOrderId,
         shopifyOrderName: attempt.shopifyOrderName,
+        subtotal: prepared.subtotal,
+        discount: prepared.discount,
+        total: prepared.total,
         pointsEarned: prepared.pointsEarned,
         pointsSpent: prepared.pointsSpent,
       });
@@ -97,7 +107,7 @@ export async function POST(request: Request) {
         attemptId: attempt.attemptId,
         claimToken: attempt.claimToken,
       },
-      paymentReference: tuuTransactionId,
+      paymentReference,
       receiptNumber: body.receiptNumber,
       responsible,
       notes: body.notes,
@@ -107,6 +117,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       alreadyCompleted: result.alreadyCompleted,
+      status: "completed",
+      paymentReference,
+      folio: `#${result.physicalSaleId}`,
       physicalSaleId: result.physicalSaleId,
       shopifyOrderId: result.shopifyOrderId,
       shopifyOrderName: result.shopifyOrderName,
@@ -128,7 +141,7 @@ export async function POST(request: Request) {
       });
     }
 
-    console.error("Error completing TUU POS sale:", error);
+    console.error("Error completing manual POS sale:", error);
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

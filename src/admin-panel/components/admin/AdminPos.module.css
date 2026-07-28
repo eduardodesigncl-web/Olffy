@@ -560,6 +560,105 @@
   border-color: var(--pos-blue);
 }
 
+.paymentModes {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.paymentModes legend {
+  margin-bottom: 7px;
+  color: var(--pos-muted);
+  font-size: 12px;
+}
+
+.paymentMode {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid var(--pos-border);
+  border-radius: 10px;
+  background: var(--pos-surface);
+  cursor: pointer;
+}
+
+.paymentMode:has(input:checked) {
+  border-color: var(--pos-blue);
+  background: #f1efff;
+}
+
+.paymentMode input {
+  margin-top: 2px;
+}
+
+.paymentMode span {
+  display: grid;
+  gap: 1px;
+  color: var(--pos-text);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.paymentMode small {
+  color: var(--pos-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.manualPaymentFields {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgba(91, 85, 181, 0.2);
+  border-radius: 10px;
+  background: #f8f7ff;
+}
+
+.manualPaymentFields label {
+  display: grid;
+  gap: 4px;
+  color: var(--pos-muted);
+  font-size: 11.5px;
+}
+
+.manualPaymentFields input,
+.manualPaymentFields textarea {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--pos-border);
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: var(--pos-text);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  resize: vertical;
+}
+
+.manualPaymentFields input:focus,
+.manualPaymentFields textarea:focus {
+  border-color: var(--pos-blue);
+}
+
+.paymentConfirmation {
+  display: flex !important;
+  grid-template-columns: none;
+  align-items: flex-start;
+  gap: 8px !important;
+  color: var(--pos-text) !important;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.paymentConfirmation input {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
 .checkoutBtn {
   display: flex;
   align-items: center;
@@ -726,6 +825,7 @@
   padding: 16px;
   gap: 12px;
   overflow: hidden;
+  box-shadow: 0 24px 70px rgba(28, 18, 13, 0.28);
 }
 
 .sheetHeader {
@@ -799,10 +899,29 @@
 }
 
 .sheetList {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 900px) {
+  .overlay {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .sheet {
+    width: 100%;
+    max-height: min(82dvh, 720px);
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 20px 20px 0 0;
+  }
 }
 
 .sheetItem {

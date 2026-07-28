@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8" /><title>poster gen</title></head>
+<body>
+<script>
+const srcs = ["ig-1","ig-2","ig-3","ig-4","ig-5","ig-6"].map(n=>`/olffy/instagram/${n}.mp4`);
+const vids = srcs.map(s=>{ const v=document.createElement('video'); v.src=s; v.muted=true; v.preload='auto'; v.playsInline=true; document.body.appendChild(v); return v; });
+window.cap = async (i, t=1.5) => {
+  const v = vids[i];
+  await new Promise((res)=>{ if(v.readyState>=1) res(); else v.onloadedmetadata=()=>res(); });
+  const time = Math.min(t, (v.duration||3) * 0.4);
+  await new Promise((res)=>{ v.onseeked=()=>res(); v.currentTime=time; });
+  const w = 480, h = Math.round(w * (v.videoHeight / v.videoWidth));
+  const c = document.createElement('canvas'); c.width=w; c.height=h;
+  c.getContext('2d').drawImage(v, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.72);
+};
+</script>
+</body></html>
