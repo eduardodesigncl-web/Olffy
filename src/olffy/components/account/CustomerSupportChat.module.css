@@ -28,13 +28,31 @@
   box-shadow: 0 16px 34px rgba(101, 47, 20, 0.34);
 }
 
-.launcher svg {
-  width: 29px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.launcherLogo {
+  width: 46px;
+  height: 26px;
+  padding: 7px 5px;
+  border-radius: 999px;
+  background: white;
+  object-fit: contain;
+}
+
+.launcherNewReply {
+  animation: newReplyPulse 1.6s ease-in-out 2;
+}
+
+@keyframes newReplyPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 12px 30px rgba(101, 47, 20, 0.28);
+  }
+  45% {
+    transform: scale(1.08);
+    box-shadow:
+      0 16px 38px rgba(101, 47, 20, 0.38),
+      0 0 0 8px rgba(255, 90, 0, 0.16);
+  }
 }
 
 .badge {

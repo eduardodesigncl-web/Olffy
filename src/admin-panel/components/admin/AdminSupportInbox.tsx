@@ -943,9 +943,25 @@ export function AdminSupportInbox({
                         <time title={formatSupportDate(message.createdAt)}>
                           {formatSupportDate(message.createdAt)}
                         </time>
+                        {message.emailStatus === "pending" && (
+                          <span className={styles.emailPending}>
+                            Correo pendiente de envío
+                          </span>
+                        )}
+                        {message.emailStatus === "sent" && (
+                          <span className={styles.emailSent}>
+                            Correo enviado
+                            {message.emailProviderId
+                              ? ` · ID ${message.emailProviderId}`
+                              : ""}
+                          </span>
+                        )}
                         {message.emailStatus === "failed" && (
                           <span className={styles.systemEmailFailure}>
                             El correo no pudo enviarse.
+                            {message.emailError && (
+                              <span>{message.emailError}</span>
+                            )}
                             <button
                               type="button"
                               onClick={() =>
@@ -975,14 +991,27 @@ export function AdminSupportInbox({
                           </time>
                           {message.sender === "admin" &&
                             message.deliveryChannel === "chat_and_email" &&
+                            message.emailStatus === "pending" && (
+                              <small>Chat enviado · correo pendiente</small>
+                            )}
+                          {message.sender === "admin" &&
+                            message.deliveryChannel === "chat_and_email" &&
                             message.emailStatus === "sent" && (
-                              <small>Chat + correo enviado</small>
+                              <small>
+                                Chat + correo enviado
+                                {message.emailProviderId
+                                  ? ` · ID ${message.emailProviderId}`
+                                  : ""}
+                              </small>
                             )}
                           {message.sender === "admin" &&
                             message.emailStatus === "failed" && (
                               <span className={styles.emailFailure}>
                                 La respuesta quedó en el chat, pero el correo no
                                 pudo enviarse.
+                                {message.emailError && (
+                                  <span>{message.emailError}</span>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() =>
