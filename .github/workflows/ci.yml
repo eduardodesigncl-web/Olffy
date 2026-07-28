@@ -44,6 +44,9 @@ jobs:
           PAYMENTS_TUU_ENABLED: "false"
           TUU_REMOTE_POS_ENABLED: "false"
 
+      - name: Supabase migration history
+        run: npm run migrations:verify
+
       - name: Unit tests
         run: npm run test:unit
 
