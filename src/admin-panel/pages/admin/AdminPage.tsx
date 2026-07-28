@@ -78,13 +78,19 @@ export function AdminPage({
           canAccessSupport={allowedTabs.includes("soporte")}
         />
       )}
-      {activeTab === "clientes" && <AdminCustomers navContext={navContext} />}
-      {activeTab === "soporte" && <AdminSupportInbox />}
+      {activeTab === "clientes" && (
+        <AdminCustomers navContext={navContext} onNavigate={navigate} />
+      )}
+      {activeTab === "soporte" && (
+        <AdminSupportInbox navContext={navContext} onNavigate={navigate} />
+      )}
       {activeTab === "puntos" && <AdminPoints />}
       {activeTab === "recompensas" && <AdminRewards />}
       {activeTab === "productos" && <AdminProducts navContext={navContext} />}
       {activeTab === "colecciones" && <AdminCollections />}
-      {activeTab === "ventas" && <AdminSales />}
+      {activeTab === "ventas" && (
+        <AdminSales navContext={navContext} onNavigate={navigate} />
+      )}
       {activeTab === "pos" && <AdminPos />}
       {activeTab === "ajustes" && <AdminSettings />}
     </AdminLayout>

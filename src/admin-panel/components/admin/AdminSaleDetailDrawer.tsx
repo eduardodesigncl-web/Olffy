@@ -1,12 +1,19 @@
+import { useCallback, useEffect, useState } from "react";
 import { Drawer } from "../ui";
-import type { UnifiedSale } from "../../integration/types";
+import type { UnifiedSale, UnifiedSaleDetail } from "../../integration/types";
 import styles from "./AdminSaleDetailDrawer.module.css";
 
 interface AdminSaleDetailDrawerProps {
   sale: UnifiedSale | null;
   shopifyAdminUrl: string;
   onClose: () => void;
+  onBack?: () => void;
 }
+
+type DetailPayload = {
+  sale?: UnifiedSaleDetail;
+  error?: string;
+};
 
 function shopifyOrderUrl(shopifyAdminUrl: string, sale: UnifiedSale) {
   if (!sale.shopifyOrderId) return null;
@@ -25,14 +32,67 @@ function payBadgeClass(estado: UnifiedSale["estadoPago"]) {
   }
 }
 
-// Detalle transaccional de una venta (online o física): orden Shopify, pago,
-// boleta, puntos y referencia TUU cuando existe.
+function loyaltyLabel(status: string) {
+  if (status === "processed") return "Procesados";
+  if (status === "skipped") return "No aplica";
+  if (status === "failed") return "Con error";
+  return "Pendientes";
+}
+
 export function AdminSaleDetailDrawer({
   sale,
   shopifyAdminUrl,
   onClose,
+  onBack,
 }: AdminSaleDetailDrawerProps) {
-  const orderUrl = sale ? shopifyOrderUrl(shopifyAdminUrl, sale) : null;
+  const [detail, setDetail] = useState<UnifiedSaleDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const loadDetail = useCallback(() => setReloadKey((value) => value + 1), []);
+
+  useEffect(() => {
+    if (!sale) {
+      setDetail(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setDetail(null);
+    setError(null);
+    setLoading(true);
+    void fetch(`/api/admin/sales/${encodeURIComponent(sale.id)}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = (await response.json()) as DetailPayload;
+        if (!response.ok || !payload.sale) {
+          throw new Error(payload.error || "No se pudo cargar el detalle");
+        }
+        setDetail(payload.sale);
+      })
+      .catch((cause) => {
+        if (cause instanceof DOMException && cause.name === "AbortError")
+          return;
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "No se pudo cargar el detalle de la venta",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [reloadKey, sale]);
+
+  const displayedSale = detail ?? sale;
+  const orderUrl = displayedSale
+    ? shopifyOrderUrl(shopifyAdminUrl, displayedSale)
+    : null;
 
   return (
     <Drawer
@@ -41,7 +101,7 @@ export function AdminSaleDetailDrawer({
       side="right"
       panelClassName={styles.panel}
     >
-      {sale && (
+      {displayedSale && (
         <div className={styles.detail}>
           <div className={styles.header}>
             <button
@@ -52,109 +112,213 @@ export function AdminSaleDetailDrawer({
             >
               ✕
             </button>
-            <div className={styles.folio}>{sale.folio}</div>
-            <div className={styles.cliente}>{sale.cliente}</div>
-            {sale.email ? (
-              <div className={styles.email}>{sale.email}</div>
+            <div className={styles.headerMeta}>
+              <span className={styles.channelBadge}>
+                {displayedSale.origen === "fisica"
+                  ? "Venta presencial"
+                  : "Venta online"}
+              </span>
+              <span>{displayedSale.fecha}</span>
+            </div>
+            <div className={styles.folio}>{displayedSale.folio}</div>
+            <div className={styles.cliente}>{displayedSale.cliente}</div>
+            {displayedSale.email ? (
+              <div className={styles.email}>{displayedSale.email}</div>
             ) : null}
             <div className={styles.totalRow}>
-              <span className={styles.total}>{sale.total}</span>
+              <span className={styles.total}>{displayedSale.total}</span>
               <span
-                className={`${styles.payBadge} ${payBadgeClass(sale.estadoPago)}`}
+                className={`${styles.payBadge} ${payBadgeClass(displayedSale.estadoPago)}`}
               >
-                {sale.estadoPago}
+                {displayedSale.estadoPago}
               </span>
             </div>
           </div>
 
           <div className={styles.body}>
-            {sale.productos.length > 0 ? (
-              <div className={styles.section}>
-                <div className={styles.sectionTitle}>Productos</div>
-                <div className={styles.stack}>
-                  {sale.productos.map((p, index) => (
-                    <div
-                      key={`${p.nombre}-${index}`}
-                      className={styles.product}
-                    >
-                      <span className={styles.productName}>{p.nombre}</span>
-                      <span className={styles.productMeta}>
-                        x{p.qty} · {p.precio} · pagado {p.pagado}
-                        {!p.elegible ? " · No acumula puntos" : ""}
+            {loading ? (
+              <div className={styles.loading} role="status">
+                Cargando líneas y contexto de la venta…
+              </div>
+            ) : error ? (
+              <div className={styles.error} role="alert">
+                <strong>No se pudo cargar el detalle completo.</strong>
+                <span>{error}</span>
+                <button type="button" onClick={loadDetail}>
+                  Reintentar
+                </button>
+              </div>
+            ) : detail ? (
+              <>
+                <section className={styles.section}>
+                  <div className={styles.sectionTitle}>Productos</div>
+                  {detail.productos.length > 0 ? (
+                    <div className={styles.stack}>
+                      {detail.productos.map((product) => (
+                        <article key={product.id} className={styles.product}>
+                          <div className={styles.productImage}>
+                            {product.imageUrl ? (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.imageAlt}
+                              />
+                            ) : (
+                              <span aria-hidden="true">OLFFY</span>
+                            )}
+                          </div>
+                          <div className={styles.productInfo}>
+                            <strong>{product.nombre}</strong>
+                            <span>
+                              {[
+                                product.variante,
+                                product.sku ? `SKU ${product.sku}` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ") || "Variante única"}
+                            </span>
+                            {!product.elegible ? (
+                              <em>No acumula puntos</em>
+                            ) : null}
+                          </div>
+                          <dl className={styles.lineAmounts}>
+                            <div>
+                              <dt>Cantidad</dt>
+                              <dd>{product.qty}</dd>
+                            </div>
+                            <div>
+                              <dt>Precio unitario</dt>
+                              <dd>{product.precio}</dd>
+                            </div>
+                            <div>
+                              <dt>Descuento</dt>
+                              <dd>{product.descuento}</dd>
+                            </div>
+                            <div>
+                              <dt>Total línea</dt>
+                              <dd>{product.pagado}</dd>
+                            </div>
+                          </dl>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={styles.note}>
+                      Esta venta no tiene líneas registradas para mostrar.
+                    </p>
+                  )}
+                </section>
+
+                <section className={styles.totals} aria-label="Totales">
+                  <div>
+                    <span>Subtotal</span>
+                    <strong>{detail.subtotal}</strong>
+                  </div>
+                  <div>
+                    <span>Descuento</span>
+                    <strong>-{detail.descuento}</strong>
+                  </div>
+                  {detail.ajustesN !== 0 ? (
+                    <div>
+                      <span>Despacho, impuestos o ajustes</span>
+                      <strong>{detail.ajustes}</strong>
+                    </div>
+                  ) : null}
+                  <div>
+                    <span>Total</span>
+                    <strong>{detail.total}</strong>
+                  </div>
+                </section>
+
+                <div className={styles.rows}>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Canal</span>
+                    <span className={styles.rowValue}>
+                      {detail.origenLabel} · {detail.detalleCanal}
+                    </span>
+                  </div>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Método de pago</span>
+                    <span className={styles.rowValue}>{detail.metodoPago}</span>
+                  </div>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Estado del pago</span>
+                    <span className={styles.rowValue}>{detail.estadoPago}</span>
+                  </div>
+                  {detail.referenciaPago ? (
+                    <div className={styles.row}>
+                      <span className={styles.rowLabel}>
+                        Referencia de pago
+                      </span>
+                      <span className={styles.rowValue}>
+                        {detail.referenciaPago}
                       </span>
                     </div>
-                  ))}
+                  ) : null}
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Boleta</span>
+                    <span className={styles.rowValue}>{detail.boleta}</span>
+                  </div>
+                  {detail.numeroComprobante ? (
+                    <div className={styles.row}>
+                      <span className={styles.rowLabel}>
+                        Número de comprobante
+                      </span>
+                      <span className={styles.rowValue}>
+                        {detail.numeroComprobante}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Responsable</span>
+                    <span className={styles.rowValue}>
+                      {detail.responsable}
+                    </span>
+                  </div>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Estado de puntos</span>
+                    <span className={styles.rowValue}>
+                      {loyaltyLabel(detail.loyaltyStatus)} · {detail.puntos} pts
+                    </span>
+                  </div>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Monto elegible</span>
+                    <span className={styles.rowValue}>
+                      {detail.montoElegible}
+                    </span>
+                  </div>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Monto excluido</span>
+                    <span className={styles.rowValue}>
+                      {detail.montoExcluido}
+                    </span>
+                  </div>
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Regla aplicada</span>
+                    <span className={styles.rowValue}>
+                      {detail.reglaAplicada}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ) : null}
-
-            <div className={styles.rows}>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Origen</span>
-                <span className={styles.rowValue}>{sale.origenLabel}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Fecha</span>
-                <span className={styles.rowValue}>{sale.fecha}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Método de pago</span>
-                <span className={styles.rowValue}>{sale.metodoPago}</span>
-              </div>
-              {sale.referenciaPago ? (
-                <div className={styles.row}>
-                  <span className={styles.rowLabel}>Referencia de pago</span>
-                  <span className={styles.rowValue}>{sale.referenciaPago}</span>
-                </div>
-              ) : null}
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Boleta</span>
-                <span className={styles.rowValue}>{sale.boleta}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Monto elegible</span>
-                <span className={styles.rowValue}>{sale.montoElegible}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Monto excluido</span>
-                <span className={styles.rowValue}>{sale.montoExcluido}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Regla aplicada</span>
-                <span className={styles.rowValue}>{sale.reglaAplicada}</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Puntos generados</span>
-                <span className={styles.rowValue}>{sale.puntos} pts</span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Estado de puntos</span>
-                <span className={styles.rowValue}>
-                  {sale.loyaltyStatus === "processed"
-                    ? "Procesados"
-                    : sale.loyaltyStatus === "skipped"
-                      ? "No aplica"
-                      : sale.loyaltyStatus === "failed"
-                        ? "Con error"
-                        : "Pendientes"}
-                </span>
-              </div>
-              <div className={styles.row}>
-                <span className={styles.rowLabel}>Canal</span>
-                <span className={styles.rowValue}>{sale.detalleCanal}</span>
-              </div>
-            </div>
-
-            {sale.productos.length === 0 ? (
-              <p className={styles.note}>
-                El detalle de líneas de esta orden vive en Shopify. Ábrela para
-                revisar productos, variantes y descuentos aplicados.
-              </p>
+                {detail.notas ? (
+                  <p className={styles.note}>
+                    <strong>Notas:</strong> {detail.notas}
+                  </p>
+                ) : null}
+              </>
             ) : null}
           </div>
 
           <div className={styles.footer}>
             <div className={styles.footerGrid}>
+              {onBack ? (
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={onBack}
+                >
+                  Volver a la clienta
+                </button>
+              ) : null}
               {orderUrl ? (
                 <a
                   className={styles.secondaryBtn}
@@ -162,7 +326,7 @@ export function AdminSaleDetailDrawer({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Ver en Shopify
+                  Abrir en Shopify
                 </a>
               ) : null}
               <button

@@ -7,7 +7,15 @@ import { getActiveLoyaltyRule, listRewards } from "lib/loyalty/service";
 import { getAbandonedCheckoutsSummary } from "lib/shopify/abandoned-checkouts";
 import { getShopifyShopSummary } from "lib/shopify/admin";
 import type { OrderReference } from "lib/transactions/types";
-import type { AdminPanelData, UnifiedSale } from "./types";
+import type {
+  AdminCustomerSupportConversation,
+  AdminPanelData,
+  UnifiedSale,
+} from "./types";
+import {
+  buildCustomerContexts,
+  type CustomerSupportRelation,
+} from "./customer-context";
 
 const CHILE_TIME_ZONE = "America/Santiago";
 
@@ -120,17 +128,9 @@ function movementType(type: string | null | undefined) {
   }
 }
 
-function toUnifiedSale(order: OrderReference): UnifiedSale {
+export function toUnifiedSale(order: OrderReference): UnifiedSale {
   const metadata = (order.metadata ?? {}) as {
     customer_name?: string | null;
-    items?: Array<{
-      productTitle?: string;
-      variantTitle?: string;
-      quantity?: number;
-      unitPrice?: number;
-      paidTotal?: number;
-      eligible?: boolean;
-    }> | null;
     eligible_total?: number;
     excluded_amount?: number;
     rule?: {
@@ -153,6 +153,9 @@ function toUnifiedSale(order: OrderReference): UnifiedSale {
       order.customer_email ||
       (origen === "fisica" ? "Venta anónima" : "Cliente invitado"),
     email: order.customer_email ?? "",
+    customerId: order.loyalty_customer_id
+      ? Number(order.loyalty_customer_id)
+      : null,
     fechaISO: order.created_at,
     fecha: dateLabel(order.created_at),
     total: clp(Number(order.total ?? 0)),
@@ -167,22 +170,6 @@ function toUnifiedSale(order: OrderReference): UnifiedSale {
     loyaltyStatus: order.loyalty_status,
     shopifyOrderId: order.shopify_order_id,
     detalleCanal: order.sale_channel_detail,
-    productos: Array.isArray(metadata.items)
-      ? metadata.items.map((item) => ({
-          nombre: [item.productTitle, item.variantTitle]
-            .filter((part) => part && part !== "Default Title")
-            .join(" · "),
-          qty: Number(item.quantity ?? 0),
-          precio: clp(Number(item.unitPrice ?? 0)),
-          pagado: clp(
-            Number(
-              item.paidTotal ??
-                Number(item.unitPrice ?? 0) * Number(item.quantity ?? 0),
-            ),
-          ),
-          elegible: item.eligible !== false,
-        }))
-      : [],
     montoElegible: clp(
       Number(order.eligible_total ?? metadata.eligible_total ?? 0),
     ),
@@ -195,6 +182,92 @@ function toUnifiedSale(order: OrderReference): UnifiedSale {
         ? `${order.points_per_unit} punto(s) cada ${clp(order.spending_unit_clp)}`
         : "Sin snapshot de regla"),
   };
+}
+
+function supportStatus(value: string): {
+  status: AdminCustomerSupportConversation["status"];
+  label: string;
+} {
+  switch (value) {
+    case "new":
+      return { status: "new", label: "Nueva" };
+    case "waiting_information":
+      return { status: "waiting_information", label: "Esperando información" };
+    case "resolved":
+    case "closed":
+      return { status: "resolved", label: "Resuelta" };
+    default:
+      return { status: "in_progress", label: "En atención" };
+  }
+}
+
+async function getCustomerSupportRelations(): Promise<
+  CustomerSupportRelation[]
+> {
+  const supabase = getSupabaseAdmin();
+  const { data: conversations, error } = await supabase
+    .from("support_conversations")
+    .select(
+      "id,reference_number,customer_id,customer_email,status,last_message_at,archived_at",
+    )
+    .order("last_message_at", { ascending: false })
+    .limit(500);
+  if (error) {
+    console.error("No se pudieron cargar las relaciones de soporte:", error);
+    return [];
+  }
+
+  const conversationIds = (conversations ?? []).map((item) => String(item.id));
+  const latestMessageByConversation = new Map<
+    string,
+    { body: string; createdAt: string }
+  >();
+  if (conversationIds.length > 0) {
+    const { data: messages, error: messageError } = await supabase
+      .from("support_messages")
+      .select("conversation_id,body,created_at,id")
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(3000);
+    if (messageError) {
+      console.error(
+        "No se pudieron cargar los últimos mensajes de soporte:",
+        messageError,
+      );
+    } else {
+      for (const message of messages ?? []) {
+        const conversationId = String(message.conversation_id);
+        if (!latestMessageByConversation.has(conversationId)) {
+          latestMessageByConversation.set(conversationId, {
+            body: String(message.body),
+            createdAt: String(message.created_at),
+          });
+        }
+      }
+    }
+  }
+
+  return (conversations ?? []).map((conversation) => {
+    const latestMessage = latestMessageByConversation.get(
+      String(conversation.id),
+    );
+    const lastMessageAt =
+      latestMessage?.createdAt ?? String(conversation.last_message_at);
+    const normalizedStatus = supportStatus(String(conversation.status));
+    return {
+      id: String(conversation.id),
+      reference: `#SUP-${conversation.reference_number}`,
+      status: normalizedStatus.status,
+      statusLabel: normalizedStatus.label,
+      lastMessage: latestMessage?.body ?? null,
+      lastMessageAt,
+      lastMessageDate: dateLabel(lastMessageAt),
+      archived: Boolean(conversation.archived_at),
+      customerId: Number(conversation.customer_id),
+      customerEmail: String(conversation.customer_email).toLowerCase(),
+    };
+  });
 }
 
 async function getRecentPointMovements(): Promise<
@@ -267,6 +340,7 @@ export async function getAdminPanelData(options?: {
     loyaltyRuleResult,
     abandonedCheckouts,
     storeInfo,
+    supportRelations,
   ] = await Promise.all([
     getFrontendAdminData(),
     posOnly
@@ -303,6 +377,7 @@ export async function getAdminPanelData(options?: {
           );
           return null;
         }),
+    posOnly ? Promise.resolve([]) : getCustomerSupportRelations(),
   ]);
 
   const customers = frontend.customers.map((customer, index) => ({
@@ -397,6 +472,11 @@ export async function getAdminPanelData(options?: {
   const sales = orderRefs
     .map(toUnifiedSale)
     .sort((a, b) => Date.parse(b.fechaISO) - Date.parse(a.fechaISO));
+  const customerContexts = buildCustomerContexts(
+    customers,
+    sales,
+    supportRelations,
+  );
   const todayKey = chileDayKey(new Date());
   const salesTodayList = sales.filter(
     (sale) => chileDayKey(sale.fechaISO) === todayKey,
@@ -482,6 +562,7 @@ export async function getAdminPanelData(options?: {
     dashboardMetrics,
     products,
     sales,
+    customerContexts,
     loyaltyRule: loyaltyRuleResult
       ? {
           id: loyaltyRuleResult.id,

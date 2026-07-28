@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { allocateSaleLineDiscounts } from "lib/admin/sale-lines";
 import {
   addPointsTransaction,
   getActiveLoyaltyRule,
@@ -14,10 +15,18 @@ import {
   type LoyaltyRuleSnapshot,
 } from "lib/loyalty/calculation";
 import { createGuestPendingClaim } from "lib/loyalty/guest-claims";
-import { adminFetch } from "lib/shopify/admin";
+import {
+  adminFetch,
+  getAdminOrderSaleSnapshot,
+  getAdminProductImagesByIds,
+} from "lib/shopify/admin";
 import { getSupabaseAdmin } from "lib/supabase/admin";
 import { enqueueOrderMarketingEvents } from "lib/transactions/marketing";
-import { updateOrderReference } from "lib/transactions/repository";
+import {
+  getOrderReferenceById,
+  getPhysicalSaleDetail,
+  updateOrderReference,
+} from "lib/transactions/repository";
 import type { OrderReference, PaidSaleSnapshot } from "lib/transactions/types";
 
 export const DIGITAL_SALES_PAGE_SIZE = 50;
@@ -1037,5 +1046,238 @@ export async function syncRecentShopifyPaidOrders(input?: {
     ).length,
     failed: results.filter((result) => "error" in result).length,
     results,
+  };
+}
+
+export type AdminSaleDetailItemRecord = {
+  id: string;
+  shopifyProductId: string | null;
+  shopifyVariantId: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  productTitle: string;
+  variantTitle: string | null;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  grossTotal: number;
+  allocatedDiscount: number;
+  paidTotal: number;
+  eligible: boolean;
+};
+
+export type AdminSaleDetailRecord = {
+  order: OrderReference;
+  items: AdminSaleDetailItemRecord[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  responsible: string;
+  receiptNumber: string | null;
+  notes: string | null;
+};
+
+function snapshotItems(order: OrderReference) {
+  const loyaltyItems = order.loyalty_snapshot?.items;
+  if (Array.isArray(loyaltyItems) && loyaltyItems.length > 0) {
+    return loyaltyItems;
+  }
+  const metadataItems = order.metadata?.items;
+  return Array.isArray(metadataItems)
+    ? (metadataItems as PaidSaleSnapshot["items"])
+    : [];
+}
+
+export async function getAdminSaleDetailRecord(
+  saleId: string,
+): Promise<AdminSaleDetailRecord> {
+  const order = await getOrderReferenceById(saleId);
+
+  if (order.channel === "physical") {
+    if (!order.physical_sale_id) {
+      throw new Error("La venta física no tiene un registro asociado");
+    }
+    const physical = await getPhysicalSaleDetail(order.physical_sale_id);
+    let images = new Map<string, { url: string; alt: string | null }>();
+    try {
+      images = await getAdminProductImagesByIds(
+        physical.items.map((item) => item.shopify_product_id),
+      );
+    } catch (cause) {
+      console.error(
+        "No se pudieron cargar imágenes de la venta física:",
+        cause,
+      );
+    }
+
+    const physicalDiscount = Number(physical.discount);
+    const storedPhysicalItems = physical.items.map((item) => {
+      const productId = item.shopify_product_id;
+      const image = images.get(gid("Product", productId) ?? productId);
+      const quantity = Number(item.quantity);
+      const unitPrice = Number(item.unit_price);
+      const grossTotal = Number(item.gross_total ?? unitPrice * quantity);
+      const allocatedDiscount = Number(item.allocated_discount ?? 0);
+      return {
+        id: String(item.id),
+        shopifyProductId: productId,
+        shopifyVariantId: item.shopify_variant_id,
+        imageUrl: image?.url ?? null,
+        imageAlt: image?.alt ?? item.product_title,
+        productTitle: item.product_title,
+        variantTitle: item.variant_title,
+        sku: item.sku,
+        quantity,
+        unitPrice,
+        grossTotal,
+        allocatedDiscount,
+        paidTotal: Number(
+          item.paid_total ?? Math.max(grossTotal - allocatedDiscount, 0),
+        ),
+        eligible: item.eligible !== false,
+      };
+    });
+    const storedDiscount = storedPhysicalItems.reduce(
+      (total, item) => total + item.allocatedDiscount,
+      0,
+    );
+    const items =
+      physicalDiscount > 0 && storedDiscount !== physicalDiscount
+        ? allocateSaleLineDiscounts(
+            storedPhysicalItems.map(
+              ({ allocatedDiscount: _discount, paidTotal: _paid, ...item }) =>
+                item,
+            ),
+            physicalDiscount,
+          )
+        : storedPhysicalItems;
+
+    return {
+      order,
+      subtotal: items.reduce((total, item) => total + item.grossTotal, 0),
+      discount: items.reduce(
+        (total, item) => total + item.allocatedDiscount,
+        0,
+      ),
+      total: Number(physical.total),
+      responsible: physical.created_by?.trim() || "Equipo OLFFY",
+      receiptNumber: physical.receipt_number,
+      notes: physical.notes,
+      items,
+    };
+  }
+
+  const storedItems = snapshotItems(order);
+  let shopifySnapshot: Awaited<ReturnType<typeof getAdminOrderSaleSnapshot>> =
+    null;
+  if (order.shopify_order_id) {
+    try {
+      shopifySnapshot = await getAdminOrderSaleSnapshot(order.shopify_order_id);
+    } catch (cause) {
+      if (storedItems.length === 0) throw cause;
+      console.error(
+        "Shopify no respondió al completar el detalle de la venta:",
+        cause,
+      );
+    }
+  }
+
+  const imagesByVariant = new Map(
+    (shopifySnapshot?.items ?? []).flatMap((item) =>
+      item.variantId
+        ? [
+            [
+              item.variantId,
+              { url: item.imageUrl, alt: item.imageAlt },
+            ] as const,
+          ]
+        : [],
+    ),
+  );
+  const imagesByProduct = new Map(
+    (shopifySnapshot?.items ?? []).flatMap((item) =>
+      item.productId
+        ? [
+            [
+              item.productId,
+              { url: item.imageUrl, alt: item.imageAlt },
+            ] as const,
+          ]
+        : [],
+    ),
+  );
+  const metadataSubtotal = Number(order.metadata?.subtotal);
+  const metadataDiscount = Number(order.metadata?.discount);
+  const subtotal = Number.isFinite(metadataSubtotal)
+    ? metadataSubtotal
+    : (shopifySnapshot?.subtotal ?? order.total);
+  const discount = Number.isFinite(metadataDiscount)
+    ? metadataDiscount
+    : (shopifySnapshot?.discount ?? Math.max(subtotal - order.total, 0));
+
+  const shopifyItems = (shopifySnapshot?.items ?? []).map((item) => ({
+    id: item.id,
+    shopifyProductId: item.productId,
+    shopifyVariantId: item.variantId,
+    imageUrl: item.imageUrl,
+    imageAlt: item.imageAlt,
+    productTitle: item.productTitle,
+    variantTitle: item.variantTitle,
+    sku: item.sku,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    grossTotal: item.grossTotal,
+    allocatedDiscount: item.allocatedDiscount,
+    paidTotal: Math.max(item.grossTotal - item.allocatedDiscount, 0),
+    eligible: true,
+  }));
+  const shopifyAllocatedDiscount = shopifyItems.reduce(
+    (total, item) => total + item.allocatedDiscount,
+    0,
+  );
+  const fallbackItems =
+    Math.abs(shopifyAllocatedDiscount - discount) < 0.01
+      ? shopifyItems
+      : allocateSaleLineDiscounts(
+          shopifyItems.map(
+            ({ allocatedDiscount: _discount, paidTotal: _paid, ...item }) =>
+              item,
+          ),
+          discount,
+        );
+  const items =
+    storedItems.length > 0
+      ? storedItems.map((item, index) => {
+          const image =
+            imagesByVariant.get(item.shopifyVariantId) ??
+            imagesByProduct.get(item.shopifyProductId);
+          return {
+            id: `${saleId}-${index}`,
+            shopifyProductId: item.shopifyProductId || null,
+            shopifyVariantId: item.shopifyVariantId || null,
+            imageUrl: image?.url ?? null,
+            imageAlt: image?.alt ?? item.productTitle,
+            productTitle: item.productTitle,
+            variantTitle: item.variantTitle || null,
+            sku: item.sku ?? null,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            grossTotal: Number(item.grossTotal),
+            allocatedDiscount: Number(item.allocatedDiscount),
+            paidTotal: Number(item.paidTotal),
+            eligible: item.eligible !== false,
+          };
+        })
+      : fallbackItems;
+
+  return {
+    order,
+    items,
+    subtotal: items.reduce((total, item) => total + item.grossTotal, 0),
+    discount: items.reduce((total, item) => total + item.allocatedDiscount, 0),
+    total: Number(order.total),
+    responsible: "Checkout Shopify",
+    receiptNumber: null,
+    notes: null,
   };
 }

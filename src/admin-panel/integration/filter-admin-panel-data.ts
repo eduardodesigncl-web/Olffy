@@ -43,6 +43,18 @@ export function filterAdminPanelData(
     dashboardMetrics: canSeeDashboard ? data.dashboardMetrics : [],
     products: canSeeProducts || canUsePos ? data.products : [],
     sales: canSeeSales ? data.sales : [],
+    customerContexts: canSeeCustomers
+      ? Object.fromEntries(
+          Object.entries(data.customerContexts).map(([customerId, context]) => [
+            customerId,
+            {
+              ...context,
+              purchaseCount: canSeeSales ? context.purchaseCount : 0,
+              purchases: canSeeSales ? context.purchases : [],
+            },
+          ]),
+        )
+      : {},
     loyaltyRule: canSeePoints || canUsePos ? data.loyaltyRule : null,
     physicalSalesHistory:
       canSeeSales || canUsePos ? data.physicalSalesHistory : [],
@@ -60,7 +72,7 @@ export function filterAdminPanelData(
         },
     storeInfo: canSeeSettings ? data.storeInfo : null,
     shopifyAdminUrl:
-      canSeeProducts || canSeeCollections || canSeeSettings
+      canSeeSales || canSeeProducts || canSeeCollections || canSeeSettings
         ? data.shopifyAdminUrl
         : "",
   };

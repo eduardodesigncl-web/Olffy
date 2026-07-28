@@ -7,6 +7,18 @@ export interface AdminNavContext {
   productFilter?: ProductFilter;
   productId?: number;
   customersFilter?: "activos" | "canjes";
+  customerId?: number;
+  customerSearch?: string;
+  customerScrollY?: number;
+  saleId?: string;
+  supportConversationId?: string;
+  supportArchived?: boolean;
+  returnToCustomer?: {
+    customerId: number;
+    filter?: "activos" | "canjes";
+    search?: string;
+    scrollY?: number;
+  };
   pointsView?: "historial";
   rewardsFilter?: "pendientes";
 }

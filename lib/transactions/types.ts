@@ -51,6 +51,7 @@ export type OrderReference = {
   shopify_customer_id: string | null;
   customer_email: string | null;
   loyalty_customer_id: number | null;
+  physical_sale_id: number | null;
   payment_provider: string;
   payment_reference: string | null;
   payment_status: "pending" | "confirmed" | "rejected" | "manual_review";

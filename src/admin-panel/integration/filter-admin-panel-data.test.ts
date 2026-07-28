@@ -20,6 +20,14 @@ const sample = {
   dashboardMetrics: [{ label: "Ventas" }],
   products: [{ id: 1, name: "Producto" }],
   sales: [{ id: "sale-1" }],
+  customerContexts: {
+    "1": {
+      purchaseCount: 1,
+      purchases: [{ id: "sale-1" }],
+      supportCount: 1,
+      supportConversations: [{ id: "support-1" }],
+    },
+  },
   loyaltyRule: { id: 1 },
   physicalSalesHistory: [{ id: 1 }],
   pointMovements: [{ id: 1 }],
@@ -51,6 +59,7 @@ describe("filterAdminPanelData", () => {
     expect(filtered.adminData.clientes).toEqual([]);
     expect(filtered.products).toEqual([]);
     expect(filtered.sales).toEqual([]);
+    expect(filtered.customerContexts).toEqual({});
     expect(filtered.pointMovements).toEqual([]);
     expect(filtered.rewards).toEqual([]);
     expect(filtered.abandonedCheckouts.checkouts).toEqual([]);
@@ -65,6 +74,15 @@ describe("filterAdminPanelData", () => {
     expect(filtered.loyaltyRule).not.toBeNull();
     expect(filtered.sales).toEqual([]);
     expect(filtered.adminData.clientes).toEqual([]);
+    expect(filtered.customerContexts).toEqual({});
+  });
+
+  it("removes purchase relations when a customer account cannot see sales", () => {
+    const filtered = filterAdminPanelData(sample, ["clientes"]);
+
+    expect(filtered.customerContexts["1"]?.purchaseCount).toBe(0);
+    expect(filtered.customerContexts["1"]?.purchases).toEqual([]);
+    expect(filtered.customerContexts["1"]?.supportCount).toBe(1);
   });
 
   it("keeps Shopify store information only for settings accounts", () => {
@@ -72,5 +90,11 @@ describe("filterAdminPanelData", () => {
       "OLFFY",
     );
     expect(filterAdminPanelData(sample, ["productos"]).storeInfo).toBeNull();
+  });
+
+  it("keeps the Shopify order link base for sales accounts", () => {
+    expect(filterAdminPanelData(sample, ["ventas"]).shopifyAdminUrl).toBe(
+      "https://admin.shopify.com/store/olffy",
+    );
   });
 });

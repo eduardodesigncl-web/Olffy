@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminMetricCard, type AdminMetricCardData } from "./AdminMetricCard";
 import { AdminSearchInput } from "./AdminSearchInput";
 import { AdminSaleDetailDrawer } from "./AdminSaleDetailDrawer";
+import type { AdminNavigate, AdminNavContext } from "./adminNav";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
 import type { UnifiedSale, UnifiedSaleOrigin } from "../../integration/types";
 import styles from "./AdminSales.module.css";
@@ -46,7 +47,13 @@ function readInitialParams(): {
 // Sección Ventas: una sola vista para ventas online y físicas, separadas por
 // pestañas "Ventas del día" e "Historial de ventas" y distinguidas por origen.
 // La pestaña y los filtros persisten en la URL (/admin/ventas?vista=...&origen=...).
-export function AdminSales() {
+export function AdminSales({
+  navContext,
+  onNavigate,
+}: {
+  navContext?: AdminNavContext | null;
+  onNavigate?: AdminNavigate;
+} = {}) {
   const [view, setView] = useState<SalesView>("dia");
   const [searchTerm, setSearchTerm] = useState("");
   const [originFilter, setOriginFilter] = useState<OriginFilter>("todos");
@@ -66,6 +73,14 @@ export function AdminSales() {
   const sales = adminPanelRuntime.data?.sales ?? [];
   const shopifyAdminUrl =
     adminPanelRuntime.data?.shopifyAdminUrl ?? "https://admin.shopify.com";
+
+  useEffect(() => {
+    if (!navContext?.saleId) return;
+    const requestedSale = sales.find((sale) => sale.id === navContext.saleId);
+    if (!requestedSale) return;
+    setDetail(requestedSale);
+    setView("historial");
+  }, [navContext?.saleId, sales]);
 
   // Persistir pestaña y filtros en la URL para que los atajos sean compartibles.
   useEffect(() => {
@@ -304,6 +319,17 @@ export function AdminSales() {
         sale={detail}
         shopifyAdminUrl={shopifyAdminUrl}
         onClose={() => setDetail(null)}
+        onBack={
+          navContext?.returnToCustomer && onNavigate
+            ? () =>
+                onNavigate("clientes", {
+                  customerId: navContext.returnToCustomer?.customerId,
+                  customersFilter: navContext.returnToCustomer?.filter,
+                  customerSearch: navContext.returnToCustomer?.search,
+                  customerScrollY: navContext.returnToCustomer?.scrollY,
+                })
+            : undefined
+        }
       />
     </div>
   );
