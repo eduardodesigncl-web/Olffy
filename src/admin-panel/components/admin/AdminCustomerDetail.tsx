@@ -16,6 +16,7 @@ import {
   rejectRedemption,
 } from "../../../adapters/frontend-actions";
 import { adminPanelRuntime } from "../../integration/hydrate-admin-panel-data";
+import type { AdminCustomerContext } from "../../integration/types";
 import styles from "./AdminCustomerDetail.module.css";
 
 // Customer detail drawer mock. En producción estos movimientos deben registrarse
@@ -26,6 +27,9 @@ interface AdminCustomerDetailProps {
   historial: AdminHistorialItem[];
   canjes: AdminCanje[];
   onClose: () => void;
+  context: AdminCustomerContext;
+  onOpenSale: (saleId: string) => void;
+  onOpenSupport: (conversationId: string, archived: boolean) => void;
 }
 
 // "+2.000" / "-300" → número. Solo para derivar cifras del resumen (mock).
@@ -36,6 +40,15 @@ function parsePts(s: string): number {
 
 function fmt(n: number): string {
   return n.toLocaleString("es-CL");
+}
+
+function customerDate(value: string) {
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Santiago",
+  }).format(new Date(value));
 }
 
 // Select de responsable reutilizable (lista mock compartida con Ventas físicas).
@@ -68,6 +81,9 @@ export function AdminCustomerDetail({
   historial,
   canjes,
   onClose,
+  context,
+  onOpenSale,
+  onOpenSupport,
 }: AdminCustomerDetailProps) {
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -146,6 +162,110 @@ export function AdminCustomerDetail({
             <span className={styles.statValue}>{fmt(usados)}</span>
             <span className={styles.statLabel}>Puntos usados</span>
           </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Datos personales</div>
+          <dl className={styles.profileGrid}>
+            <div>
+              <dt>Email</dt>
+              <dd>{customer.email}</dd>
+            </div>
+            <div>
+              <dt>Teléfono</dt>
+              <dd>{customer.tel || "No informado"}</dd>
+            </div>
+            <div>
+              <dt>Estado de la cuenta</dt>
+              <dd>{customer.estado}</dd>
+            </div>
+            <div>
+              <dt>Clienta desde</dt>
+              <dd>{customerDate(customer.createdAt)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <div className={styles.sectionTitle}>Compras</div>
+              <p>
+                {context.purchaseCount}{" "}
+                {context.purchaseCount === 1
+                  ? "compra registrada"
+                  : "compras registradas"}
+              </p>
+            </div>
+          </div>
+          {context.purchases.length === 0 ? (
+            <div className={styles.empty}>
+              Esta clienta todavía no tiene compras asociadas a su cuenta.
+            </div>
+          ) : (
+            <div className={styles.relationList}>
+              {context.purchases.map((purchase) => (
+                <button
+                  key={purchase.id}
+                  type="button"
+                  className={styles.relationCard}
+                  onClick={() => onOpenSale(purchase.id)}
+                >
+                  <span>
+                    <strong>{purchase.folio}</strong>
+                    <small>
+                      {purchase.fecha} · {purchase.origenLabel}
+                    </small>
+                  </span>
+                  <span className={styles.relationValue}>
+                    <strong>{purchase.total}</strong>
+                    <small>{purchase.estadoPago}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <div className={styles.sectionTitle}>Consultas de soporte</div>
+              <p>
+                {context.supportCount}{" "}
+                {context.supportCount === 1 ? "conversación" : "conversaciones"}
+              </p>
+            </div>
+          </div>
+          {context.supportConversations.length === 0 ? (
+            <div className={styles.empty}>
+              Esta clienta no tiene consultas de soporte registradas.
+            </div>
+          ) : (
+            <div className={styles.relationList}>
+              {context.supportConversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  className={styles.relationCard}
+                  onClick={() =>
+                    onOpenSupport(conversation.id, conversation.archived)
+                  }
+                >
+                  <span>
+                    <strong>{conversation.reference}</strong>
+                    <small>
+                      {conversation.lastMessage || "Sin mensajes todavía"}
+                    </small>
+                  </span>
+                  <span className={styles.relationValue}>
+                    <strong>{conversation.statusLabel}</strong>
+                    <small>{conversation.lastMessageDate}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <AjusteManual customer={customer} onNotify={setNotice} />

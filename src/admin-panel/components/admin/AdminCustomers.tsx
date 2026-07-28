@@ -6,7 +6,7 @@ import { AdminMetricCard, type AdminMetricCardData } from "./AdminMetricCard";
 import { AdminSearchInput } from "./AdminSearchInput";
 import { AdminCustomerTable } from "./AdminCustomerTable";
 import { AdminCustomerDrawer } from "./AdminCustomerDrawer";
-import type { AdminNavContext } from "./adminNav";
+import type { AdminNavigate, AdminNavContext } from "./adminNav";
 import { ADMIN_DATA, type AdminCliente } from "../../data/adminData.mock";
 import styles from "./AdminCustomers.module.css";
 
@@ -19,12 +19,16 @@ const FILTER_LABEL: Record<Exclude<CustomerFilter, "all">, string> = {
 
 interface AdminCustomersProps {
   navContext?: AdminNavContext | null;
+  onNavigate?: AdminNavigate;
 }
 
 // Sección Clientes del panel admin.
 // CLIENTES MOCK: en producción debe leer desde Supabase/Shopify con permisos
 // internos. Aquí no hay ajustes reales de puntos (acciones deshabilitadas).
-export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
+export function AdminCustomers({
+  navContext,
+  onNavigate,
+}: AdminCustomersProps = {}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selected, setSelected] = useState<AdminCliente | null>(null);
   const [filter, setFilter] = useState<CustomerFilter>("all");
@@ -101,7 +105,21 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
   // Navegación con contexto (ej. desde el Dashboard).
   useEffect(() => {
     if (navContext?.customersFilter) setFilter(navContext.customersFilter);
-  }, [navContext]);
+    if (navContext?.customerSearch !== undefined) {
+      setSearchTerm(navContext.customerSearch);
+    }
+    if (navContext?.customerId) {
+      const requested = clientes.find(
+        (customer) => customer.idx === navContext.customerId,
+      );
+      if (requested) setSelected(requested);
+    }
+    if (navContext?.customerScrollY !== undefined) {
+      window.requestAnimationFrame(() =>
+        window.scrollTo({ top: navContext.customerScrollY }),
+      );
+    }
+  }, [clientes, navContext]);
 
   // Clientes con canjes pendientes (match por nombre en mock).
   const canjeNames = useMemo(
@@ -250,6 +268,31 @@ export function AdminCustomers({ navContext }: AdminCustomersProps = {}) {
       <AdminCustomerDrawer
         customer={selected}
         onClose={() => setSelected(null)}
+        onOpenSale={(saleId) => {
+          if (!selected || !onNavigate) return;
+          onNavigate("ventas", {
+            saleId,
+            returnToCustomer: {
+              customerId: selected.idx,
+              filter: filter === "all" ? undefined : filter,
+              search: searchTerm,
+              scrollY: window.scrollY,
+            },
+          });
+        }}
+        onOpenSupport={(conversationId, archived) => {
+          if (!selected || !onNavigate) return;
+          onNavigate("soporte", {
+            supportConversationId: conversationId,
+            supportArchived: archived,
+            returnToCustomer: {
+              customerId: selected.idx,
+              filter: filter === "all" ? undefined : filter,
+              search: searchTerm,
+              scrollY: window.scrollY,
+            },
+          });
+        }}
       />
 
       <Modal

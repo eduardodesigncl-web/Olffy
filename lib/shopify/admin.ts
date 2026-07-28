@@ -380,6 +380,219 @@ export async function getCustomerSupportOrders(
   });
 }
 
+export type ShopifySaleLine = {
+  id: string;
+  productId: string | null;
+  variantId: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  productTitle: string;
+  variantTitle: string | null;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  grossTotal: number;
+  allocatedDiscount: number;
+};
+
+export type ShopifyOrderSaleSnapshot = {
+  subtotal: number;
+  discount: number;
+  total: number;
+  items: ShopifySaleLine[];
+};
+
+const adminOrderSaleDetailQuery = /* GraphQL */ `
+  query adminOrderSaleDetail($id: ID!) {
+    order(id: $id) {
+      id
+      subtotalPriceSet {
+        shopMoney {
+          amount
+        }
+      }
+      totalDiscountsSet {
+        shopMoney {
+          amount
+        }
+      }
+      totalPriceSet {
+        shopMoney {
+          amount
+        }
+      }
+      lineItems(first: 100) {
+        nodes {
+          id
+          quantity
+          name
+          title
+          variantTitle
+          sku
+          originalTotalSet {
+            shopMoney {
+              amount
+            }
+          }
+          discountAllocations {
+            allocatedAmountSet {
+              shopMoney {
+                amount
+              }
+            }
+          }
+          product {
+            id
+            featuredMedia {
+              preview {
+                image {
+                  url
+                  altText
+                }
+              }
+            }
+          }
+          variant {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getAdminOrderSaleSnapshot(
+  orderId: string,
+): Promise<ShopifyOrderSaleSnapshot | null> {
+  type RawOrder = {
+    subtotalPriceSet: { shopMoney: { amount: string } };
+    totalDiscountsSet: { shopMoney: { amount: string } };
+    totalPriceSet: { shopMoney: { amount: string } };
+    lineItems: {
+      nodes: Array<{
+        id: string;
+        quantity: number;
+        name: string | null;
+        title: string | null;
+        variantTitle: string | null;
+        sku: string | null;
+        originalTotalSet: { shopMoney: { amount: string } };
+        discountAllocations: Array<{
+          allocatedAmountSet: { shopMoney: { amount: string } };
+        }>;
+        product: {
+          id: string;
+          featuredMedia: {
+            preview: {
+              image: { url: string; altText: string | null } | null;
+            } | null;
+          } | null;
+        } | null;
+        variant: { id: string } | null;
+      }>;
+    };
+  };
+
+  const { body } = await adminFetch<{
+    data: { order: RawOrder | null };
+    variables: { id: string };
+  }>({
+    query: adminOrderSaleDetailQuery,
+    variables: { id: normalizeShopifyGid("Order", orderId) },
+  });
+  const order = body.data.order;
+  if (!order) return null;
+
+  return {
+    subtotal: Number(order.subtotalPriceSet.shopMoney.amount),
+    discount: Number(order.totalDiscountsSet.shopMoney.amount),
+    total: Number(order.totalPriceSet.shopMoney.amount),
+    items: order.lineItems.nodes.map((line) => {
+      const quantity = Math.max(Number(line.quantity || 1), 1);
+      const grossTotal = Number(line.originalTotalSet.shopMoney.amount);
+      const allocatedDiscount = line.discountAllocations.reduce(
+        (total, allocation) =>
+          total + Number(allocation.allocatedAmountSet.shopMoney.amount),
+        0,
+      );
+      const image = line.product?.featuredMedia?.preview?.image;
+      return {
+        id: line.id,
+        productId: line.product?.id ?? null,
+        variantId: line.variant?.id ?? null,
+        imageUrl: image?.url ?? null,
+        imageAlt: image?.altText ?? null,
+        productTitle: line.title ?? line.name ?? "Producto Shopify",
+        variantTitle: line.variantTitle,
+        sku: line.sku,
+        quantity,
+        unitPrice: Math.round(grossTotal / quantity),
+        grossTotal,
+        allocatedDiscount,
+      };
+    }),
+  };
+}
+
+const adminProductImagesQuery = /* GraphQL */ `
+  query adminProductImages($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ... on Product {
+        id
+        title
+        featuredMedia {
+          preview {
+            image {
+              url
+              altText
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getAdminProductImagesByIds(productIds: string[]) {
+  const ids = [
+    ...new Set(
+      productIds
+        .filter(Boolean)
+        .map((id) => normalizeShopifyGid("Product", id)),
+    ),
+  ].slice(0, 100);
+  if (ids.length === 0) {
+    return new Map<string, { url: string; alt: string | null }>();
+  }
+
+  const { body } = await adminFetch<{
+    data: {
+      nodes: Array<{
+        id: string;
+        title: string;
+        featuredMedia: {
+          preview: {
+            image: { url: string; altText: string | null } | null;
+          } | null;
+        } | null;
+      } | null>;
+    };
+    variables: { ids: string[] };
+  }>({
+    query: adminProductImagesQuery,
+    variables: { ids },
+  });
+
+  return new Map(
+    body.data.nodes.flatMap((product) => {
+      const image = product?.featuredMedia?.preview?.image;
+      return product && image
+        ? [[product.id, { url: image.url, alt: image.altText }] as const]
+        : [];
+    }),
+  );
+}
+
 export async function getShopifyShopSummary(): Promise<ShopifyShopSummary> {
   const query = /* GraphQL */ `
     query ShopSummary {

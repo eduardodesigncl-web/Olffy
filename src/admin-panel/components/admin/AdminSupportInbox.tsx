@@ -14,6 +14,7 @@ import {
   supportStatusLabel,
 } from "lib/support/workflow";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { AdminNavigate, AdminNavContext } from "./adminNav";
 import styles from "./AdminSupportInbox.module.css";
 
 type InboxPayload = {
@@ -85,11 +86,20 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
-export function AdminSupportInbox() {
+export function AdminSupportInbox({
+  navContext,
+  onNavigate,
+}: {
+  navContext?: AdminNavContext | null;
+  onNavigate?: AdminNavigate;
+} = {}) {
+  const requestedConversationId = navContext?.supportConversationId ?? null;
   const [conversations, setConversations] = useState<SupportConversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
-  const [view, setView] = useState<InboxView>("active");
+  const [view, setView] = useState<InboxView>(
+    navContext?.supportArchived ? "archived" : "active",
+  );
   const [selectedConversationIds, setSelectedConversationIds] = useState<
     string[]
   >([]);
@@ -137,6 +147,14 @@ export function AdminSupportInbox() {
         );
         setSelectedId((current) => {
           if (
+            requestedConversationId &&
+            payload.conversations?.some(
+              (item) => item.id === requestedConversationId,
+            )
+          ) {
+            return requestedConversationId;
+          }
+          if (
             current &&
             payload.conversations?.some((item) => item.id === current)
           ) {
@@ -158,8 +176,15 @@ export function AdminSupportInbox() {
         if (manual) setRefreshing(false);
       }
     },
-    [view],
+    [requestedConversationId, view],
   );
+
+  useEffect(() => {
+    if (!requestedConversationId) return;
+    setFilter("all");
+    setCategoryFilter("all");
+    setView(navContext?.supportArchived ? "archived" : "active");
+  }, [navContext?.supportArchived, requestedConversationId]);
 
   useEffect(() => {
     void load();
@@ -421,6 +446,22 @@ export function AdminSupportInbox() {
               })}
             </small>
           )}
+          {navContext?.returnToCustomer && onNavigate ? (
+            <button
+              type="button"
+              className={styles.refresh}
+              onClick={() =>
+                onNavigate("clientes", {
+                  customerId: navContext.returnToCustomer?.customerId,
+                  customersFilter: navContext.returnToCustomer?.filter,
+                  customerSearch: navContext.returnToCustomer?.search,
+                  customerScrollY: navContext.returnToCustomer?.scrollY,
+                })
+              }
+            >
+              Volver a la clienta
+            </button>
+          ) : null}
           <button
             type="button"
             className={styles.refresh}

@@ -19,10 +19,21 @@ export type AdminPanelCustomer = {
 export type UnifiedSaleOrigin = "online" | "fisica";
 
 export type UnifiedSaleItem = {
+  id: string;
+  shopifyProductId: string | null;
+  shopifyVariantId: string | null;
+  imageUrl: string | null;
+  imageAlt: string;
   nombre: string;
+  variante: string | null;
+  sku: string | null;
   qty: number;
   precio: string;
+  precioN: number;
+  descuento: string;
+  descuentoN: number;
   pagado: string;
+  pagadoN: number;
   elegible: boolean;
 };
 
@@ -31,6 +42,7 @@ export type UnifiedSale = {
   folio: string;
   cliente: string;
   email: string;
+  customerId: number | null;
   fechaISO: string;
   fecha: string;
   total: string;
@@ -45,10 +57,53 @@ export type UnifiedSale = {
   loyaltyStatus: string;
   shopifyOrderId: string | null;
   detalleCanal: string;
-  productos: UnifiedSaleItem[];
   montoElegible: string;
   montoExcluido: string;
   reglaAplicada: string;
+};
+
+export type UnifiedSaleDetail = UnifiedSale & {
+  productos: UnifiedSaleItem[];
+  subtotal: string;
+  subtotalN: number;
+  descuento: string;
+  descuentoN: number;
+  ajustes: string;
+  ajustesN: number;
+  responsable: string;
+  numeroComprobante: string | null;
+  notas: string | null;
+};
+
+export type AdminCustomerPurchase = Pick<
+  UnifiedSale,
+  | "id"
+  | "folio"
+  | "fecha"
+  | "fechaISO"
+  | "total"
+  | "totalN"
+  | "origen"
+  | "origenLabel"
+  | "estadoPago"
+>;
+
+export type AdminCustomerSupportConversation = {
+  id: string;
+  reference: string;
+  status: "new" | "in_progress" | "waiting_information" | "resolved";
+  statusLabel: string;
+  lastMessage: string | null;
+  lastMessageAt: string;
+  lastMessageDate: string;
+  archived: boolean;
+};
+
+export type AdminCustomerContext = {
+  purchaseCount: number;
+  purchases: AdminCustomerPurchase[];
+  supportCount: number;
+  supportConversations: AdminCustomerSupportConversation[];
 };
 
 export type PosLoyaltyRule = {
@@ -98,6 +153,7 @@ export type AdminPanelData = {
     }
   >;
   sales: UnifiedSale[];
+  customerContexts: Record<string, AdminCustomerContext>;
   loyaltyRule: PosLoyaltyRule | null;
   physicalSalesHistory: Array<{
     id: number;

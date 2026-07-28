@@ -112,6 +112,113 @@
   margin-bottom: 12px;
 }
 
+.sectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sectionHeading .sectionTitle {
+  margin-bottom: 3px;
+}
+
+.sectionHeading p {
+  margin: 0;
+  color: var(--olffy-cafe-55);
+  font-size: 12px;
+}
+
+.relationList {
+  display: grid;
+  gap: 8px;
+}
+
+.relationCard {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  background: var(--olffy-blanco);
+  color: var(--olffy-cafe);
+  text-align: left;
+  cursor: pointer;
+}
+
+.relationCard:hover,
+.relationCard:focus-visible {
+  border-color: var(--olffy-morado);
+  background: var(--olffy-morado-suave);
+  outline: none;
+}
+
+.relationCard > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.relationCard strong {
+  font-size: 12.5px;
+}
+
+.relationCard small {
+  overflow: hidden;
+  color: var(--olffy-cafe-55);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relationValue {
+  flex-shrink: 0;
+  justify-items: end;
+  text-align: right;
+}
+
+.relationValue strong {
+  color: var(--olffy-morado);
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.profileGrid div {
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--olffy-cafe-08);
+  border-radius: var(--radius-md);
+  background: var(--olffy-blanco);
+}
+
+.profileGrid dt {
+  color: var(--olffy-cafe-55);
+  font-size: 10px;
+}
+
+.profileGrid dd {
+  overflow-wrap: anywhere;
+  margin: 3px 0 0;
+  color: var(--olffy-cafe);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+@media (max-width: 460px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Aviso/feedback dentro del drawer ── */
 .notice {
   position: sticky;

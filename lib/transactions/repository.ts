@@ -294,3 +294,60 @@ export async function getOrderReferenceById(id: string) {
 
   return data as OrderReference;
 }
+
+export type PhysicalSaleDetailRecord = {
+  id: number;
+  receipt_number: string | null;
+  subtotal: number;
+  discount: number;
+  total: number;
+  notes: string | null;
+  created_by: string | null;
+  items: Array<{
+    id: number;
+    shopify_product_id: string;
+    shopify_variant_id: string | null;
+    sku: string | null;
+    product_title: string;
+    variant_title: string | null;
+    quantity: number;
+    unit_price: number;
+    gross_total: number | null;
+    allocated_discount: number | null;
+    paid_total: number | null;
+    eligible: boolean | null;
+  }>;
+};
+
+export async function getPhysicalSaleDetail(physicalSaleId: number) {
+  const supabase = getSupabaseAdmin();
+  const [saleResult, itemsResult] = await Promise.all([
+    supabase
+      .from("physical_sales")
+      .select("id,receipt_number,subtotal,discount,total,notes,created_by")
+      .eq("id", physicalSaleId)
+      .single(),
+    supabase
+      .from("physical_sale_items")
+      .select(
+        "id,shopify_product_id,shopify_variant_id,sku,product_title,variant_title,quantity,unit_price,gross_total,allocated_discount,paid_total,eligible",
+      )
+      .eq("physical_sale_id", physicalSaleId)
+      .order("id", { ascending: true }),
+  ]);
+
+  if (saleResult.error) {
+    fail("No se pudo cargar la venta física", saleResult.error);
+  }
+  if (itemsResult.error) {
+    fail(
+      "No se pudieron cargar las líneas de la venta física",
+      itemsResult.error,
+    );
+  }
+
+  return {
+    ...saleResult.data,
+    items: itemsResult.data ?? [],
+  } as PhysicalSaleDetailRecord;
+}
