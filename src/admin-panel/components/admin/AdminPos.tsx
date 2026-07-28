@@ -25,6 +25,7 @@ type PosCartLine = {
 };
 
 type BenefitType = "none" | "points" | "discount_code" | "manual_discount";
+type PaymentMode = "remote" | "manual";
 
 type ChargePhase =
   | "idle"
@@ -41,6 +42,12 @@ type ChargeState = {
   error: string;
   orderName: string;
   physicalSaleId: number | null;
+  total: number;
+  pointsEarned: number;
+  pointsSpent: number;
+  alreadyCompleted: boolean;
+  transactionPipelineWarning: string;
+  paymentMode: PaymentMode;
 };
 
 const IDLE_CHARGE: ChargeState = {
@@ -50,6 +57,12 @@ const IDLE_CHARGE: ChargeState = {
   error: "",
   orderName: "",
   physicalSaleId: null,
+  total: 0,
+  pointsEarned: 0,
+  pointsSpent: 0,
+  alreadyCompleted: false,
+  transactionPipelineWarning: "",
+  paymentMode: "remote",
 };
 
 const OPERATOR_STORAGE_KEY = "olffy-pos-operadora";
@@ -64,9 +77,8 @@ function amount(value: string): number {
 }
 
 // Tienda POS de OLFFY — interfaz de caja inspirada en Shopify POS: catálogo en
-// tiles a la izquierda, venta en curso a la derecha y cobro por la máquina TUU.
-// El cobro SIEMPRE se confirma vía webhook TUU en el backend: esta interfaz no
-// puede marcar un pago como aprobado por sí misma.
+// tiles a la izquierda, venta en curso a la derecha y dos modalidades de pago.
+// El éxito SIEMPRE proviene del backend; la interfaz nunca simula una aprobación.
 export function AdminPos() {
   const runtime = adminPanelRuntime.data;
   const products = runtime?.products ?? [];
@@ -83,6 +95,11 @@ export function AdminPos() {
   const [benefitAmount, setBenefitAmount] = useState("");
   const [manualDiscountReason, setManualDiscountReason] = useState("");
   const [responsible, setResponsible] = useState("Equipo OLFFY");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("remote");
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [receiptNumber, setReceiptNumber] = useState("");
+  const [saleNotes, setSaleNotes] = useState("");
   const [overlay, setOverlay] = useState<
     | { kind: "none" }
     | { kind: "customer" }
@@ -99,6 +116,8 @@ export function AdminPos() {
     text: string;
   } | null>(null);
   const pollTokenRef = useRef(0);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(OPERATOR_STORAGE_KEY);
@@ -117,6 +136,58 @@ export function AdminPos() {
       pollTokenRef.current += 1;
     };
   }, []);
+
+  useEffect(() => {
+    if (overlay.kind === "none") return;
+
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const dialog = dialogRef.current;
+    const initialFocus = dialog?.querySelector<HTMLElement>(
+      "[data-dialog-autofocus], button:not(:disabled), input:not(:disabled), textarea:not(:disabled)",
+    );
+    initialFocus?.focus();
+
+    function handleDialogKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeOverlay();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleDialogKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleDialogKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [overlay]);
 
   const filteredProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -217,6 +288,9 @@ export function AdminPos() {
       (!manualDiscountReason.trim() ||
         amount(benefitAmount) <= 0 ||
         amount(benefitAmount) >= subtotal));
+  const pointsSpent = Math.trunc(amount(pointsToUse));
+  const manualPaymentInvalid =
+    !paymentConfirmed || !paymentReference.trim() || !responsible.trim();
 
   const chargeDisabled =
     charge.phase === "sending" ||
@@ -225,8 +299,15 @@ export function AdminPos() {
     total <= 0 ||
     benefitInvalid ||
     !responsible.trim() ||
-    !readiness?.tuuRemote ||
-    !readiness?.tuuWebhook;
+    !readiness?.shopify ||
+    (paymentMode === "remote"
+      ? !readiness?.tuuRemote || !readiness?.tuuWebhook
+      : manualPaymentInvalid);
+
+  function closeOverlay() {
+    setOverlay({ kind: "none" });
+    window.requestAnimationFrame(() => restoreFocusRef.current?.focus());
+  }
 
   function addVariantToCart(product: PosProduct, variant: PosProductVariant) {
     const maxQty = Math.max(Number(variant.quantityAvailable ?? 0), 0);
@@ -293,12 +374,16 @@ export function AdminPos() {
     setDiscountCode("");
     setBenefitAmount("");
     setManualDiscountReason("");
+    setPaymentConfirmed(false);
+    setPaymentReference("");
+    setReceiptNumber("");
+    setSaleNotes("");
     setRedeemingRewardId(null);
     setRewardFeedback(null);
     setCharge(IDLE_CHARGE);
   }
 
-  function salePayload() {
+  function salePayload(notes = "Venta Tienda POS OLFFY") {
     return {
       customerId: customer?.idx ?? null,
       items: cart.map((line) => ({
@@ -311,7 +396,7 @@ export function AdminPos() {
       discountCode,
       manualDiscountReason,
       responsible: responsible.trim(),
-      notes: "Venta Tienda POS OLFFY",
+      notes,
     };
   }
 
@@ -357,6 +442,7 @@ export function AdminPos() {
         setCharge((current) => ({
           ...current,
           phase: "success",
+          statusLabel: "Venta completada",
           orderName: data.shopifyOrderName || "",
           physicalSaleId: data.physicalSaleId ?? null,
         }));
@@ -432,9 +518,15 @@ export function AdminPos() {
         setCharge({
           ...IDLE_CHARGE,
           phase: "success",
+          statusLabel: "Venta ya completada",
           reference: data.paymentReference,
           orderName: data.shopifyOrderName || "",
           physicalSaleId: data.physicalSaleId ?? null,
+          total,
+          pointsEarned,
+          pointsSpent,
+          alreadyCompleted: true,
+          paymentMode: "remote",
         });
         return;
       }
@@ -444,6 +536,10 @@ export function AdminPos() {
         phase: "waiting",
         reference: data.paymentReference,
         statusLabel: "Esperando aprobación en la máquina TUU...",
+        total,
+        pointsEarned,
+        pointsSpent,
+        paymentMode: "remote",
       });
       void pollRemotePayment(data.paymentReference, token);
     } catch (cause) {
@@ -454,6 +550,81 @@ export function AdminPos() {
           cause instanceof Error
             ? cause.message
             : "No se pudo enviar el cobro TUU",
+      });
+    }
+  }
+
+  async function confirmManualSale() {
+    setCharge({
+      ...IDLE_CHARGE,
+      phase: "sending",
+      statusLabel: "Registrando cobro manual confirmado...",
+      reference: paymentReference.trim(),
+      total,
+      pointsEarned,
+      pointsSpent,
+      paymentMode: "manual",
+    });
+
+    try {
+      const response = await fetch("/api/admin/loyalty/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          ...salePayload(saleNotes.trim()),
+          paymentConfirmed,
+          paymentReference: paymentReference.trim(),
+          receiptNumber: receiptNumber.trim(),
+        }),
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        alreadyCompleted?: boolean;
+        status?: string;
+        paymentReference?: string;
+        physicalSaleId?: number;
+        shopifyOrderName?: string;
+        total?: number;
+        pointsEarned?: number;
+        pointsSpent?: number;
+        transactionPipelineWarning?: string;
+      };
+
+      if (!response.ok || data.success !== true) {
+        throw new Error(data.error || "No se pudo completar la venta manual");
+      }
+
+      setCharge({
+        ...IDLE_CHARGE,
+        phase: "success",
+        statusLabel: data.alreadyCompleted
+          ? "Venta ya completada"
+          : "Venta completada",
+        reference: data.paymentReference || paymentReference.trim(),
+        orderName: data.shopifyOrderName || "",
+        physicalSaleId: data.physicalSaleId ?? null,
+        total: data.total ?? total,
+        pointsEarned: data.pointsEarned ?? pointsEarned,
+        pointsSpent: data.pointsSpent ?? pointsSpent,
+        alreadyCompleted: data.alreadyCompleted === true,
+        transactionPipelineWarning: data.transactionPipelineWarning || "",
+        paymentMode: "manual",
+      });
+    } catch (cause) {
+      setCharge({
+        ...IDLE_CHARGE,
+        phase: "failed",
+        error:
+          cause instanceof Error
+            ? cause.message
+            : "No se pudo completar la venta manual",
+        reference: paymentReference.trim(),
+        total,
+        pointsEarned,
+        pointsSpent,
+        paymentMode: "manual",
       });
     }
   }
@@ -716,9 +887,17 @@ export function AdminPos() {
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </div>
-            <h2 className={styles.resultTitle}>Venta completada</h2>
-            <p className={styles.resultAmount}>{clp(total)}</p>
+            <h2 className={styles.resultTitle}>
+              {charge.alreadyCompleted
+                ? "Venta ya completada"
+                : "Venta completada"}
+            </h2>
+            <p className={styles.resultAmount}>{clp(charge.total)}</p>
             <div className={styles.resultRows}>
+              <div className={styles.resultRow}>
+                <span>Estado</span>
+                <span>{charge.statusLabel}</span>
+              </div>
               {charge.orderName ? (
                 <div className={styles.resultRow}>
                   <span>Orden Shopify</span>
@@ -727,23 +906,41 @@ export function AdminPos() {
               ) : null}
               {charge.physicalSaleId ? (
                 <div className={styles.resultRow}>
-                  <span>Registro OLFFY</span>
+                  <span>Folio OLFFY</span>
                   <span>#{charge.physicalSaleId}</span>
                 </div>
               ) : null}
               {charge.reference ? (
                 <div className={styles.resultRow}>
-                  <span>Referencia TUU</span>
+                  <span>
+                    {charge.paymentMode === "manual"
+                      ? "Referencia de pago"
+                      : "Referencia TUU"}
+                  </span>
                   <span className={styles.mono}>{charge.reference}</span>
                 </div>
               ) : null}
-              {customer && pointsEarned > 0 ? (
+              {customer && charge.pointsEarned > 0 ? (
                 <div className={styles.resultRow}>
                   <span>Puntos para {customer.nombre}</span>
-                  <span>+{pointsEarned.toLocaleString("es-CL")} pts</span>
+                  <span>
+                    +{charge.pointsEarned.toLocaleString("es-CL")} pts
+                  </span>
+                </div>
+              ) : null}
+              {charge.pointsSpent > 0 ? (
+                <div className={styles.resultRow}>
+                  <span>Puntos utilizados</span>
+                  <span>−{charge.pointsSpent.toLocaleString("es-CL")} pts</span>
                 </div>
               ) : null}
             </div>
+            {charge.transactionPipelineWarning ? (
+              <div className={styles.chargeWarning} role="alert">
+                Venta registrada. Requiere revisión:{" "}
+                {charge.transactionPipelineWarning}
+              </div>
+            ) : null}
             <button
               type="button"
               className={styles.checkoutBtn}
@@ -861,9 +1058,9 @@ export function AdminPos() {
             <div className={styles.summary}>
               {!readiness?.tuuRemote ? (
                 <div className={styles.apiNotice} role="status">
-                  <strong>Modo preparación</strong>
-                  El carrito y los descuentos se validan ahora. El cobro se
-                  habilitará al configurar la API y el webhook de TUU.
+                  <strong>TUU remoto no disponible</strong>
+                  Puedes finalizar la venta con “Cobro manual confirmado” si
+                  verificaste el pago por otro medio.
                 </div>
               ) : null}
               {!customer ? (
@@ -975,14 +1172,105 @@ export function AdminPos() {
                 </div>
               ) : null}
               <div className={styles.operatorRow}>
-                <label htmlFor="pos-operadora">Operadora</label>
+                <label htmlFor="pos-operadora">Responsable</label>
                 <input
                   id="pos-operadora"
                   value={responsible}
                   onChange={(event) => setResponsible(event.target.value)}
                   placeholder="Nombre de quien vende"
+                  required
+                  aria-invalid={!responsible.trim()}
                 />
               </div>
+
+              <fieldset
+                className={styles.paymentModes}
+                disabled={
+                  charge.phase === "sending" || charge.phase === "waiting"
+                }
+              >
+                <legend>Modalidad de cobro</legend>
+                <label className={styles.paymentMode}>
+                  <input
+                    type="radio"
+                    name="pos-payment-mode"
+                    value="remote"
+                    checked={paymentMode === "remote"}
+                    onChange={() => {
+                      setPaymentMode("remote");
+                      setCharge(IDLE_CHARGE);
+                    }}
+                  />
+                  <span>
+                    Cobro remoto con TUU
+                    <small>
+                      Envía el cobro a la máquina y espera el webhook real.
+                    </small>
+                  </span>
+                </label>
+                <label className={styles.paymentMode}>
+                  <input
+                    type="radio"
+                    name="pos-payment-mode"
+                    value="manual"
+                    checked={paymentMode === "manual"}
+                    onChange={() => {
+                      setPaymentMode("manual");
+                      setCharge(IDLE_CHARGE);
+                    }}
+                  />
+                  <span>
+                    Cobro manual confirmado
+                    <small>
+                      Registra una venta cuyo pago ya fue verificado.
+                    </small>
+                  </span>
+                </label>
+              </fieldset>
+
+              {paymentMode === "manual" ? (
+                <div className={styles.manualPaymentFields}>
+                  <label>
+                    Referencia o número de transacción
+                    <input
+                      value={paymentReference}
+                      onChange={(event) =>
+                        setPaymentReference(event.target.value)
+                      }
+                      required
+                      aria-invalid={!paymentReference.trim()}
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label>
+                    Número de comprobante (opcional)
+                    <input
+                      value={receiptNumber}
+                      onChange={(event) => setReceiptNumber(event.target.value)}
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label>
+                    Notas (opcional)
+                    <textarea
+                      rows={2}
+                      value={saleNotes}
+                      onChange={(event) => setSaleNotes(event.target.value)}
+                    />
+                  </label>
+                  <label className={styles.paymentConfirmation}>
+                    <input
+                      type="checkbox"
+                      checked={paymentConfirmed}
+                      onChange={(event) =>
+                        setPaymentConfirmed(event.target.checked)
+                      }
+                      required
+                    />
+                    Confirmo que el pago fue recibido y verificado.
+                  </label>
+                </div>
+              ) : null}
 
               {charge.phase === "waiting" || charge.phase === "sending" ? (
                 <div className={styles.chargeStatus} role="status">
@@ -1010,14 +1298,22 @@ export function AdminPos() {
                 type="button"
                 className={styles.checkoutBtn}
                 disabled={chargeDisabled}
-                onClick={() => void sendCharge()}
+                onClick={() =>
+                  void (paymentMode === "manual"
+                    ? confirmManualSale()
+                    : sendCharge())
+                }
               >
                 <span>
                   {charge.phase === "sending"
-                    ? "Enviando cobro..."
+                    ? paymentMode === "manual"
+                      ? "Registrando venta..."
+                      : "Enviando cobro..."
                     : charge.phase === "waiting"
                       ? "Esperando TUU..."
-                      : "Cobrar con TUU"}
+                      : paymentMode === "manual"
+                        ? "Confirmar venta manual"
+                        : "Cobrar con TUU"}
                 </span>
                 <span>{clp(total)}</span>
               </button>
@@ -1034,14 +1330,10 @@ export function AdminPos() {
           aria-modal="true"
           aria-label="Seleccionar cliente"
         >
-          <div className={styles.sheet}>
+          <div className={styles.sheet} ref={dialogRef} tabIndex={-1}>
             <div className={styles.sheetHeader}>
               <h3>Cliente</h3>
-              <button
-                type="button"
-                onClick={() => setOverlay({ kind: "none" })}
-                aria-label="Cerrar"
-              >
+              <button type="button" onClick={closeOverlay} aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -1051,7 +1343,7 @@ export function AdminPos() {
               value={customerQuery}
               onChange={(event) => setCustomerQuery(event.target.value)}
               placeholder="Buscar por nombre o correo"
-              autoFocus
+              data-dialog-autofocus
             />
             <div className={styles.sheetList}>
               <button
@@ -1061,7 +1353,7 @@ export function AdminPos() {
                   setCustomer(null);
                   if (benefitType === "points") setBenefitType("none");
                   setPointsToUse("");
-                  setOverlay({ kind: "none" });
+                  closeOverlay();
                 }}
               >
                 <span className={styles.sheetItemTitle}>Venta anónima</span>
@@ -1078,7 +1370,7 @@ export function AdminPos() {
                   onClick={() => {
                     setCustomer(item);
                     setPointsToUse("");
-                    setOverlay({ kind: "none" });
+                    closeOverlay();
                   }}
                 >
                   <span className={styles.sheetItemTitle}>{item.nombre}</span>
@@ -1106,14 +1398,10 @@ export function AdminPos() {
           aria-modal="true"
           aria-label={`Variantes de ${overlay.product.name}`}
         >
-          <div className={styles.sheet}>
+          <div className={styles.sheet} ref={dialogRef} tabIndex={-1}>
             <div className={styles.sheetHeader}>
               <h3>{overlay.product.name}</h3>
-              <button
-                type="button"
-                onClick={() => setOverlay({ kind: "none" })}
-                aria-label="Cerrar"
-              >
+              <button type="button" onClick={closeOverlay} aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -1129,9 +1417,10 @@ export function AdminPos() {
                     type="button"
                     className={styles.sheetItem}
                     disabled={stock <= 0}
+                    data-dialog-autofocus={stock > 0 ? "" : undefined}
                     onClick={() => {
                       addVariantToCart(overlay.product, variant);
-                      setOverlay({ kind: "none" });
+                      closeOverlay();
                     }}
                   >
                     <span className={styles.sheetItemTitle}>
@@ -1159,14 +1448,10 @@ export function AdminPos() {
           aria-modal="true"
           aria-label="Aplicar beneficio"
         >
-          <div className={styles.sheet}>
+          <div className={styles.sheet} ref={dialogRef} tabIndex={-1}>
             <div className={styles.sheetHeader}>
               <h3>Beneficio de la venta</h3>
-              <button
-                type="button"
-                onClick={() => setOverlay({ kind: "none" })}
-                aria-label="Cerrar"
-              >
+              <button type="button" onClick={closeOverlay} aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -1265,7 +1550,7 @@ export function AdminPos() {
             <button
               type="button"
               className={styles.sheetConfirm}
-              onClick={() => setOverlay({ kind: "none" })}
+              onClick={closeOverlay}
               disabled={benefitType !== "none" && benefitInvalid}
             >
               Listo
