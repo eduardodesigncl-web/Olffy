@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type {
   SupportConversation,
   SupportIssueCategory,
@@ -37,11 +38,26 @@ export function CustomerSupportChat() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasNewReply, setHasNewReply] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastUnreadRef = useRef<number | null>(null);
+  const openRef = useRef(false);
+  openRef.current = open;
 
   const refresh = useCallback(async (markRead: boolean) => {
     const result = await getCustomerSupportConversationAction({ markRead });
     if (result.ok) {
+      const nextUnread = result.conversation?.unreadCustomer ?? 0;
+      if (
+        !markRead &&
+        !openRef.current &&
+        lastUnreadRef.current !== null &&
+        nextUnread > lastUnreadRef.current
+      ) {
+        setHasNewReply(true);
+      }
+      if (markRead) setHasNewReply(false);
+      lastUnreadRef.current = nextUnread;
       setConversation(result.conversation);
       setError(null);
     } else {
@@ -355,17 +371,36 @@ export function CustomerSupportChat() {
 
       <button
         type="button"
-        className={styles.launcher}
-        onClick={() => setOpen((current) => !current)}
-        aria-label={open ? "Cerrar ayuda" : "Abrir chat de ayuda"}
+        className={`${styles.launcher} ${
+          hasNewReply ? styles.launcherNewReply : ""
+        }`}
+        onClick={() => {
+          setHasNewReply(false);
+          setOpen((current) => !current);
+        }}
+        aria-label={
+          open
+            ? "Cerrar ayuda OLFFY"
+            : unread > 0
+              ? `Abrir chat de ayuda OLFFY, ${unread} ${
+                  unread === 1 ? "mensaje sin leer" : "mensajes sin leer"
+                }`
+              : "Abrir chat de ayuda OLFFY"
+        }
         aria-expanded={open}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 9.5 9.5 0 0 1-3.7-.8L4 20l1.4-3.7A7.4 7.4 0 0 1 4 12a7.5 7.5 0 0 1 8-7.5 7.5 7.5 0 0 1 8 7Z" />
-          <path d="M8.5 11.8h.01M12 11.8h.01M15.5 11.8h.01" />
-        </svg>
+        <Image
+          src="/olffy/logo.png"
+          alt=""
+          width={46}
+          height={20}
+          className={styles.launcherLogo}
+          aria-hidden="true"
+        />
         {unread > 0 && (
-          <span className={styles.badge}>{Math.min(unread, 9)}</span>
+          <span className={styles.badge} aria-hidden="true">
+            {Math.min(unread, 9)}
+          </span>
         )}
       </button>
     </div>

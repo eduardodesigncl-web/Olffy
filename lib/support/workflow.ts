@@ -175,6 +175,57 @@ export function supportDeliveryForPresence(
       } as const);
 }
 
+export function supportDeliveryForAdminAction(
+  action: "reply" | "reply_chat" | "reply_chat_email",
+  lastSeenAt: string | null | undefined,
+  now = Date.now(),
+) {
+  if (action === "reply_chat") {
+    return {
+      online: isCustomerOnline(lastSeenAt, now),
+      deliveryChannel: "chat",
+      emailStatus: "not_required",
+    } as const;
+  }
+
+  if (action === "reply_chat_email") {
+    return {
+      online: isCustomerOnline(lastSeenAt, now),
+      deliveryChannel: "chat_and_email",
+      emailStatus: "pending",
+    } as const;
+  }
+
+  return supportDeliveryForPresence(lastSeenAt, now);
+}
+
+export function resolveSupportSiteOrigin(input: {
+  nodeEnv: string | undefined;
+  siteUrl: string | undefined;
+  nextPublicSiteUrl: string | undefined;
+  requestOrigin: string;
+}) {
+  const isProduction = input.nodeEnv === "production";
+  const configured = input.siteUrl?.trim() || input.nextPublicSiteUrl?.trim();
+  const candidate = isProduction
+    ? configured
+    : input.requestOrigin || configured;
+
+  if (!candidate) {
+    throw new Error("SITE_URL o NEXT_PUBLIC_SITE_URL no está configurada.");
+  }
+
+  const url = new URL(candidate);
+  if (
+    url.username ||
+    url.password ||
+    (url.protocol !== "https:" && (isProduction || url.protocol !== "http:"))
+  ) {
+    throw new Error("La URL canónica de soporte no es válida.");
+  }
+  return url.origin;
+}
+
 export function supportEmailIdempotencyKey(messageId: number) {
   if (!Number.isSafeInteger(messageId) || messageId <= 0) {
     throw new Error("Id de mensaje inválido");
@@ -239,5 +290,6 @@ export function sanitizeSupportEmailError(value: unknown) {
   return message
     .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [oculto]")
     .replace(/re_[A-Za-z0-9_-]+/g, "re_[oculto]")
-    .slice(0, 1000);
+    .replace(/((?:api|secret)[_-]?key\s*[:=]\s*)[^\s,;]+/gi, "$1[oculto]")
+    .slice(0, 500);
 }

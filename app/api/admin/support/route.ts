@@ -19,8 +19,10 @@ import {
   adminHandlerUpdate,
   buildSupportCustomerEmailBody,
   normalizeSupportStatus,
+  resolveSupportSiteOrigin,
   sanitizeSupportEmailError,
   statusAfterAdminReply,
+  supportDeliveryForAdminAction,
   supportDateKey,
   supportEmailIdempotencyKey,
 } from "lib/support/workflow";
@@ -205,9 +207,12 @@ async function requireRealAdmin(): Promise<{
 }
 
 function conversationUrl(request: Request, conversationId: string) {
-  const configured =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim();
-  const origin = configured || new URL(request.url).origin;
+  const origin = resolveSupportSiteOrigin({
+    nodeEnv: process.env.NODE_ENV,
+    siteUrl: process.env.SITE_URL,
+    nextPublicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    requestOrigin: new URL(request.url).origin,
+  });
   const url = new URL("/cuenta", origin);
   url.searchParams.set("support", conversationId);
   return url.toString();
@@ -263,28 +268,36 @@ async function deliverEmailForStoredMessage(input: {
 
   const orderName = await relatedOrderName(input.conversation);
   const reference = `#SUP-${input.conversation.reference_number}`;
-  const result = await sendSupportEmail({
-    to: input.conversation.customer_email,
-    idempotencyKey: supportEmailIdempotencyKey(input.messageId),
-    subject:
-      input.subject ||
-      `Respuesta OLFFY · ${reference}${
-        input.conversation.issue_subcategory
-          ? ` · ${input.conversation.issue_subcategory}`
-          : ""
-      }`,
-    heading: input.heading,
-    body: buildSupportCustomerEmailBody({
-      customerName: input.conversation.customer_name,
-      message: input.message,
-      reference,
-      category: input.conversation.issue_category,
-      subcategory: input.conversation.issue_subcategory,
-      orderName,
-    }),
-    actionUrl: conversationUrl(input.request, input.conversation.id),
-    actionLabel: "Volver a la conversación",
-  });
+  let result;
+  try {
+    result = await sendSupportEmail({
+      to: input.conversation.customer_email,
+      idempotencyKey: supportEmailIdempotencyKey(input.messageId),
+      subject:
+        input.subject ||
+        `Respuesta OLFFY · ${reference}${
+          input.conversation.issue_subcategory
+            ? ` · ${input.conversation.issue_subcategory}`
+            : ""
+        }`,
+      heading: input.heading,
+      body: buildSupportCustomerEmailBody({
+        customerName: input.conversation.customer_name,
+        message: input.message,
+        reference,
+        category: input.conversation.issue_category,
+        subcategory: input.conversation.issue_subcategory,
+        orderName,
+      }),
+      actionUrl: conversationUrl(input.request, input.conversation.id),
+      actionLabel: "Volver a la conversación",
+    });
+  } catch (cause) {
+    result = {
+      sent: false as const,
+      error: sanitizeSupportEmailError(cause),
+    };
+  }
 
   const emailUpdate = result.sent
     ? {
@@ -641,7 +654,14 @@ export async function POST(request: Request) {
     } else {
       let message = String(body.message ?? "").trim();
       let deliveryChannel: SupportDeliveryChannel =
-        action === "reply_chat" ? "chat" : "chat_and_email";
+        action === "reply" ||
+        action === "reply_chat" ||
+        action === "reply_chat_email"
+          ? supportDeliveryForAdminAction(
+              action,
+              conversation.customer_last_seen_at,
+            ).deliveryChannel
+          : "chat_and_email";
       let nextStatus: SupportStatus = statusAfterAdminReply(currentStatus);
       let heading = "OLFFY respondió tu consulta";
 
@@ -695,7 +715,9 @@ export async function POST(request: Request) {
         ...commonUpdate,
         status: nextStatus,
         unread_admin: 0,
-        unread_customer: Number(conversation.unread_customer ?? 0) + 1,
+        unread_customer:
+          Number(conversation.unread_customer ?? 0) +
+          (inserted.duplicate ? 0 : 1),
         last_message_at: now,
       };
       if (action === "request_information") {
@@ -721,7 +743,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (!inserted.duplicate && deliveryChannel === "chat_and_email") {
+      if (deliveryChannel === "chat_and_email") {
         const emailResult = await deliverEmailForStoredMessage({
           request,
           messageId: inserted.id,

@@ -8,8 +8,10 @@ import {
   normalizeSupportIssueCategory,
   normalizeSupportStatus,
   sanitizeSupportEmailError,
+  resolveSupportSiteOrigin,
   statusAfterAdminReply,
   statusAfterCustomerMessage,
+  supportDeliveryForAdminAction,
   supportDeliveryForPresence,
   supportDateKey,
   supportEmailIdempotencyKey,
@@ -40,6 +42,35 @@ describe("support workflow", () => {
         emailStatus: "pending",
       },
     );
+  });
+
+  it("respeta la modalidad explícita aunque la clienta esté conectada", () => {
+    const now = Date.parse("2026-07-17T17:00:00.000Z");
+    const online = "2026-07-17T16:59:30.000Z";
+
+    expect(
+      supportDeliveryForAdminAction("reply_chat_email", online, now),
+    ).toEqual({
+      online: true,
+      deliveryChannel: "chat_and_email",
+      emailStatus: "pending",
+    });
+    expect(supportDeliveryForAdminAction("reply_chat", null, now)).toEqual({
+      online: false,
+      deliveryChannel: "chat",
+      emailStatus: "not_required",
+    });
+  });
+
+  it("usa el dominio canónico para botones de soporte en producción", () => {
+    expect(
+      resolveSupportSiteOrigin({
+        nodeEnv: "production",
+        siteUrl: "https://olffy.cl",
+        nextPublicSiteUrl: "https://preview.vercel.app",
+        requestOrigin: "https://other-preview.vercel.app",
+      }),
+    ).toBe("https://olffy.cl");
   });
 
   it("deriva encargado exclusivamente de la identidad autenticada", () => {

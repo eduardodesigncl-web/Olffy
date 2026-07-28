@@ -10,8 +10,11 @@ import {
   validateCustomerPassword,
 } from "lib/customer/auth-input";
 import {
+  buildCustomerConfirmationRedirect,
+  buildCustomerRecoveryRedirect,
   CUSTOMER_RECOVERY_COOKIE,
   CUSTOMER_RECOVERY_COOKIE_VALUE,
+  resolveCustomerAuthOrigin,
 } from "lib/customer/recovery";
 import { requestCustomerReward } from "lib/customer/redemptions";
 import { getSupabaseServer } from "lib/supabase/server";
@@ -123,63 +126,14 @@ function invalidInput(cause: unknown): CustomerAuthActionResult {
 
 async function getCustomerAuthOrigin() {
   const requestHeaders = await headers();
-  const requestOrigin = requestHeaders.get("origin");
-  const forwardedHost =
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const forwardedProtocol =
-    requestHeaders.get("x-forwarded-proto") ??
-    (process.env.NODE_ENV === "production" ? "https" : "http");
-  const currentOrigin = requestOrigin
-    ? new URL(requestOrigin).origin
-    : forwardedHost
-      ? `${forwardedProtocol}://${forwardedHost}`
-      : null;
-
-  if (
-    currentOrigin &&
-    (process.env.NODE_ENV !== "production" ||
-      currentOrigin.startsWith("https://"))
-  ) {
-    return currentOrigin;
-  }
-
-  const configuredUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.CUSTOMER_AUTH_SITE_URL ??
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
-    process.env.VERCEL_URL;
-
-  if (configuredUrl) {
-    const url = configuredUrl.startsWith("http")
-      ? configuredUrl
-      : `https://${configuredUrl}`;
-    const origin = new URL(url).origin;
-
-    if (
-      process.env.NODE_ENV === "production" &&
-      !origin.startsWith("https://")
-    ) {
-      throw new Error("CUSTOMER_AUTH_SITE_URL debe usar HTTPS en producción.");
-    }
-
-    return origin;
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("CUSTOMER_AUTH_SITE_URL no está configurada.");
-  }
-
-  throw new Error("No se pudo determinar la URL del sitio.");
-}
-
-function confirmationRedirect(origin: string) {
-  return `${origin}/auth/confirm?next=${encodeURIComponent("/cuenta")}`;
-}
-
-function recoveryRedirect(origin: string) {
-  return `${origin}/auth/confirm?next=${encodeURIComponent(
-    "/cuenta/restablecer",
-  )}`;
+  return resolveCustomerAuthOrigin({
+    nodeEnv: process.env.NODE_ENV,
+    customerAuthSiteUrl: process.env.CUSTOMER_AUTH_SITE_URL,
+    requestOrigin: requestHeaders.get("origin"),
+    forwardedHost:
+      requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    forwardedProtocol: requestHeaders.get("x-forwarded-proto"),
+  });
 }
 
 export async function loginCustomerAction(
@@ -249,7 +203,7 @@ export async function registerCustomerAction(
       email,
       password: input.password,
       options: {
-        emailRedirectTo: confirmationRedirect(origin),
+        emailRedirectTo: buildCustomerConfirmationRedirect(origin),
         data: {
           full_name: fullName,
           registration_source: "customer_account",
@@ -292,7 +246,9 @@ export async function resendCustomerConfirmationAction(
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: confirmationRedirect(origin) },
+      options: {
+        emailRedirectTo: buildCustomerConfirmationRedirect(origin),
+      },
     });
 
     if (error) return authFailure(error);
@@ -318,7 +274,7 @@ export async function requestCustomerPasswordRecoveryAction(
     const supabase = await getSupabaseServer();
     const origin = await getCustomerAuthOrigin();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: recoveryRedirect(origin),
+      redirectTo: buildCustomerRecoveryRedirect(origin),
     });
 
     if (error) return authFailure(error);

@@ -8,6 +8,7 @@ import {
   CUSTOMER_RECOVERY_COOKIE,
   CUSTOMER_RECOVERY_COOKIE_VALUE,
   CUSTOMER_RECOVERY_MAX_AGE_SECONDS,
+  resolveCustomerAuthOrigin,
 } from "lib/customer/recovery";
 
 export async function GET(request: Request) {
@@ -16,12 +17,26 @@ export async function GET(request: Request) {
   const type = url.searchParams.get("type") as EmailOtpType | null;
   const code = url.searchParams.get("code");
   const next = safeCustomerReturnUrl(url.searchParams.get("next"));
+  let origin: string;
+
+  try {
+    origin = resolveCustomerAuthOrigin({
+      nodeEnv: process.env.NODE_ENV,
+      customerAuthSiteUrl: process.env.CUSTOMER_AUTH_SITE_URL,
+      requestOrigin: url.origin,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "La URL de autenticación no está configurada." },
+      { status: 500 },
+    );
+  }
 
   if (!hasSupabasePublicConfig()) {
     return NextResponse.redirect(
       new URL(
         `/cuenta/login?error=${encodeURIComponent("La autenticacion de cliente no esta configurada.")}`,
-        url.origin,
+        origin,
       ),
     );
   }
@@ -49,7 +64,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(
       new URL(
         `/cuenta/login?error=${encodeURIComponent("El enlace expiro o ya fue utilizado.")}`,
-        url.origin,
+        origin,
       ),
     );
   }
@@ -71,7 +86,7 @@ export async function GET(request: Request) {
         `/cuenta/login?error=${encodeURIComponent(
           "No pudimos vincular tu cuenta. Contacta a OLFFY.",
         )}`,
-        url.origin,
+        origin,
       ),
     );
   }
@@ -79,11 +94,11 @@ export async function GET(request: Request) {
   if (!user || !customer) {
     await supabase.auth.signOut();
     return NextResponse.redirect(
-      new URL("/cuenta/login?error=no-inscrita", url.origin),
+      new URL("/cuenta/login?error=no-inscrita", origin),
     );
   }
 
-  const response = NextResponse.redirect(new URL(next, url.origin));
+  const response = NextResponse.redirect(new URL(next, origin));
   const isPasswordRecovery =
     type === "recovery" || next === "/cuenta/restablecer";
 

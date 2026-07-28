@@ -754,11 +754,24 @@
 }
 
 .systemEmailFailure {
-  display: inline-flex;
+  display: grid;
   justify-content: center;
   gap: 5px;
   color: #b42318;
   font-size: 8px;
+}
+
+.emailPending,
+.emailSent {
+  font-size: 8px;
+}
+
+.emailPending {
+  color: #875c00;
+}
+
+.emailSent {
+  color: #087443;
 }
 
 .systemEmailFailure button {
@@ -790,6 +803,12 @@
   font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.emailFailure span,
+.systemEmailFailure span {
+  overflow-wrap: anywhere;
+  opacity: 0.82;
 }
 
 .messageBubble time,

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { sanitizeSupportEmailError } from "./workflow";
+
 type SupportEmailInput = {
   to: string;
   subject: string;
@@ -31,11 +33,14 @@ export async function sendSupportEmail(
   const from =
     process.env.SUPPORT_EMAIL_FROM?.trim() ||
     process.env.RESEND_FROM_EMAIL?.trim();
+  const replyTo =
+    input.replyTo?.trim() || process.env.SUPPORT_EMAIL_TO?.trim() || undefined;
 
-  if (!apiKey || !from) {
+  if (!apiKey || !from || !replyTo) {
     return {
       sent: false,
-      error: "Falta configurar RESEND_API_KEY y SUPPORT_EMAIL_FROM.",
+      error:
+        "Falta configurar RESEND_API_KEY, SUPPORT_EMAIL_FROM y SUPPORT_EMAIL_TO.",
     };
   }
 
@@ -68,16 +73,27 @@ export async function sendSupportEmail(
             }
           </div>
         `,
-        ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+        ...(replyTo ? { reply_to: replyTo } : {}),
       }),
       cache: "no-store",
     });
 
     if (!response.ok) {
-      const payload = await response.text();
+      const payload = (await response.json().catch(() => null)) as {
+        message?: unknown;
+        error?: { message?: unknown };
+      } | null;
+      const providerMessage =
+        typeof payload?.message === "string"
+          ? payload.message
+          : typeof payload?.error?.message === "string"
+            ? payload.error.message
+            : "La solicitud fue rechazada por el proveedor.";
       return {
         sent: false,
-        error: `Resend ${response.status}: ${payload.slice(0, 500)}`,
+        error: sanitizeSupportEmailError(
+          `Resend ${response.status}: ${providerMessage}`,
+        ),
       };
     }
 
@@ -92,8 +108,9 @@ export async function sendSupportEmail(
   } catch (cause) {
     return {
       sent: false,
-      error:
+      error: sanitizeSupportEmailError(
         cause instanceof Error ? cause.message : "No se pudo enviar el correo.",
+      ),
     };
   }
 }
