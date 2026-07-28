@@ -6,6 +6,8 @@
     "start": "next start",
     "prettier": "prettier --write --ignore-unknown .",
     "prettier:check": "prettier --check --ignore-unknown .",
+    "env:check": "node scripts/validate-environment.mjs",
+    "env:check:ci": "node scripts/validate-environment.mjs ci",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
     "test": "npm run test:unit && npm run typecheck && npm run prettier:check",
