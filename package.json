@@ -8,6 +8,7 @@
     "prettier:check": "prettier --check --ignore-unknown .",
     "env:check": "node scripts/validate-environment.mjs",
     "env:check:ci": "node scripts/validate-environment.mjs ci",
+    "migrations:replay": "node scripts/replay-supabase-migrations.mjs",
     "migrations:verify": "node scripts/verify-supabase-migrations.mjs",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",

@@ -35,13 +35,17 @@ El workflow `quality` ejecuta esta validación antes de las pruebas unitarias.
 Una migración ya registrada no debe editarse: todo cambio futuro debe agregarse
 como una migración nueva.
 
+El job `database-replay` inicia PostgreSQL 17 vacío, crea únicamente los roles y
+el esquema `auth` mínimos de Supabase, aplica las 20 migraciones en orden y
+ejecuta smoke tests de tablas, RLS y `loyalty_lot_remaining`. Este replay usa
+infraestructura efímera de CI y no requiere una branch pagada de Supabase.
+
 ## Validación pendiente antes de promover cambios de esquema
 
-1. Ejecutar un replay completo en una base desechable.
-2. Comparar esquema, funciones, grants y políticas RLS con producción.
-3. Ejecutar advisors de seguridad y rendimiento.
-4. Probar las RPC de POS, puntos, canjes y soporte.
-5. Aplicar nuevas migraciones únicamente después de aprobar el replay.
+1. Comparar esquema, funciones, grants y políticas RLS con producción.
+2. Ejecutar advisors de seguridad y rendimiento.
+3. Probar las RPC de POS, puntos, canjes y soporte.
+4. Aplicar nuevas migraciones únicamente después de aprobar el replay.
 
 La rama principal de Supabase no se debe reparar manualmente mientras el
 repositorio no haya incorporado este historial.
