@@ -24,6 +24,8 @@ const organizationSchema = {
   "@type": "Organization",
   name: "OLFFY",
   url: baseUrl,
+  logo: `${baseUrl}/icon-512.png`,
+  image: `${baseUrl}/icon-512.png`,
   description:
     "Papelería chilena creativa: agendas, libretas, stickers y regalos desde Viña del Mar.",
   sameAs: [INSTAGRAM_PROFILE_URL],
@@ -63,6 +65,10 @@ export const metadata = {
     description:
       "Agendas, libretas ilustradas, stickers y regalos desde Viña del Mar.",
   },
+};
+
+export const viewport = {
+  themeColor: "#5857B6",
 };
 
 export default async function RootLayout({
