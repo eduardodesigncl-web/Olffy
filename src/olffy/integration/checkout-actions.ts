@@ -120,27 +120,29 @@ export async function getStorefrontLoyaltyStateAction(): Promise<StorefrontLoyal
     }),
   ]);
   const subtotal = clp(cart?.cost.subtotalAmount.amount);
-  const total = clp(cart?.cost.totalAmount.amount);
-  const discount = Math.max(subtotal - total, 0);
+  const shopifyTotal = clp(cart?.cost.totalAmount.amount);
+  // Shopify incluye impuestos/despacho estimados en `totalAmount`, por lo que
+  // `subtotal - total` NO representa el descuento de puntos (puede dar 0 o
+  // negativo y ocultar el descuento en el resumen). Se usa solo como respaldo
+  // para códigos de descuento externos cuando no hay una recompensa aplicada.
+  const externalDiscount = Math.max(subtotal - shopifyTotal, 0);
 
-  // Puntos que acumula la compra: estimación sobre el total a pagar (tras
-  // descuentos). Los puntos definitivos se confirman al completar el pago.
   const earnRate = rule
     ? {
         spendingUnitClp: rule.spending_unit_clp,
         pointsPerUnit: rule.points_per_unit,
       }
     : null;
-  const pointsToEarn = rule ? calculatePointsForAmount(total, rule) : 0;
 
   if (account.status !== "ready") {
+    const total = Math.max(subtotal - externalDiscount, 0);
     return {
       accountStatus: account.status,
       pointsBalance: 0,
       subtotal,
-      discount,
+      discount: externalDiscount,
       total,
-      pointsToEarn,
+      pointsToEarn: rule ? calculatePointsForAmount(total, rule) : 0,
       earnRate,
       rewards: [],
       activeReward: null,
@@ -153,6 +155,20 @@ export async function getStorefrontLoyaltyStateAction(): Promise<StorefrontLoyal
         storefrontCartId: cart.id,
       })
     : null;
+  const activeReward = activeRewardView(active, cart?.discountCodes ?? []);
+  // El descuento del resumen proviene de la recompensa aplicada (fuente
+  // confiable e independiente de impuestos). Si la recompensa no aplica al
+  // carrito, se recurre al descuento externo del carrito de Shopify.
+  const discount =
+    activeReward?.applicable && activeReward.discountAmountClp > 0
+      ? activeReward.discountAmountClp
+      : externalDiscount;
+  // Total estimado del mini-resumen: subtotal menos el descuento de puntos.
+  // Impuestos y despacho se finalizan en el checkout de Shopify.
+  const total = Math.max(subtotal - discount, 0);
+  // Puntos que acumula la compra: estimación sobre el total a pagar (tras
+  // descuentos). Los puntos definitivos se confirman al completar el pago.
+  const pointsToEarn = rule ? calculatePointsForAmount(total, rule) : 0;
   const displayName =
     account.customer.full_name?.trim() ||
     account.customer.email.split("@")[0] ||
@@ -173,7 +189,7 @@ export async function getStorefrontLoyaltyStateAction(): Promise<StorefrontLoyal
       pointsBalance: account.customer.points_balance,
       subtotal,
     }),
-    activeReward: activeRewardView(active, cart?.discountCodes ?? []),
+    activeReward,
   };
 }
 
